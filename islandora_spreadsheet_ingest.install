@@ -2,5 +2,42 @@
 
 /**
  * @file
- * Main module entry points.
+ * Module installation/uninstallation hooks and helpers.
  */
+
+/**
+ * Implements hook_schema().
+ */
+function islandora_spreadsheet_ingest_schema() {
+  $schema = array();
+  $schema['islandora_spreadsheet_ingest_templates'] = array(
+    'description' => 'templates used during ingest.',
+    'fields' => array(
+      'id' => array(
+        'type' => 'serial',
+        'not null' => TRUE,
+      ),
+      'name' => array(
+        'description' => 'The name of the template.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ),
+      'fid' => array(
+        'description' => 'The Drupal file identifier of the template.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+    ),
+    'unique keys' => array('name' => array(array('name', 191))),
+    'primary key' => array('id'),
+    'foreign keys' => array(
+      'fid' => array(
+        'table' => 'file_managed',
+        'columns' => array('fid' => 'fid'),
+      ),
+    ),
+  );
+  return $schema;
+}
