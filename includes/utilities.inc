@@ -6,7 +6,7 @@
  */
 
 /**
- * Get all templates.
+ * Get all template information.
  */
 function islandora_spreadsheet_ingest_get_templates() {
   module_load_include('inc', 'islandora_spreadsheet_ingest', 'includes/db');

@@ -11,20 +11,29 @@
 function islandora_spreadsheet_ingest_admin_form(array $form, array &$form_state) {
   form_load_include($form_state, 'inc', 'islandora_spreadsheet_ingest', 'includes/utilities');
   $templates = islandora_spreadsheet_ingest_get_templates();
-dpm($templates, 'admin');
-  $form['submit'] = array(
-    '#type' => 'submit',
-    '#value' => t('Remove Templates'),
+  foreach($templates as $template) {
+    $options[$template['id']] = array(
+      $template['name'],
+    );
+    if (isset($template['uri'])) {
+      $options[$template['id']][] = l('Download', file_create_url($template['uri']));
+    }
+    elseif (isset($template['fid'])) {
+      $options[$template['id']][] = l('Download', file_create_url(file_load($template['fid'])->uri));
+      $options[$template['id']][] = l('Delete', '');
+    }
+  }
+  $form['templates'] = array(
+    '#theme' => 'table',
+    '#caption' => t('Templates'),
+    '#header' => array(
+      t('Name'),
+      array('data' => t('Operations'), 'colspan' => 2),
+    ),
+    '#rows' => $options,
+    '#empty' => t('No templates available.'),
   );
   return $form;
-}
-
-/**
- * Administration form submit callback.
- */
-function islandora_spreadsheet_ingest_admin_form_submit(array $form, array &$form_state) {
-
-  dpm($form_state['values']);
 }
 
 /**
