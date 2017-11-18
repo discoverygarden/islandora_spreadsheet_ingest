@@ -20,7 +20,7 @@ function islandora_spreadsheet_ingest_admin_form(array $form, array &$form_state
     }
     elseif (isset($template['fid'])) {
       $options[$template['id']][] = l('Download', file_create_url(file_load($template['fid'])->uri));
-      $options[$template['id']][] = l('Delete', '');
+      $options[$template['id']][] = l('Delete', "admin/islandora/tools/islandora_spreadsheet_ingest/{$template['id']}/delete_template");
     }
   }
   $form['templates'] = array(
@@ -83,4 +83,53 @@ function islandora_spreadsheet_ingest_add_template_form_submit(array $form, arra
   $managed_file = file_load($form_state['values']['file']);
   file_usage_add($managed_file, 'islandora_spreadsheet_ingest', 'template', $id);
   drupal_set_message(t('Template added.'));
+}
+
+/**
+ * Form for deleting a template.
+ */
+function islandora_spreadsheet_ingest_delete_template_form($form, array &$form_state, $id) {
+  form_load_include($form_state, 'inc', 'islandora_spreadsheet_ingest', 'includes/utilities');
+  $templates = islandora_spreadsheet_ingest_get_templates();
+  foreach ($templates as $template) {
+    if ($template['id'] == $id) {
+      $name = $template['name'];
+      break;
+    }
+  }
+  return array(
+    'template_id' => array(
+      '#type' => 'hidden',
+      '#value' => $id,
+    ),
+    'description' => array(
+      '#type' => 'markup',
+      '#prefix' => '<div>',
+      '#markup' => t('Are you sure you want to delete the template <strong>%name</strong>? This action is irreversible.', array('%name' => $name)),
+      '#suffix' => '</div>',
+    ),
+    'delete' => array(
+      '#type' => 'submit',
+      '#value' => t('Delete'),
+      '#name' => 'delete',
+    ),
+    'cancel' => array(
+      '#type' => 'submit',
+      '#value' => t('Cancel'),
+      '#name' => 'cancel',
+    ),
+  );
+}
+
+/**
+ * Submit form delete callback.
+ */
+function islandora_spreadsheet_ingest_delete_template_form_submit(array $form, array &$form_state) {
+  form_load_include($form_state, 'inc', 'islandora_spreadsheet_ingest', 'includes/db');
+  $form_state['redirect'] = 'admin/islandora/tools/islandora_spreadsheet_ingest';
+  if ($form_state['clicked_button']['#name'] == 'delete') {
+    $id = $form_state['values']['template_id'];
+    islandora_spreadsheet_ingest_purge_template($id);
+    drupal_set_message(t('Successfully deleted the template.'));
+  }
 }
