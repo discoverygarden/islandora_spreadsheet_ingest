@@ -14,7 +14,8 @@
  */
 function hook_islandora_spreadsheet_ingest_templates() {
   return array(
-    'my_template_id' => array(
+    array(
+      'id' => 'my_template_id',
       'name' => 'my awesome template',
       'uri' => 'uri/to_my/template',
     ),
