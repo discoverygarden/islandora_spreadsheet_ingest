@@ -38,6 +38,15 @@ function islandora_spreadsheet_ingest_menu() {
     'access arguments' => array('administer islandora spreadsheet ingest'),
     'type' => MENU_CALLBACK,
   );
+  $menu['admin/islandora/tools/islandora_spreadsheet_ingest/%/update_template'] = array(
+    'title' => 'Update template',
+    'description' => 'Update a template.',
+    'page callback' => 'drupal_get_form',
+    'file' => 'includes/admin.form.inc',
+    'page arguments' => array('islandora_spreadsheet_ingest_update_template_form', 4),
+    'access arguments' => array('administer islandora spreadsheet ingest'),
+    'type' => MENU_CALLBACK,
+  );
 
   return $menu;
 }

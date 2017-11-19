@@ -6,6 +6,18 @@
  */
 
 /**
+ * Get a template from the database.
+ */
+function islandora_spreadsheet_ingest_get_db_template($id) {
+  $query = db_select('islandora_spreadsheet_ingest_templates', 'templates')
+    ->fields('templates', array())
+    ->condition('id', $id);
+
+  return $query->execute()
+    ->fetchAssoc();
+}
+
+/**
  * Get all templates from the database.
  */
 function islandora_spreadsheet_ingest_get_db_templates() {
@@ -44,12 +56,12 @@ function islandora_spreadsheet_ingest_add_template($name, $fid) {
  */
 function islandora_spreadsheet_ingest_update_template($id, $name, $fid) {
   db_update('islandora_spreadsheet_ingest_templates')
-  ->fields(
-    array(
-      'name' => $name,
-      'fid' => $fid,
+    ->fields(
+      array(
+        'name' => $name,
+        'fid' => $fid,
+      )
     )
-  )
-  ->condition('id', $id)
-  ->execute();
+    ->condition('id', $id)
+    ->execute();
 }
