@@ -66,12 +66,12 @@ class IslandoraSpreadsheetIngestBatch extends IslandoraBatchPreprocessor {
         $pid_row_map[$current_row] = $object->id;
       }
     }
-    // Run through the rows that had row IDs as parents repeatedly until none.
+    // Run through the rows that had row IDs as parents repeatedly until none
     // are left.
     while (!empty($rid_parent_rows)) {
       $remaining = array();
       foreach ($rid_parent_rows as $rid => $row) {
-        if (($parent_header && intval($row[$key_map['parent_object']]) > 0) || !isset($pid_row_map[$row[$key_map['parent_object']]])) {
+        if (!isset($pid_row_map[$row[$key_map['parent_object']]])) {
           $remaining[$rid] = $row;
           continue;
         }
