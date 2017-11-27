@@ -48,6 +48,8 @@ class IslandoraSpreadsheetIngestBatch extends IslandoraBatchPreprocessor {
       $current_row++;
       // Blank lines are considered NULL.
       if (!is_null($row)) {
+        // If the 'parent_object' is an integer, it's also a row and should be
+        // left until the non-integer rows are processed.
         if ($parent_header && intval($row[$key_map['parent_object']]) > 0) {
           $rid_parent_rows[$current_row] = $row;
           continue;
@@ -64,21 +66,30 @@ class IslandoraSpreadsheetIngestBatch extends IslandoraBatchPreprocessor {
         $pid_row_map[$current_row] = $object->id;
       }
     }
-    // Run through the rows that had row IDs as parents.
-    foreach ($rid_parent_rows as $rid => $row) {
-      if (!isset($pid_row_map[$row[$key_map['parent_object']]])) {
-        throw new IslandoraSpreadsheetIngestBatchException(t('Row @rid specifies a parent_object of @parent, which is out of range of the CSV', array(
-          '@rid' => $rid,
-          '@parent' => $row[$key_map['parent_object']],
-        )));
+    // Run through the rows that had row IDs as parents repeatedly until none.
+    // are left.
+    while (!empty($rid_parent_rows)) {
+      $remaining = array();
+      foreach ($rid_parent_rows as $rid => $row) {
+        if (($parent_header && intval($row[$key_map['parent_object']]) > 0) || !isset($pid_row_map[$row[$key_map['parent_object']]])) {
+          $remaining[$rid] = $row;
+          continue;
+        }
+        $parameters = $base_parameters + array(
+          'value_map' => $row,
+          'parent_pid' => $pid_row_map[$row[$key_map['parent_object']]],
+        );
+        $object = new IslandoraSpreadsheetIngestBatchObject($this->connection, $parameters);
+        $this->addToDatabase($object);
+        $added++;
       }
-      $parameters = $base_parameters + array(
-        'value_map' => $row,
-        'parent_pid' => $pid_row_map[$row[$key_map['parent_object']]],
-      );
-      $object = new IslandoraSpreadsheetIngestBatchObject($this->connection, $parameters);
-      $this->addToDatabase($object);
-      $added++;
+      // If the list hasn't shrunk any, we either have a cyclical dependency
+      // that can't be resolved, or some rows reference out-of-range parents.
+      if (count($remaining) == count($rid_parent_rows)) {
+        throw new IslandoraSpreadsheetIngestBatchException(t('Failed to preprocess the batch: either rows specify parent rows which are out of range of the CSV, or a cyclical set of relationships has been established in the CSV that cannot be resolved.'));
+        ));
+      }
+      $rid_parent_rows = $remaining;
     }
     $this->total = $added;
   }
