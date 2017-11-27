@@ -10,6 +10,8 @@ This module requires the following modules/libraries:
 
 * [Islandora](https://github.com/islandora/islandora)
 * [Tuque](https://github.com/islandora/tuque)
+* [Islandora Batch](https://github.com/Islandora/islandora_batch)
+* [Saxon-B XSLT](http://saxon.sourceforge.net/)
 
 ## Installation
 
@@ -58,6 +60,15 @@ nodes, and place the root of the output document in a template node named
     </mods>
   </xsl:template>
 </xsl:stylesheet>
+```
+
+An example of a .csv file that would work with the above sample template,
+assuming a file called test.jpg in the binary path given to the importer:
+
+```csv
+label,binary_file,parent_object,cmodel,title,names
+Test 1,test.jpg,islandora:sp_basic_image_collection,islandora:sp_basic_image,Test 1,Name
+Test 2,test.jpg,islandora:sp_basic_image_collection,islandora:sp_basic_image,Test 2,Name 1 ; Name 2
 ```
 
 ## Usage
