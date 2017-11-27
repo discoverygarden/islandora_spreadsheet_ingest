@@ -3,5 +3,7 @@ description = "Facilitates the ingest of data using a spreadsheet."
 configure = admin/islandora/tools/islandora_spreadsheet_ingest
 package = Islandora Tools
 dependencies[] = islandora
+dependencies[] = islandora_batch
+files[] = includes/spreadsheet_batch_ingest.inc
 version = 7.x-dev
 core = 7.x

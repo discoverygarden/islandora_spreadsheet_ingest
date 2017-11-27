@@ -25,3 +25,34 @@ function islandora_spreadsheet_ingest_get_hook_templates() {
   $templates = module_invoke_all('islandora_spreadsheet_ingest_templates');
   return $templates;
 }
+
+/**
+ * Get all templates as key/value pairs useful for #options.
+ */
+function islandora_spreadsheet_ingest_get_templates_as_form_options() {
+  $options = array();
+  $templates = islandora_spreadsheet_ingest_get_templates();
+  foreach ($templates as $template) {
+    $options[$template['id']] = $template['name'];
+  }
+  return $options;
+}
+
+/**
+ * Gets an individual template definition.
+ *
+ * @param string $id
+ *   The template ID to get.
+ *
+ * @return array|null
+ *   The template information, or NULL if none exist by the given ID.
+ */
+function islandora_spreadsheet_ingest_get_template($id) {
+  $templates = islandora_spreadsheet_ingest_get_templates();
+  foreach ($templates as $template) {
+    if ($template['id'] == $id) {
+      return $template;
+    }
+  }
+  return NULL;
+}

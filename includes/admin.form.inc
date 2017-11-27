@@ -35,7 +35,56 @@ function islandora_spreadsheet_ingest_admin_form(array $form, array &$form_state
     '#rows' => $options,
     '#empty' => t('No templates available.'),
   );
+  $form['delimiter_defaults'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('CSV Delimiter Defaults'),
+    '#collapsible' => FALSE,
+    'default_cell_delimiter' => array(
+      '#type' => 'textfield',
+      '#title' => t('Cell Delimiter'),
+      '#description' => t('Delimiter to designate cells in a row.'),
+      '#default_value' => variable_get('islandora_spreadsheet_ingest_default_cell_delimiter', ','),
+    ),
+  );
+  $form['default_binary_path'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Default Binaries Path'),
+    '#description' => t('The default path that will be referenced to find OBJ datastreams.'),
+    '#default_value' => variable_get('islandora_spreadsheet_ingest_default_binary_path', 'public://'),
+  );
+  $form['saxon_command'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Saxon Command'),
+    '#description' => t('The path to the Saxon XSLT processor.'),
+    '#default_value' => variable_get('islandora_spreadsheet_ingest_saxon_command', '/usr/bin/saxonb-xslt'),
+  );
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Update Configuration'),
+  );
   return $form;
+}
+
+/**
+ * Validator for admin form.
+ */
+function islandora_spreadsheet_ingest_admin_form_validate(array &$form, array &$form_state) {
+  // Invalid path shouldn't cause the form to not submit but should pop warning.
+  if (!file_exists(drupal_realpath($form_state['values']['default_binary_path']))) {
+    drupal_set_message(t('Failed to resolve the filepath at @path to the local filesystem; it will not be usable for ingests.', array(
+      '@path' => $form_state['values']['default_binary_path'],
+    )), 'warning');
+  }
+}
+
+/**
+ * Submit handler for admin form.
+ */
+function islandora_spreadsheet_ingest_admin_form_submit(array &$form, array &$form_state) {
+  variable_set('islandora_spreadsheet_ingest_default_cell_delimiter', $form_state['values']['default_cell_delimiter']);
+  variable_set('islandora_spreadsheet_ingest_default_binary_path', $form_state['values']['default_binary_path']);
+  variable_set('islandora_spreadsheet_ingest_saxon_command', $form_state['values']['saxon_command']);
+  drupal_set_message(t('The configuration has been saved'));
 }
 
 /**
@@ -51,17 +100,35 @@ function islandora_spreadsheet_ingest_add_template_form(array $form, array &$for
     '#type' => 'managed_file',
     '#required' => TRUE,
     '#title' => t('Upload Template'),
-    '#description' => t('Select a template file to upload. Must have the extension <strong>xsl</strong> or <strong>xslt</strong>.'),
+    '#description' => t('Select a template file to upload. Must have the extension <strong>xsl</strong> or <strong>xslt</strong>. Templates are expected to contain a named xsl template node called "root" containing the root node of the output XML.'),
     '#upload_location' => file_default_scheme() . '://',
     '#upload_validators' => array(
       'file_validate_extensions' => array('xsl xslt'),
     ),
+  );
+  $form['dsid'] = array(
+    '#type' => 'textfield',
+    '#required' => TRUE,
+    '#title' => t('Output DSID'),
+    '#description' => t('The DSID of the datastream the template will create.'),
+    '#element_validate' => array('islandora_spreadsheet_ingest_validate_dsid'),
+    '#maxlength' => 64,
   );
   $form['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Add Template'),
   );
   return $form;
+}
+
+/**
+ * Validate the given DSID.
+ */
+function islandora_spreadsheet_ingest_validate_dsid($element, &$form_state, $form) {
+  module_load_include('inc', 'islandora', 'includes/utilities');
+  if (!islandora_is_valid_dsid($element['#value'])) {
+    form_error($element, t('The given DSID is not a valid datastream identifier.'));
+  }
 }
 
 /**
@@ -74,7 +141,8 @@ function islandora_spreadsheet_ingest_add_template_form_submit(array $form, arra
   try {
     $id = islandora_spreadsheet_ingest_add_template(
       $form_state['values']['name'],
-      $form_state['values']['file']
+      $form_state['values']['file'],
+      $form_state['values']['dsid']
     );
   }
   catch (PDOException $exception) {
@@ -154,11 +222,20 @@ function islandora_spreadsheet_ingest_update_template_form(array $form, array &$
   $form['file'] = array(
     '#type' => 'managed_file',
     '#title' => t('Upload Template'),
-    '#description' => t('Select a template file to upload. Must have the extension <strong>xsl</strong> or <strong>xslt</strong>.'),
+    '#description' => t('Select a template file to upload. Must have the extension <strong>xsl</strong> or <strong>xslt</strong>. Templates are expected to contain a named xsl template node called "root" containing the root node of the output XML.'),
     '#upload_location' => file_default_scheme() . '://',
     '#upload_validators' => array(
       'file_validate_extensions' => array('xsl xslt'),
     ),
+  );
+  $form['dsid'] = array(
+    '#type' => 'textfield',
+    '#required' => TRUE,
+    '#title' => t('Output DSID'),
+    '#description' => t('The DSID of the datastream the template will create.'),
+    '#element_validate' => array('islandora_spreadsheet_ingest_validate_dsid'),
+    '#maxlength' => 64,
+    '#default_value' => $template['dsid'],
   );
   $form['submit'] = array(
     '#type' => 'submit',
@@ -185,7 +262,8 @@ function islandora_spreadsheet_ingest_update_template_form_submit(array $form, a
   islandora_spreadsheet_ingest_update_template(
     $form_state['values']['template_id'],
     $form_state['values']['name'],
-    $form_state['values']['file'] ? $form_state['values']['file'] : $old_template['fid']
+    $form_state['values']['file'] ? $form_state['values']['file'] : $old_template['fid'],
+    $form_state['values']['dsid']
   );
 
   drupal_set_message(t('Template updated.'));
