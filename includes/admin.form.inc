@@ -9,7 +9,11 @@
  * Administration form.
  */
 function islandora_spreadsheet_ingest_admin_form(array $form, array &$form_state) {
+  module_load_include('inc', 'islandora', 'includes/utilities');
   form_load_include($form_state, 'inc', 'islandora_spreadsheet_ingest', 'includes/utilities');
+  $get_default_value = function($name, $default) use(&$form_state) {
+    return isset($form_state['values'][$name]) ? $form_state['values'][$name] : variable_get($name, $default);
+  };
   $templates = islandora_spreadsheet_ingest_get_templates();
   $options = array();
   foreach ($templates as $template) {
@@ -50,19 +54,37 @@ function islandora_spreadsheet_ingest_admin_form(array $form, array &$form_state
     '#type' => 'textfield',
     '#title' => t('Default Binaries Path'),
     '#description' => t('The default path that will be referenced to find OBJ datastreams.'),
-    '#default_value' => variable_get('islandora_spreadsheet_ingest_default_binary_path', 'public://'),
+    '#default_value' => variable_get('islandora_spreadsheet_ingest_default_binary_path', ''),
   );
+  $saxon_path = isset($form_state['values']['saxon_command']) ? $form_state['values']['saxon_command'] : variable_get('islandora_spreadsheet_ingest_saxon_command', '/usr/bin/saxonb-xslt');
   $form['saxon_command'] = array(
     '#type' => 'textfield',
     '#title' => t('Saxon Command'),
-    '#description' => t('The path to the Saxon XSLT processor.'),
-    '#default_value' => variable_get('islandora_spreadsheet_ingest_saxon_command', '/usr/bin/saxonb-xslt'),
+    '#description' => t('The path to the Saxon XSLT processor. !available', array(
+      '!available' => islandora_executable_available_message($saxon_path),
+    )),
+    '#default_value' => $saxon_path,
+    '#prefix' => '<div id="saxon-wrapper">',
+    '#suffix' => '</div>',
+    '#ajax' => array(
+      'callback' => 'islandora_spreadsheet_ingest_admin_form_saxon_ajax_callback',
+      'wrapper' => 'saxon-wrapper',
+      'effect' => 'fade',
+      'event' => 'change',
+    ),
   );
   $form['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Update Configuration'),
   );
   return $form;
+}
+
+/**
+ * Ajax callback for the Saxon command chunk.
+ */
+function islandora_spreadsheet_ingest_admin_form_saxon_ajax_callback(array $form, array $form_state) {
+  return $form['saxon_command'];
 }
 
 /**

@@ -23,7 +23,9 @@ further information.
 
 Users with the "Administer Islandora Spreadsheet Ingest" permission can view,
 upload, and modify XSLT templates at
-'/admin/islandora/tools/islandora_spreadsheet_ingest'.
+'/admin/islandora/tools/islandora_spreadsheet_ingest'. Global defaults can also
+be set, including the default CSV parameters and a default secure location to
+source binaries from. The path to the saxonb-xslt executable can also be set.
 
 Uploaded templates should define CSV header parameters globally as XSL 'param'
 nodes, and place the root of the output document in a template node named

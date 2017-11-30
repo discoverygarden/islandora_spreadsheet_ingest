@@ -19,7 +19,7 @@ function islandora_spreadsheet_ingest_batch_form($form, &$form_state) {
         '#type' => 'managed_file',
         '#required' => TRUE,
         '#description' => t('Select a CSV file to upload, delimited using the below-configured delimiters.'),
-        '#upload_location' => 'temporary://',
+        '#upload_location' => file_directory_temp(),
         '#upload_validators' => array(
           'file_validate_extensions' => array('csv'),
           'file_validate_size' => array(min((int) ini_get('post_max_size'), (int) ini_get('upload_max_filesize')) * 1024 * 1024),
@@ -36,7 +36,8 @@ function islandora_spreadsheet_ingest_batch_form($form, &$form_state) {
         '#type' => 'textfield',
         '#title' => t('Base Binaries Folder'),
         '#description' => t('Path to a folder on the local filesystem where binaries are being kept. Files under the <strong>binary_file</strong> column will be sourced relative to this path.'),
-        '#default_value' => variable_get('islandora_spreadsheet_ingest_default_binary_path', 'public://'),
+        '#default_value' => variable_get('islandora_spreadsheet_ingest_default_binary_path', ''),
+        '#element_validate' => array('islandora_spreadsheet_ingest_valid_base_binaries_folder'),
       ),
       'delimiters' => array(
         '#type' => 'fieldset',
@@ -46,7 +47,7 @@ function islandora_spreadsheet_ingest_batch_form($form, &$form_state) {
         'cell_delimiter' => array(
           '#type' => 'textfield',
           '#title' => t('Cell Delimiter'),
-          '#description' => t('Character to delimit individual cells in a row. Per <a href="https://www.ietf.org/rfc/rfc4180.txt">RFC 4180</a>, cells containing the delimiter should be enclosed in double quotes.'),
+          '#description' => t('Character to delimit individual cells in a row.'),
           '#default_value' => variable_get('islandora_spreadsheet_ingest_default_cell_delimiter', ','),
         ),
       ),
@@ -54,6 +55,7 @@ function islandora_spreadsheet_ingest_batch_form($form, &$form_state) {
         '#type' => 'textfield',
         '#title' => t('Namespace'),
         '#description' => t('Ingested items will be given the next available PID in the given namespace. Leave blank to use the default configured namespace in Fedora.'),
+        '#element_validate' => array('islandora_spreadsheet_ingest_valid_namespace'),
       ),
       'ingest_immediately' => array(
         '#type' => 'checkbox',
@@ -70,13 +72,18 @@ function islandora_spreadsheet_ingest_batch_form($form, &$form_state) {
       '#header' => array(
         t('Column Header'),
         t('Description'),
-        t('Required?'),
+        t('Required'),
       ),
       '#rows' => array(
         array(
+          'machine_name',
+          t('A unique name for this row, so that other rows can reference it without having to rely on row positioning.'),
+          t('Yes if other objects reference this row as a parent; otherwise, no'),
+        ),
+        array(
           'parent_object',
-          t('A PID representing the parent object of the entry. May also be a row number in the spreadsheet (including the header row as row 1) representing an object that will serve as parent.'),
-          t('No, but omitting will generate an orphaned object'),
+          t('A PID or the machine_name of a row representing the parent of the object.'),
+          t('No, but omitting will generate an object with no parent'),
         ),
         array(
           'parent_predicate',
@@ -101,7 +108,7 @@ function islandora_spreadsheet_ingest_batch_form($form, &$form_state) {
         array(
           'label',
           t('The label to give the object'),
-          t('No, but omitting will generate objects with no labels'),
+          t('No, but omitting may generate objects with no labels'),
         ),
       ),
     ),
@@ -110,6 +117,27 @@ function islandora_spreadsheet_ingest_batch_form($form, &$form_state) {
       '#value' => t('Batch Ingest'),
     ),
   );
+}
+
+/**
+ * Validates that the given base binaries folder exists.
+ */
+function islandora_spreadsheet_ingest_valid_base_binaries_folder($element, &$form_state, $form) {
+  if (!empty($element['#value']) && !file_exists($element['#value'])) {
+    form_error($element, t('Failed to resolve base binary path at @path', array(
+      '@path' => $element['#value'],
+    )));
+  }
+}
+
+/**
+ * Validates the given namespace.
+ */
+function islandora_spreadsheet_ingest_valid_namespace($element, &$form_state, $form) {
+  module_load_include('inc', 'islandora', 'includes/utilities');
+  if (!islandora_namespace_accessible($element['#value'])) {
+    form_error($element, t('The namespace given is not valid.'));
+  }
 }
 
 /**
@@ -132,9 +160,6 @@ function islandora_spreadsheet_ingest_batch_form_submit(&$form, &$form_state) {
 
   $connection = islandora_get_tuque_connection();
   $preprocessor = new IslandoraSpreadsheetIngestBatch($connection, $form_state['values']);
-  $csv_file->status &= ~FILE_STATUS_PERMANENT;
-  file_save($csv_file);
-  file_usage_add($csv_file, 'islandora_batch', 'islandora_batch_set', $preprocessor->getSetId());
 
   if ($form_state['values']['ingest_immediately']) {
     islandora_batch_ingest(array(
