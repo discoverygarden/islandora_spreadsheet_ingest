@@ -19,6 +19,7 @@ function islandora_spreadsheet_ingest_admin_form(array $form, array &$form_state
   foreach ($templates as $template) {
     $options[$template['id']] = array(
       $template['name'],
+      implode(', ', $template['dsids']),
     );
     if (isset($template['uri'])) {
       $options[$template['id']][] = l(t('Download'), file_create_url($template['uri']));
@@ -34,6 +35,7 @@ function islandora_spreadsheet_ingest_admin_form(array $form, array &$form_state
     '#caption' => t('Templates'),
     '#header' => array(
       t('Name'),
+      t('Associated DSIDs'),
       array('data' => t('Operations'), 'colspan' => 3),
     ),
     '#rows' => $options,
@@ -128,29 +130,18 @@ function islandora_spreadsheet_ingest_add_template_form(array $form, array &$for
       'file_validate_extensions' => array('xsl xslt'),
     ),
   );
-  $form['dsid'] = array(
+  $form['dsids'] = array(
     '#type' => 'textfield',
     '#required' => TRUE,
-    '#title' => t('Output DSID'),
-    '#description' => t('The DSID of the datastream the template will create.'),
-    '#element_validate' => array('islandora_spreadsheet_ingest_validate_dsid'),
-    '#maxlength' => 64,
+    '#title' => t('Associated DSIDs'),
+    '#description' => t('Comma-separated list of datastream IDs this template should be associated with.'),
+    '#element_validate' => array('islandora_spreadsheet_ingest_validate_comma_separated_dsids'),
   );
   $form['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Add Template'),
   );
   return $form;
-}
-
-/**
- * Validate the given DSID.
- */
-function islandora_spreadsheet_ingest_validate_dsid($element, &$form_state, $form) {
-  module_load_include('inc', 'islandora', 'includes/utilities');
-  if (!islandora_is_valid_dsid($element['#value'])) {
-    form_error($element, t('The given DSID is not a valid datastream identifier.'));
-  }
 }
 
 /**
@@ -163,13 +154,17 @@ function islandora_spreadsheet_ingest_add_template_form_submit(array $form, arra
   try {
     $id = islandora_spreadsheet_ingest_add_template(
       $form_state['values']['name'],
-      $form_state['values']['file'],
-      $form_state['values']['dsid']
+      $form_state['values']['file']
     );
   }
   catch (PDOException $exception) {
     drupal_set_message(t('Please choose a unique name when adding a template.'), 'error');
     return;
+  }
+
+  $set = islandora_spreadsheet_ingest_set_dsid_associations($id, $dsids);
+  if (!$set) {
+    drupal_set_message(t('Failed to set the DSID associations for this template; check the logs for details.'), 'error');
   }
 
   $managed_file = file_load($form_state['values']['file']);
@@ -250,14 +245,13 @@ function islandora_spreadsheet_ingest_update_template_form(array $form, array &$
       'file_validate_extensions' => array('xsl xslt'),
     ),
   );
-  $form['dsid'] = array(
+  $form['dsids'] = array(
     '#type' => 'textfield',
     '#required' => TRUE,
-    '#title' => t('Output DSID'),
-    '#description' => t('The DSID of the datastream the template will create.'),
-    '#element_validate' => array('islandora_spreadsheet_ingest_validate_dsid'),
-    '#maxlength' => 64,
-    '#default_value' => $template['dsid'],
+    '#title' => t('Associated DSIDs'),
+    '#description' => t('Comma-separated list of datastream IDs this template should be associated with.'),
+    '#element_validate' => array('islandora_spreadsheet_ingest_validate_comma_separated_dsids'),
+    '#default_value' => implode(', ', islandora_spreadsheet_ingest_get_db_template_dsids($id)),
   );
   $form['submit'] = array(
     '#type' => 'submit',
@@ -284,9 +278,28 @@ function islandora_spreadsheet_ingest_update_template_form_submit(array $form, a
   islandora_spreadsheet_ingest_update_template(
     $form_state['values']['template_id'],
     $form_state['values']['name'],
-    $form_state['values']['file'] ? $form_state['values']['file'] : $old_template['fid'],
-    $form_state['values']['dsid']
+    $form_state['values']['file'] ? $form_state['values']['file'] : $old_template['fid']
   );
 
+  $set = islandora_spreadsheet_ingest_set_dsid_associations($form_state['values']['template_id'], array_map('trim', explode(',', $form_state['values']['dsids'])));
+  if (!$set) {
+    drupal_set_message(t('Failed to update the DSID associations for this template; check the logs for details.'), 'error');
+  }
+
   drupal_set_message(t('Template updated.'));
+}
+
+/**
+ * Validates that comma-separated DSIDs are all valid DSIDs.
+ */
+function islandora_spreadsheet_ingest_validate_comma_separated_dsids($element, &$form_state, $form) {
+  module_load_include('inc', 'islandora', 'includes/utilities');
+  $dsids = array_map('trim', explode(',', $element['#value']));
+  foreach ($dsids as $dsid) {
+    if (!islandora_is_valid_dsid($dsid)) {
+      form_error($element, t('@dsid is not a valid DSID', array(
+        '@dsid' => $dsid,
+      )));
+    }
+  }
 }

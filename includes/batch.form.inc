@@ -10,6 +10,8 @@
  */
 function islandora_spreadsheet_ingest_batch_form($form, &$form_state) {
   module_load_include('inc', 'islandora_spreadsheet_ingest', 'includes/utilities');
+  module_load_include('inc', 'islandora_spreadsheet_ingest', 'includes/db');
+  $dsids = isset($form_state['values']['template']) ? islandora_spreadsheet_ingest_get_template_dsids($form_state['values']['template']) : array();
   return array(
     'spreadsheet_parameters' => array(
       '#type' => 'fieldset',
@@ -17,6 +19,7 @@ function islandora_spreadsheet_ingest_batch_form($form, &$form_state) {
       '#collapsible' => FALSE,
       'spreadsheet_file' => array(
         '#type' => 'managed_file',
+        '#title' => t('CSV File'),
         '#required' => TRUE,
         '#description' => t('Select a CSV file to upload, delimited using the below-configured delimiters.'),
         '#upload_location' => file_directory_temp(),
@@ -31,6 +34,20 @@ function islandora_spreadsheet_ingest_batch_form($form, &$form_state) {
         '#description' => t('Select the template to apply the given CSV to'),
         '#required' => TRUE,
         '#options' => islandora_spreadsheet_ingest_get_templates_as_form_options(),
+        '#ajax' => array(
+          'callback' => 'islandora_spreadsheet_ingest_batch_form_update_dsids',
+          'wrapper' => 'islandora-spreadsheet-ingest-dsids',
+          'effect' => 'fade',
+        ),
+      ),
+      'dsid' => array(
+        '#type' => 'select',
+        '#title' => t('Output DSID'),
+        '#description' => t('ID of the datastream that generated metadata should be placed in.'),
+        '#required' => TRUE,
+        '#options' => $dsids,
+        '#prefix' => '<div id="islandora-spreadsheet-ingest-dsids">',
+        '#suffix' => '</div>',
       ),
       'base_binary_path' => array(
         '#type' => 'textfield',
@@ -76,13 +93,13 @@ function islandora_spreadsheet_ingest_batch_form($form, &$form_state) {
       ),
       '#rows' => array(
         array(
-          'machine_name',
-          t('A unique name for this row, so that other rows can reference it without having to rely on row positioning.'),
-          t('Yes if other objects reference this row as a parent; otherwise, no'),
+          'pid',
+          t('A PID to assign this object'),
+          t('No; if one is not given, a PID will be assigned in the given namespace.'),
         ),
         array(
           'parent_object',
-          t('A PID or the machine_name of a row representing the parent of the object.'),
+          t('A PID representing the parent of the object.'),
           t('No, but omitting will generate an object with no parent'),
         ),
         array(
@@ -117,6 +134,13 @@ function islandora_spreadsheet_ingest_batch_form($form, &$form_state) {
       '#value' => t('Batch Ingest'),
     ),
   );
+}
+
+/**
+ * Updates the selection section of the form.
+ */
+function islandora_spreadsheet_ingest_batch_form_update_dsids(array $form, array $form_state) {
+  return $form['spreadsheet_parameters']['dsid'];
 }
 
 /**

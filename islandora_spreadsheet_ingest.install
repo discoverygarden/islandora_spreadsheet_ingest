@@ -10,6 +10,7 @@
  */
 function islandora_spreadsheet_ingest_schema() {
   $schema = array();
+  // Storage for templates.
   $schema['islandora_spreadsheet_ingest_templates'] = array(
     'description' => 'templates used during ingest.',
     'fields' => array(
@@ -29,12 +30,6 @@ function islandora_spreadsheet_ingest_schema() {
         'unsigned' => TRUE,
         'not null' => TRUE,
       ),
-      'dsid' => array(
-        'description' => 'The DSID the output of this template creates.',
-        'type' => 'varchar',
-        'length' => 64,
-        'not null' => TRUE,
-      ),
     ),
     'unique keys' => array('name' => array(array('name', 191))),
     'primary key' => array('id'),
@@ -42,6 +37,30 @@ function islandora_spreadsheet_ingest_schema() {
       'fid' => array(
         'table' => 'file_managed',
         'columns' => array('fid' => 'fid'),
+      ),
+    ),
+  );
+  // Ties templates to one or more DSIDs.
+  $schema['islandora_spreadsheet_ingest_dsids'] = array(
+    'description' => 'DSIDs associated with templates.',
+    'fields' => array(
+      'tid' => array(
+        'description' => 'Template ID from the islandora_spreadsheet_ingest_templates table.',
+        'type' => 'int',
+        'not null' => TRUE,
+      ),
+      'dsid' => array(
+        'description' => 'DSID associated with this template.',
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => TRUE,
+      ),
+    ),
+    'primary key' => array('tid', 'dsid'),
+    'foreign keys' => array(
+      'tid' => array(
+        'table' => 'islandora_spreadsheet_ingest_templates',
+        'columns' => array('tid' => 'id'),
       ),
     ),
   );

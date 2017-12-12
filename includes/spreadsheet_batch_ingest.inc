@@ -32,28 +32,12 @@ class IslandoraSpreadsheetIngestBatch extends IslandoraBatchPreprocessor {
     $header_line = fgetcsv($csv_file, 0, $this->parameters['cell_delimiter']);
     // Key map will be used later to determine values for columns.
     $key_map = array_flip($header_line);
-    // If parent objects are being specified, there is the potential that the
-    // parent object may reference a row instead of a PID. We'll hang onto those
-    // rows for later once the parents are assigned PIDs.
-    $parent_header = isset($key_map['parent_object']);
-    // Store rows that have row ID as parents here.
-    $rid_parent_rows = array();
-    // Store a map of row ID to PID here.
-    $pid_row_map = array();
     $base_parameters = $this->getBaseParameters($key_map);
-    $current_row = 0;
     $added = 0;
     while (!feof($csv_file)) {
       $row = fgetcsv($csv_file, 0, $this->parameters['cell_delimiter']);
-      $current_row++;
       // Blank lines are considered NULL.
       if (!is_null($row)) {
-        // If the 'parent_object' is an integer, it's also a row and should be
-        // left until the non-integer rows are processed.
-        if ($parent_header && intval($row[$key_map['parent_object']]) > 0) {
-          $rid_parent_rows[$current_row] = $row;
-          continue;
-        }
         $parameters = $base_parameters + array(
           'value_map' => $row,
         );
@@ -63,33 +47,7 @@ class IslandoraSpreadsheetIngestBatch extends IslandoraBatchPreprocessor {
         $object = new IslandoraSpreadsheetIngestBatchObject($this->connection, $parameters);
         $this->addToDatabase($object);
         $added++;
-        $pid_row_map[$current_row] = $object->id;
       }
-    }
-    // Run through the rows that had row IDs as parents repeatedly until none
-    // are left.
-    while (!empty($rid_parent_rows)) {
-      $remaining = array();
-      foreach ($rid_parent_rows as $rid => $row) {
-        if (!isset($pid_row_map[$row[$key_map['parent_object']]])) {
-          $remaining[$rid] = $row;
-          continue;
-        }
-        $parameters = $base_parameters + array(
-          'value_map' => $row,
-          'parent_pid' => $pid_row_map[$row[$key_map['parent_object']]],
-        );
-        $object = new IslandoraSpreadsheetIngestBatchObject($this->connection, $parameters);
-        $this->addToDatabase($object);
-        $added++;
-      }
-      // If the list hasn't shrunk any, we either have a cyclical dependency
-      // that can't be resolved, or some rows reference out-of-range parents.
-      if (count($remaining) == count($rid_parent_rows)) {
-        throw new IslandoraSpreadsheetIngestBatchException(t('Failed to preprocess the batch: either rows specify parent rows which are out of range of the CSV, or a cyclical set of relationships has been established in the CSV that cannot be resolved.'));
-        ));
-      }
-      $rid_parent_rows = $remaining;
     }
     $this->total = $added;
   }
@@ -142,21 +100,23 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
    *   Connection to Fedora.
    * @param array $parameters
    *   Associative array containing preprocessor parameters, requiring:
-   *   - 'namespace': A namespace to give this object.
+   *   - 'namespace': A namespace to give this object if a 'pid' isn't set in
+   *     the value_map.
    *   - 'template': The ID of the template to use with the given value map.
    *   - 'binary_path': Base path to a binary for this object, or NULL if not
    *     specified.
    *   - 'key_map': Associative array mapping column headers to their column
    *     position.
    *   - 'value_map': Array of string values.
-   *   - 'parent_pid': The parent PID of this item, or NULL if not specified.
-   *   - 'cmodel': The content model of this item.
    */
   public function __construct(IslandoraTuque $connection, array $parameters) {
-    $namespace = empty($parameters['namespace']) ? NULL : $parameters['namespace'];
-    parent::__construct($namespace, $connection->repository);
     $this->connection = $connection;
     $this->parameters = $parameters;
+    $id = $this->getValue('pid');
+    if (!$id) {
+      $id = empty($this->parameters['namespace']) ? NULL : $this->parameters['namespace'];
+    }
+    parent::__construct($id, $connection->repository);
   }
 
   /**
