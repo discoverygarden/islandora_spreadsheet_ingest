@@ -64,13 +64,12 @@ nodes, and place the root of the output document in a template node named
 </xsl:stylesheet>
 ```
 
-An example of a .csv file that would work with the above sample template,
-assuming a file called test.jpg in the binary path given to the importer:
+An example of a .csv file that would work with the above sample template:
 
 ```csv
-label,binary_file,parent_object,cmodel,title,names
-Test 1,test.jpg,islandora:sp_basic_image_collection,islandora:sp_basic_image,Test 1,Name
-Test 2,test.jpg,islandora:sp_basic_image_collection,islandora:sp_basic_image,Test 2,Name 1 ; Name 2
+parent_object,cmodel,title,names
+islandora:sp_basic_image_collection,islandora:sp_basic_image,Test 1,Kevin
+islandora:sp_basic_image_collection,islandora:sp_basic_image,Test 2,Bob ; Jill
 ```
 
 ## Usage

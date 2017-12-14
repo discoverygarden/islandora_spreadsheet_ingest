@@ -11,9 +11,6 @@
 function islandora_spreadsheet_ingest_admin_form(array $form, array &$form_state) {
   module_load_include('inc', 'islandora', 'includes/utilities');
   form_load_include($form_state, 'inc', 'islandora_spreadsheet_ingest', 'includes/utilities');
-  $get_default_value = function($name, $default) use(&$form_state) {
-    return isset($form_state['values'][$name]) ? $form_state['values'][$name] : variable_get($name, $default);
-  };
   $templates = islandora_spreadsheet_ingest_get_templates();
   $options = array();
   foreach ($templates as $template) {
@@ -162,7 +159,7 @@ function islandora_spreadsheet_ingest_add_template_form_submit(array $form, arra
     return;
   }
 
-  $set = islandora_spreadsheet_ingest_set_dsid_associations($id, $dsids);
+  $set = islandora_spreadsheet_ingest_set_dsid_associations($id, explode(',', trim($form_state['values']['dsids']));
   if (!$set) {
     drupal_set_message(t('Failed to set the DSID associations for this template; check the logs for details.'), 'error');
   }

@@ -41,9 +41,6 @@ class IslandoraSpreadsheetIngestBatch extends IslandoraBatchPreprocessor {
         $parameters = $base_parameters + array(
           'value_map' => $row,
         );
-        if ($parent_header) {
-          $parameters['parent_pid'] = $row[$key_map['parent_object']];
-        }
         $object = new IslandoraSpreadsheetIngestBatchObject($this->connection, $parameters);
         $this->addToDatabase($object);
         $added++;
@@ -112,10 +109,7 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
   public function __construct(IslandoraTuque $connection, array $parameters) {
     $this->connection = $connection;
     $this->parameters = $parameters;
-    $id = $this->getValue('pid');
-    if (!$id) {
-      $id = empty($this->parameters['namespace']) ? NULL : $this->parameters['namespace'];
-    }
+    $id = $this->getValue('pid', empty($this->parameters['namespace']) ? NULL : $this->parameters['namespace']);
     parent::__construct($id, $connection->repository);
   }
 
@@ -124,18 +118,16 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
    *
    * @param string $key
    *   The key to get a value for.
+   * @param string|null $default
+   *   A default value to fall back on.
    *
-   * @return string|bool|null
-   *   Returns the value of the key given in the value_map. Returns FALSE if
-   *   there is no value for the given key. Returns NULL if the given key does
-   *   not exist.
+   * @return mixed
+   *   Returns the value of the key given in the value_map. Returns the default
+   *   if the key doesn't exist or the value is not set for it.
    */
-  protected function getValue($key) {
-    if (!isset($this->parameters['key_map'][$key])) {
-      return NULL;
-    }
-    if (empty($this->parameters['value_map'][$this->parameters['key_map'][$key]])) {
-      return FALSE;
+  protected function getValue($key, $default = NULL) {
+    if (!isset($this->parameters['key_map'][$key]) || empty($this->parameters['value_map'][$this->parameters['key_map'][$key]])) {
+      return $default;
     }
     return $this->parameters['value_map'][$this->parameters['key_map'][$key]];
   }
@@ -289,12 +281,10 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
    */
   public function addRelationships() {
     $this->models = $this->getValue('cmodel');
-    if (!empty($this->parameters['parent_pid'])) {
-      $parent_uri = $this->getValue('parent_uri');
-      $parent_predicate = $this->getValue('parent_predicate');
-      $this->relationships->add($parent_uri ? $parent_uri : FEDORA_RELS_EXT_URI,
-        $parent_predicate ? $parent_predicate : 'isMemberOfCollection',
-        $this->parameters['parent_pid']);
+    if ($parent_object = $this->getValue('parent_object')) {
+      $parent_uri = $this->getValue('parent_uri', FEDORA_RELS_EXT_URI);
+      $parent_predicate = $this->getValue('parent_uri', 'isMemberOfCollection');
+      $this->relationships->add($parent_uri, $parent_predicate, $parent_object);
     }
   }
 
