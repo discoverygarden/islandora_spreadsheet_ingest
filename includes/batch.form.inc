@@ -22,7 +22,7 @@ function islandora_spreadsheet_ingest_batch_form($form, &$form_state) {
         '#title' => t('CSV File'),
         '#required' => TRUE,
         '#description' => t('Select a CSV file to upload, delimited using the below-configured delimiters.'),
-        '#upload_location' => file_directory_temp(),
+        '#upload_location' => 'temporary://',
         '#upload_validators' => array(
           'file_validate_extensions' => array('csv'),
           'file_validate_size' => array(min((int) ini_get('post_max_size'), (int) ini_get('upload_max_filesize')) * 1024 * 1024),
@@ -181,9 +181,12 @@ function islandora_spreadsheet_ingest_batch_form_validate(&$form, &$form_state) 
 function islandora_spreadsheet_ingest_batch_form_submit(&$form, &$form_state) {
   $csv_file = file_load($form_state['values']['spreadsheet_file']);
   $form_state['values']['spreadsheet_file'] = $csv_file->uri;
+  $csv_file->status = FILE_STATUS_PERMANENT;
+  file_save($csv_file);
 
   $connection = islandora_get_tuque_connection();
   $preprocessor = new IslandoraSpreadsheetIngestBatch($connection, $form_state['values']);
+  file_usage_add($csv_file, 'islandora_batch', 'islandora_batch_set', $preprocessor->getSetId());
 
   if ($form_state['values']['ingest_immediately']) {
     islandora_batch_ingest(array(
@@ -197,4 +200,6 @@ function islandora_spreadsheet_ingest_batch_form_submit(&$form, &$form_state) {
       '@total' => $preprocessor->getTotal(),
     )));
   }
+  file_usage_delete($csv_file, 'islandora_batch', 'islandora_batch_set', $preprocessor->getSetId());
+  file_delete($csv_file);
 }
