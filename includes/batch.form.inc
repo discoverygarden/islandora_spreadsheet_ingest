@@ -22,7 +22,7 @@ function islandora_spreadsheet_ingest_batch_form($form, &$form_state) {
         '#title' => t('CSV File'),
         '#required' => TRUE,
         '#description' => t('Select a CSV file to upload, delimited using the below-configured delimiters.'),
-        '#upload_location' => 'temporary://',
+        '#upload_location' => file_default_scheme() . '://',
         '#upload_validators' => array(
           'file_validate_extensions' => array('csv'),
           'file_validate_size' => array(min((int) ini_get('post_max_size'), (int) ini_get('upload_max_filesize')) * 1024 * 1024),
