@@ -169,7 +169,6 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
    * Adds metadata by transforming the value_map through the template.
    */
   public function addMetadata() {
-    dd($this->parameters);
     module_load_include('inc', 'islandora_spreadsheet_ingest', 'includes/utilities');
     $template = islandora_spreadsheet_ingest_get_template($this->parameters['template']);
     if (!$template) {
