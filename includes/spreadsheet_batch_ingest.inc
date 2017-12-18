@@ -40,6 +40,7 @@ class IslandoraSpreadsheetIngestBatch extends IslandoraBatchPreprocessor {
       if (!is_null($row)) {
         $parameters = $base_parameters + array(
           'value_map' => $row,
+          'dsid' => $this->parameters['dsid'],
         );
         $object = new IslandoraSpreadsheetIngestBatchObject($this->connection, $parameters);
         $this->addToDatabase($object);
@@ -105,6 +106,7 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
    *   - 'key_map': Associative array mapping column headers to their column
    *     position.
    *   - 'value_map': Array of string values.
+   *   - 'dsid': The ID of the datastream that the template will generate.
    */
   public function __construct(IslandoraTuque $connection, array $parameters) {
     $this->connection = $connection;
@@ -174,14 +176,15 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
         '@id' => $this->parameters['template'],
       )));
     }
+    $dsid = $this->parameters['dsid'];
     $template_file = file_load($template['fid']);
-    $ds_exists = isset($this[$template['dsid']]);
+    $ds_exists = isset($this[$dsid]);
     if (!$ds_exists) {
-      $ds = $this->constructDatastream($template['dsid'], 'M');
-      $ds->label = t('@dsid Datastream', array('@dsid' => $template['dsid']));
+      $ds = $this->constructDatastream($dsid, 'M');
+      $ds->label = t('@dsid Datastream', array('@dsid' => $dsid));
     }
     else {
-      $ds = $this[$template['dsid']];
+      $ds = $this[$dsid];
     }
     $ds->setContentFromString($this->transformWithSaxon($template_file->uri));
     if (!$ds_exists) {
