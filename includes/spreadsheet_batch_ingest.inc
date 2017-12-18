@@ -273,6 +273,7 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
         $obj = $this['OBJ'];
       }
       $obj->setContentFromFile($path);
+      $obj->mimetype = file_get_mimetype($path);
       if (!$exists) {
         $this->ingestDatastream($obj);
       }
