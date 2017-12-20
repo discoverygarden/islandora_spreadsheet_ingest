@@ -98,7 +98,7 @@ example:
   islandora-batch-process` command
 * Temporarily turning off Drupal cron, as some processes (such as Islandora IP
   Embargo's embargo-lifting job) override the global batch, preventing PHP from
-  being refreshed exposing the batch process to the potential for timeouts.
+  being refreshed and exposing the batch process to the potential for timeouts.
 
 ## Troubleshooting/Issues
 
