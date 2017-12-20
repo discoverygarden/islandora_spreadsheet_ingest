@@ -96,10 +96,9 @@ example:
 * Unchecking "Ingest immediately" and performing the processing step under
   safer conditions, such as directly against the server using the `drush
   islandora-batch-process` command
-* Temporarily turning off Drupal cron if derivative generation is not being
-  deferred, as some processes (such as Islandora IP Embargo's embargo-lifting
-  job) override the global batch in a way that would interrupt progress between
-  sets of batch derivative operations.
+* Temporarily turning off Drupal cron, as some processes (such as Islandora IP
+  Embargo's embargo-lifting job) override the global batch, preventing PHP from
+  refreshing and exposing the batch process to the potential for timeouts.
 
 ## Troubleshooting/Issues
 
