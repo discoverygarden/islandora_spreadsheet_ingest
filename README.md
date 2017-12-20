@@ -79,6 +79,23 @@ batch ingest page at '/islandora_spreadsheet_ingest'. From here, a spreadsheet
 can be uploaded paired with an existing template, and batch ingested. Some
 instructions exist on this page regarding required fields.
 
+There are a host of conditions that make ingesting large CSV files (over 5000
+rows, as a general rule) risky when done entirely through your browser.
+Preprocessing the batch is generally safe, but processing for long periods of
+time may need intervention to prevent timeouts; consider, for example:
+
+* Turning on deferred derivative generation and using something like
+  [islandora_job](https://github.com/discoverygarden/islandora_job) to offset
+  the responsibility of derivative generation
+* Increasing site-wide PHP configuration settings in the `php.ini` your
+  webserver uses
+* Using friendlier browser and operating system combinations that are safer
+  towards long-running processes; for example, disabling App Nap in macOS.
+* Splitting up your CSV into multiple smaller ones
+* Unchecking "Ingest immediately" and performing the processing step under
+  safer conditions, such as directly against the server using the `drush
+  islandora-batch-process` command
+
 ## Troubleshooting/Issues
 
 Having problems or solved a problem? Contact
