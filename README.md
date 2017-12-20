@@ -96,9 +96,11 @@ example:
 * Unchecking "Ingest immediately" and performing the processing step under
   safer conditions, such as directly against the server using the `drush
   islandora-batch-process` command
-* Temporarily turning off Drupal cron, as some processes (such as Islandora IP
-  Embargo's embargo-lifting job) override the global batch, preventing PHP from
-  being refreshed and exposing the batch process to the potential for timeouts.
+* Disabling the so-called "poor man's cron" at `admin/config/system/cron`, and
+  using a crontab or otherwise command-line-based configuration for cron, as
+  some processes (such as Islandora IP Embargo's embargo-lifting cron job) can
+  override the global batch, preventing PHP from being refreshed and exposing
+  the batch process to the potential for timeouts.
 
 ## Troubleshooting/Issues
 
