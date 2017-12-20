@@ -89,7 +89,7 @@ example:
   [islandora_job](https://github.com/discoverygarden/islandora_job) to offset
   the responsibility of derivative generation
 * Increasing timeout tolerance levels using the site-wide PHP configuration
-* settings in the `php.ini` your webserver uses (e.g., max execution time)
+  settings in the `php.ini` your webserver uses (e.g., max execution time)
 * Using friendlier browser and operating system combinations that are safer
   towards long-running processes; for example, disabling App Nap in macOS.
 * Splitting up your CSV into multiple smaller ones
