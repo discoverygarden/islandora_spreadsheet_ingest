@@ -82,7 +82,8 @@ instructions exist on this page regarding required fields.
 There are a host of conditions that make ingesting large CSV files (over 5000
 rows, as a general rule) risky when done entirely through your browser.
 Preprocessing the batch is generally safe, but processing for long periods of
-time may need intervention to prevent timeouts; consider, for example:
+time may need intervention to prevent timeouts or other issues; consider, for
+example:
 
 * Turning on deferred derivative generation and using something like
   [islandora_job](https://github.com/discoverygarden/islandora_job) to offset
@@ -95,6 +96,10 @@ time may need intervention to prevent timeouts; consider, for example:
 * Unchecking "Ingest immediately" and performing the processing step under
   safer conditions, such as directly against the server using the `drush
   islandora-batch-process` command
+* Temporarily turning off Drupal cron if derivative generation is not being
+  deferred, as some processes (such as Islandora IP Embargo's embargo-lifting
+  job) override the global batch in a way that would interrupt progress between
+  sets of batch derivative operations.
 
 ## Troubleshooting/Issues
 
