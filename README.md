@@ -78,11 +78,15 @@ islandora:30000, Example Object 1,islandora:sp_basic_image_collection,islandora:
 islandora:30001, Example Object 2,islandora:sp_basic_image_collection,islandora:sp_basic_image,Example Object 2,Bob ; Jill, Sample Abstract2, id888
 ```
 
-|pid|parent_object|parent_predicate|parent_uri|cmodel|binary_file|label|
-|---|-------------|----------------|----------|------|-----------|-----|
-|   |             |                |          |      |           |     |
-|   |             |                |          |      |           |     |
-|   |             |                |          |      |           |     |
+|Column          |Description                                                                                                   |Required                                                          |
+|----------------|--------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------|
+|pid             |A PID to assign this object                                                                                   |No; if one is not given, a PID will be assigned in the given namespace.                                   |
+|parent_object   |The predicate relationship between this object and its given parent_object.                                   |No, but omitting will generate an object with no parent                                                     |
+|parent_predicate|The predicate relationship between this object and its given parent_object.                                   |No; defaults to "isMemberOfCollection"|
+|parent_uri      |The URI of the predicate relationship between this object and its given parent object.                        |No; defaults to "info:fedora/fedora-system:def/relations-external#"                |
+|cmodel          |A PID representing the content model to be applied to this object.                                            |Yes                                                               |
+|binary_file     |The relative path from the Base Binaries Folder to the file to use as the entry's OBJ datastream.             |No                                                                |
+|label           |The label to give the object                                                                                  |'No, but omitting may generate objects with no labels                                                     |
 
 ## Usage
 
