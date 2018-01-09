@@ -1,39 +1,44 @@
+# Islandora Spreadsheet Ingest
 
--- SUMMARY --
+## Introduction
 
-Libraries API provides external library handling for Drupal modules.
+A module to facilitate the ingest of data using a spreadsheet.
 
-For a full description visit the project page:
-  http://drupal.org/project/libraries
-Bug reports, feature suggestions and latest developments:
-  http://drupal.org/project/issues/libraries
+## Requirements
 
+This module requires the following modules/libraries:
 
--- REQUIREMENTS --
+* [Islandora](https://github.com/islandora/islandora)
+* [Tuque](https://github.com/islandora/tuque)
+* [Islandora Batch](https://github.com/Islandora/islandora_batch)
+* [Saxon-B XSLT](http://saxon.sourceforge.net/)
 
-* None.
+## Installation
 
+Install as usual, see
+[this](https://drupal.org/documentation/install/modules-themes/modules-7) for
+further information.                                             |
 
--- INSTALLATION --
+## Usage
 
-* Install as usual, see
-  https://www.drupal.org/documentation/install/modules-themes/modules-7 for
-  further information. Note that installing external libraries is separate from
-  installing this module and should happen in the sites/all/libraries directory.
-  See http://drupal.org/node/1440066 for more information.
+## Troubleshooting/Issues
 
+Having problems or solved a problem? Contact
+[discoverygarden](http://support.discoverygarden.ca).
 
--- CONTACT --
+## Maintainers/Sponsors
 
 Current maintainers:
-* Daniel F. Kudwien (sun) - http://drupal.org/user/54136
-* Tobias Stöckler (tstoeckler) - http://drupal.org/user/107158
 
+* [discoverygarden](http://www.discoverygarden.ca)
 
-This project has been sponsored by:
-* UNLEASHED MIND
-  Specialized in consulting and planning of Drupal powered sites, UNLEASHED
-  MIND offers installation, development, theming, customization, and hosting
-  to get you started. Visit http://www.unleashedmind.com for more information.
+## Development
 
+If you would like to contribute to this module, please check out our helpful
+[Documentation](https://github.com/Islandora/islandora/wiki#wiki-documentation-for-developers)
+info, [Developers](http://islandora.ca/developers) section on Islandora.ca and
+contact [discoverygarden](http://support.discoverygarden.ca).
 
+## License
+
+[GPLv3](http://www.gnu.org/licenses/gpl-3.0.txt)

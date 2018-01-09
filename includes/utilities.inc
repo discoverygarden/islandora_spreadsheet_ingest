@@ -26,6 +26,9 @@ function islandora_spreadsheet_ingest_get_templates() {
  */
 function islandora_spreadsheet_ingest_get_hook_templates() {
   $templates = module_invoke_all('islandora_spreadsheet_ingest_templates');
+  foreach ($templates as &$template) {
+    $template['dsids'] = drupal_map_assoc($template['dsids']);
+  }
   return $templates;
 }
 
