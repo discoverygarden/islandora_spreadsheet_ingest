@@ -1,4 +1,4 @@
-# Islandora Spreadsheet Ingest
+# Islandora Spreadsheet Ingest Example
 
 ## Introduction
 
