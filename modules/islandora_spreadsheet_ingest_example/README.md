@@ -8,16 +8,14 @@ A module to facilitate the ingest of data using a spreadsheet.
 
 This module requires the following modules/libraries:
 
-* [Islandora](https://github.com/islandora/islandora)
-* [Tuque](https://github.com/islandora/tuque)
-* [Islandora Batch](https://github.com/Islandora/islandora_batch)
-* [Saxon-B XSLT](http://saxon.sourceforge.net/)
+* [Islandora Spreadsheet Ingest](https://github.com/discoverygarden/islandora_spreadsheet_ingest)
+
 
 ## Installation
 
 Install as usual, see
 [this](https://drupal.org/documentation/install/modules-themes/modules-7) for
-further information.                                             |
+further information.                                         
 
 ## Usage
 
