@@ -73,9 +73,9 @@ nodes, and place the root of the output document in a template node named
 An example of a .csv file that would work with the above sample template:
 
 ```csv
-pid,label,parent_object,cmodel,title,names,abstract,identifier
-islandora:30000, Example Object 1,islandora:sp_basic_image_collection,islandora:sp_basic_image,Example Object 1,Kevin, Sample Abstract, id7777
-islandora:30001, Example Object 2,islandora:sp_basic_image_collection,islandora:sp_basic_image,Example Object 2,Bob ; Jill, Sample Abstract2, id888
+label,parent_object,cmodel,title,names,abstract,identifier
+Example Object 1,islandora:sp_basic_image_collection,islandora:sp_basic_image,Example Object 1,Kevin, Sample Abstract, id7777
+Example Object 2,islandora:sp_basic_image_collection,islandora:sp_basic_image,Example Object 2,Bob ; Jill, Sample Abstract2, id888
 ```
 
 Column headers represent variables that will be passed into the selected XSLT and must only contain characters valid in XSLT qualified names. Due to the nature of XSLT, all variables defined by the template are required spreadsheet column headers. The following spreadsheet column headers are reserved and may be required:
