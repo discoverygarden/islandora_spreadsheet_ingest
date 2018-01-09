@@ -78,6 +78,8 @@ islandora:30000, Example Object 1,islandora:sp_basic_image_collection,islandora:
 islandora:30001, Example Object 2,islandora:sp_basic_image_collection,islandora:sp_basic_image,Example Object 2,Bob ; Jill, Sample Abstract2, id888
 ```
 
+Column headers represent variables that will be passed into the selected XSLT and must only contain characters valid in XSLT qualified names. Due to the nature of XSLT, all variables defined by the template are required spreadsheet column headers. The following spreadsheet column headers are reserved and may be required:
+
 |Column          |Description                                                                                                   |Required                                                          |
 |----------------|--------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------|
 |pid             |A PID to assign this object                                                                                   |No; if one is not given, a PID will be assigned in the given namespace.                                   |
