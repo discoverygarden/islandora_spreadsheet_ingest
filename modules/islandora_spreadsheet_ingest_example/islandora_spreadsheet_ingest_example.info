@@ -1,0 +1,6 @@
+name = "Islandora Spreadsheet Ingest Example"
+description = "Example files and implementation for Islandora Spreadsheet Ingest module"
+package = Islandora Tools
+dependencies[] = islandora
+dependencies[] = islandora_batch
+core = 7.x

@@ -21,6 +21,14 @@ further information.                                             |
 
 ## Usage
 
+Enabling this module will provide islandora_spreadsheet_ingest with a sample
+implementation to serve as a launching off point for developing custom XSLT
+templates and providing those templates through a hook implementation.
+
+Module contains:
+* a sample template file /includes/example_template.xslt
+* a sample dataset to be used the the template /includes/example_data.csv
+
 ## Troubleshooting/Issues
 
 Having problems or solved a problem? Contact
