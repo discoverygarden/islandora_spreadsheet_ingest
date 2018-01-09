@@ -81,54 +81,6 @@ function islandora_spreadsheet_ingest_batch_form($form, &$form_state) {
         '#default_value' => TRUE,
       ),
     ),
-    'help_text' => array(
-      '#markup' => t('Column headers represent variables that will be passed into the selected XSLT and must only contain characters valid in XSLT qualified names. Due to the nature of XSLT, all variables defined by the template are required spreadsheet column headers. The following spreadsheet column headers are reserved and may be required:'),
-    ),
-    'help_table' => array(
-      '#theme' => 'table',
-      '#header' => array(
-        t('Column Header'),
-        t('Description'),
-        t('Required'),
-      ),
-      '#rows' => array(
-        array(
-          'pid',
-          t('A PID to assign this object'),
-          t('No; if one is not given, a PID will be assigned in the given namespace.'),
-        ),
-        array(
-          'parent_object',
-          t('A PID representing the parent of the object.'),
-          t('No, but omitting will generate an object with no parent'),
-        ),
-        array(
-          'parent_predicate',
-          t('The predicate relationship between this object and its given parent_object.'),
-          t('No; defaults to "isMemberOfCollection"'),
-        ),
-        array(
-          'parent_uri',
-          t('The URI of the predicate relationship between this object and its given parent object.'),
-          t('No; defaults to "info:fedora/fedora-system:def/relations-external#"'),
-        ),
-        array(
-          'cmodel',
-          t('A PID representing the content model to be applied to this object.'),
-          t('Yes'),
-        ),
-        array(
-          'binary_file',
-          t("The relative path from the Base Binaries Folder to the file to use as the entry's OBJ datastream."),
-          t('No'),
-        ),
-        array(
-          'label',
-          t('The label to give the object'),
-          t('No, but omitting may generate objects with no labels'),
-        ),
-      ),
-    ),
     'submit' => array(
       '#type' => 'submit',
       '#value' => t('Batch Ingest'),
