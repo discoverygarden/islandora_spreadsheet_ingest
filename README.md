@@ -33,12 +33,12 @@ nodes, and place the root of the output document in a template node named
 
 ```xml
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="2.0">
-  <!-- Any CSV headers to be used by the template should be defined globally
-       as xsl:param nodes with the 'name' attribute matching the header. -->
   <xsl:param name="title"/>
   <xsl:param name="names"/>
-  <!-- The root of the output document should go in an xsl:template node with a
-       'name' attribute of root. -->
+  <xsl:param name="abstract"/>
+  <xsl:param name="identifier"/>
+  <!-- Any CSV headers to be used by the template should be defined globally
+       as xsl:param nodes with the 'name' attribute matching the header. -->
   <xsl:template name="root">
     <mods xmlns="http://www.loc.gov/mods/v3"
           xmlns:mods="http://www.loc.gov/mods/v3"
@@ -49,15 +49,21 @@ nodes, and place the root of the output document in a template node named
           <title><xsl:value-of select="normalize-space($title)"/></title>
         </titleInfo>
       </xsl:if>
+      <!-- An example of how delimiting within a single cell could be accomplished; it is left up
+           to template creators to define delimiting, and up to CSV creators
+           to implement it. -->
       <xsl:if test="string-length($names)">
-        <!-- An example of doing delimiting within a single cell; it is left up
-             to template creators to define delimiting, and up to CSV creators
-             to implement it. -->
         <xsl:for-each select="tokenize($names, ' ; ')">
           <name>
             <namePart><xsl:value-of select="normalize-space(.)"/></namePart>
           </name>
         </xsl:for-each>
+      </xsl:if>
+      <xsl:if test="string-length($abstract)">
+        <abstract><xsl:value-of select="normalize-space($abstract)"/></abstract>
+      </xsl:if>
+      <xsl:if test="string-length($identifier)">
+        <identifier><xsl:value-of select="normalize-space($identifier)"/></identifier>
       </xsl:if>
     </mods>
   </xsl:template>
@@ -67,10 +73,22 @@ nodes, and place the root of the output document in a template node named
 An example of a .csv file that would work with the above sample template:
 
 ```csv
-parent_object,cmodel,title,names
-islandora:sp_basic_image_collection,islandora:sp_basic_image,Test 1,Kevin
-islandora:sp_basic_image_collection,islandora:sp_basic_image,Test 2,Bob ; Jill
+label,parent_object,cmodel,title,names,abstract,identifier
+Example Object 1,islandora:sp_basic_image_collection,islandora:sp_basic_image,Example Object 1,Kevin, Sample Abstract, id7777
+Example Object 2,islandora:sp_basic_image_collection,islandora:sp_basic_image,Example Object 2,Bob ; Jill, Sample Abstract2, id888
 ```
+
+Column headers represent variables that will be passed into the selected XSLT and must only contain characters valid in XSLT qualified names. Due to the nature of XSLT, all variables defined by the template are required spreadsheet column headers. The following spreadsheet column headers are reserved and may be required:
+
+|Column          |Description                                                                                                   |Required                                                          |
+|----------------|--------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------|
+|pid             |A PID to assign this object                                                                                   |No; if one is not given, a PID will be assigned in the given namespace.                                   |
+|parent_object   |The predicate relationship between this object and its given parent_object.                                   |No, but omitting will generate an object with no parent                                                     |
+|parent_predicate|The predicate relationship between this object and its given parent_object.                                   |No; defaults to "isMemberOfCollection"|
+|parent_uri      |The URI of the predicate relationship between this object and its given parent object.                        |No; defaults to "info:fedora/fedora-system:def/relations-external#"                |
+|cmodel          |A PID representing the content model to be applied to this object.                                            |Yes                                                               |
+|binary_file     |The relative path from the Base Binaries Folder to the file to use as the entry's OBJ datastream.             |No                                                                |
+|label           |The label to give the object                                                                                  |'No, but omitting may generate objects with no labels                                                     |
 
 ## Usage
 
