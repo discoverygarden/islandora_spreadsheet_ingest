@@ -49,9 +49,9 @@ nodes, and place the root of the output document in a template node named
           <title><xsl:value-of select="normalize-space($title)"/></title>
         </titleInfo>
       </xsl:if>
-      <!-- An example of how delimiting within a single cell could be accomplished; it is left up
-           to template creators to define delimiting, and up to CSV creators
-           to implement it. -->
+      <!-- An example of how delimiting within a single cell could be
+           accomplished; it is left up to template creators to define
+           delimiting, and up to CSV creators to implement it. -->
       <xsl:if test="string-length($names)">
         <xsl:for-each select="tokenize($names, ' ; ')">
           <name>
@@ -63,7 +63,9 @@ nodes, and place the root of the output document in a template node named
         <abstract><xsl:value-of select="normalize-space($abstract)"/></abstract>
       </xsl:if>
       <xsl:if test="string-length($identifier)">
-        <identifier><xsl:value-of select="normalize-space($identifier)"/></identifier>
+        <identifier>
+          <xsl:value-of select="normalize-space($identifier)"/>
+        </identifier>
       </xsl:if>
     </mods>
   </xsl:template>
