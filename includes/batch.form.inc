@@ -11,7 +11,7 @@
 function islandora_spreadsheet_ingest_batch_form($form, &$form_state) {
   module_load_include('inc', 'islandora_spreadsheet_ingest', 'includes/utilities');
   module_load_include('inc', 'islandora_spreadsheet_ingest', 'includes/db');
-  $dsids = isset($form_state['values']['template']) ? islandora_spreadsheet_ingest_get_template_dsids($form_state['values']['template']) : array();
+  $dsids = isset($form_state['values']['template']) ? drupal_map_assoc(islandora_spreadsheet_ingest_get_template_dsids($form_state['values']['template'])) : array();
   return array(
     'spreadsheet_parameters' => array(
       '#type' => 'fieldset',
