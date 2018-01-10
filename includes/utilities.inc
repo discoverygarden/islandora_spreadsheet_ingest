@@ -37,6 +37,8 @@ function islandora_spreadsheet_ingest_get_templates_as_form_options() {
   $templates = islandora_spreadsheet_ingest_get_templates();
   foreach ($templates as $template) {
     $options[$template['id']] = $template['name'];
+    dsm($template);
+    //$options[$template['dsids']] = drupal_map_assoc($template['dsids']);
   }
   return $options;
 }

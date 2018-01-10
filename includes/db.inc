@@ -79,7 +79,7 @@ function islandora_spreadsheet_ingest_get_db_template_dsids($tid) {
   $get_dsid = function ($result) {
     return $result['dsid'];
   };
-  return drupal_map_assoc(array_map($get_dsid, $results));
+  return array_map($get_dsid, $results);
 }
 
 /**
