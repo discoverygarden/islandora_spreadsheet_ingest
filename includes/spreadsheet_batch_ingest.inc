@@ -177,7 +177,8 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
       )));
     }
     $dsid = $this->parameters['dsid'];
-    $template_uri = isset($template['fid']) ? file_load($template['fid'])->uri : $template['uri'] ;
+    $template_uri = isset($template['fid']) ?
+      file_load($template['fid'])->uri : $template['uri'];
     $ds_exists = isset($this[$dsid]);
     if (!$ds_exists) {
       $ds = $this->constructDatastream($dsid, 'M');
