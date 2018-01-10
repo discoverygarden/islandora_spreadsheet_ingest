@@ -74,11 +74,17 @@ An example of a .csv file that would work with the above sample template:
 
 ```csv
 label,parent_object,cmodel,title,names,abstract,identifier
-Example Object 1,islandora:sp_basic_image_collection,islandora:sp_basic_image,Example Object 1,Kevin, Sample Abstract, id7777
-Example Object 2,islandora:sp_basic_image_collection,islandora:sp_basic_image,Example Object 2,Bob ; Jill, Sample Abstract2, id888
+Example Object 1,islandora:sp_basic_image_collection,islandora:sp_basic_image,
+Example Object 1,Kevin, Sample Abstract, id7777
+Example Object 2,islandora:sp_basic_image_collection,islandora:sp_basic_image,
+Example Object 2,Bob ; Jill, Sample Abstract2, id888
 ```
 
-Column headers represent variables that will be passed into the selected XSLT and must only contain characters valid in XSLT qualified names. Due to the nature of XSLT, all variables defined by the template are required spreadsheet column headers. The following spreadsheet column headers are reserved and may be required:
+Column headers represent variables that will be passed into the selected XSLT
+and must only contain characters valid in XSLT qualified names.
+Due to the nature of XSLT, all variables defined by the template are required
+spreadsheet column headers. The following spreadsheet column headers are
+reserved and may be required:
 
 |Column          |Description                                                                                                   |Required                                                          |
 |----------------|--------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------|
@@ -87,7 +93,8 @@ Column headers represent variables that will be passed into the selected XSLT an
 |parent_predicate|The predicate relationship between this object and its given parent_object.                                   |No; defaults to "isMemberOfCollection"|
 |parent_uri      |The URI of the predicate relationship between this object and its given parent object.                        |No; defaults to "info:fedora/fedora-system:def/relations-external#"                |
 |cmodel          |A PID representing the content model to be applied to this object.                                            |Yes                                                               |
-|binary_file     |The relative path from the Base Binaries Folder to the file to use as the entry's OBJ datastream.             |No                                                                |
+|binary_file     |The relative path from the Base Binaries Folder to the file to use as the entry's OBJ datastream.             |No   
+                                                             |
 |label           |The label to give the object                                                                                  |'No, but omitting may generate objects with no labels                                                     |
 
 ## Usage

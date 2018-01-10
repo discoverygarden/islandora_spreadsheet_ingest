@@ -23,8 +23,6 @@ Install as usual, see
 [this](https://drupal.org/documentation/install/modules-themes/modules-7) for
 further information.                                         
 
-
-
 ## Troubleshooting/Issues
 
 Having problems or solved a problem? Contact
