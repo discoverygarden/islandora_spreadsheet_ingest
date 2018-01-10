@@ -2,13 +2,19 @@
 
 ## Introduction
 
-A module containing example files for use with Islandora Spreadsheet Ingest.
+Enabling this module will provide islandora_spreadsheet_ingest with a sample
+implementation to serve as a launching off point for developing custom XSLT
+templates and providing those templates through a hook implementation.
+
+Module contains:
+* a sample template file /includes/example_template.xslt
+* a sample dataset to be used the the template /includes/example_data.csv
 
 ## Requirements
 
 This module requires the following modules/libraries:
 
-* [Islandora Spreadsheet 
+* [Islandora Spreadsheet
 Ingest](https://github.com/discoverygarden/islandora_spreadsheet_ingest)
 
 ## Installation
@@ -17,15 +23,7 @@ Install as usual, see
 [this](https://drupal.org/documentation/install/modules-themes/modules-7) for
 further information.                                         
 
-## Usage
 
-Enabling this module will provide islandora_spreadsheet_ingest with a sample
-implementation to serve as a launching off point for developing custom XSLT
-templates and providing those templates through a hook implementation.
-
-Module contains:
-* a sample template file /includes/example_template.xslt
-* a sample dataset to be used the the template /includes/example_data.csv
 
 ## Troubleshooting/Issues
 
