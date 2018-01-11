@@ -72,15 +72,9 @@ nodes, and place the root of the output document in a template node named
 </xsl:stylesheet>
 ```
 
-An example of a .csv file that would work with the above sample template:
-
-```csv
-label,parent_object,cmodel,title,names,abstract,identifier
-Example Object 1,islandora:sp_basic_image_collection,islandora:sp_basic_image,
-Example Object 1,Kevin, Sample Abstract, id7777
-Example Object 2,islandora:sp_basic_image_collection,islandora:sp_basic_image,
-Example Object 2,Bob ; Jill, Sample Abstract2, id888
-```
+An example of a 
+[.csv](/modules/islandora_spreadsheet_ingest_example/includes/example_data.csv) 
+file that would work with the above sample template.
 
 Column headers represent variables that will be passed into the selected XSLT
 and must only contain characters valid in XSLT qualified names.
@@ -88,32 +82,51 @@ Due to the nature of XSLT, all variables defined by the template are required
 spreadsheet column headers. The following spreadsheet column headers are
 reserved and may be required:
 
-|Column          
-|Description                                                                                                   
-|Required|
-|---|---|---|
-|pid
-|A PID to assign this object
-|No; if one is not given, a PID will be assigned in the given namespace.|
-|parent_object
-|The predicate relationship between this object and its given parent_object.
-|No, but omitting will generate an object with no parent|
-|parent_predicate
-|The predicate relationship between this object and its given parent_object.
-|No; defaults to "isMemberOfCollection"|
-|parent_uri
-|The URI of the predicate relationship between this object
-and its given parent object.
-|No; defaults to "info:fedora/fedora-system:def/relations-external#"|
-|cmodel
-|A PID representing the content model to be applied to this object.
-|Yes|
-|binary_file
-|The relative path from the Base Binaries Folder to the file
-to use as the entry's OBJ datastream.
-|No|
-|label|The label to give the object
-|'No, but omitting may generate objects with no labels|
+<table>
+  <tr>
+    <th>Column</th>
+    <th>Description</th>
+    <th>Required</th>
+  </tr>
+  <tr>
+    <td>pid</td>
+    <td>A PID to assign this object.</td>
+    <td>No; if one is not given, a PID will be assigned in the given namespace.</td>
+  </tr>
+  <tr>
+    <td>parent_object</td>
+    <td>The parent of this object.</td>
+    <td>No, but omitting will generate an object with no parent.</td>
+  </tr>
+  <tr>
+    <td>parent_predicate</td>
+    <td>The predicate relationship between this object 
+      and its given parent_object.</td>
+    <td>No; defaults to "isMemberOfCollection".</td>
+  </tr>
+  <tr>
+    <td>parent_uri</td>
+    <td>The URI of the predicate relationship between this object 
+      and its given parent object.</td>
+    <td>No; defaults to "info:fedora/fedora-system:def/relations-external#"</td>
+  </tr>
+  <tr>
+    <td>cmodel</td>
+    <td>A PID representing the content model to be applied to this object.</td>
+    <td>Yes</td>
+  </tr>
+  <tr>
+    <td>binary_file</td>
+    <td>he relative path from the Base Binaries Folder to the file 
+      to use as the entry's OBJ datastream.</td>
+    <td>No</td>
+  </tr>
+  <tr>
+    <td>label</td>
+    <td>The label to give the object.</td>
+    <td>No, but omitting may generate objects with no labels.</td>
+  </tr>
+</table>
 
 ## Usage
 
