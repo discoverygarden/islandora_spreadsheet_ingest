@@ -71,7 +71,14 @@ function islandora_spreadsheet_ingest_batch_form($form, &$form_state) {
       'namespace' => array(
         '#type' => 'textfield',
         '#title' => t('Namespace'),
-        '#description' => t('Ingested items will be given the next available PID in the given namespace. Leave blank to use the default configured namespace in Fedora.'),
+        '#description' =>
+        variable_get('islandora_namespace_restriction_enforced', FALSE) ?
+        t("Values allowed: %pids", array(
+          '%pids' => variable_get('islandora_pids_allowed', ""),
+        )) :
+        t("Ingested items will be given the next available PID in the given
+          namespace. Leave blank to use the default configured namespace
+          in Fedora."),
         '#element_validate' => array('islandora_spreadsheet_ingest_valid_namespace'),
       ),
       'ingest_immediately' => array(
