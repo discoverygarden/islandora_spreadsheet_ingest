@@ -117,7 +117,7 @@ reserved and may be required:
   </tr>
   <tr>
     <td>binary_file</td>
-    <td>he relative path from the Base Binaries Folder to the file 
+    <td>The relative path from the Base Binaries Folder to the file 
       to use as the entry's OBJ datastream.</td>
     <td>No</td>
   </tr>
