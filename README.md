@@ -33,12 +33,12 @@ nodes, and place the root of the output document in a template node named
 
 ```xml
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="2.0">
-  <!-- Any CSV headers to be used by the template should be defined globally
-       as xsl:param nodes with the 'name' attribute matching the header. -->
   <xsl:param name="title"/>
   <xsl:param name="names"/>
-  <!-- The root of the output document should go in an xsl:template node with a
-       'name' attribute of root. -->
+  <xsl:param name="abstract"/>
+  <xsl:param name="identifier"/>
+  <!-- Any CSV headers to be used by the template should be defined globally
+       as xsl:param nodes with the 'name' attribute matching the header. -->
   <xsl:template name="root">
     <mods xmlns="http://www.loc.gov/mods/v3"
           xmlns:mods="http://www.loc.gov/mods/v3"
@@ -49,28 +49,84 @@ nodes, and place the root of the output document in a template node named
           <title><xsl:value-of select="normalize-space($title)"/></title>
         </titleInfo>
       </xsl:if>
+      <!-- An example of how delimiting within a single cell could be
+           accomplished; it is left up to template creators to define
+           delimiting, and up to CSV creators to implement it. -->
       <xsl:if test="string-length($names)">
-        <!-- An example of doing delimiting within a single cell; it is left up
-             to template creators to define delimiting, and up to CSV creators
-             to implement it. -->
         <xsl:for-each select="tokenize($names, ' ; ')">
           <name>
             <namePart><xsl:value-of select="normalize-space(.)"/></namePart>
           </name>
         </xsl:for-each>
       </xsl:if>
+      <xsl:if test="string-length($abstract)">
+        <abstract><xsl:value-of select="normalize-space($abstract)"/></abstract>
+      </xsl:if>
+      <xsl:if test="string-length($identifier)">
+        <identifier>
+          <xsl:value-of select="normalize-space($identifier)"/>
+        </identifier>
+      </xsl:if>
     </mods>
   </xsl:template>
 </xsl:stylesheet>
 ```
 
-An example of a .csv file that would work with the above sample template:
+An example of a 
+[.csv](/modules/islandora_spreadsheet_ingest_example/includes/example_data.csv) 
+file that would work with the above sample template.
 
-```csv
-parent_object,cmodel,title,names
-islandora:sp_basic_image_collection,islandora:sp_basic_image,Test 1,Kevin
-islandora:sp_basic_image_collection,islandora:sp_basic_image,Test 2,Bob ; Jill
-```
+Column headers represent variables that will be passed into the selected XSLT
+and must only contain characters valid in XSLT qualified names.
+Due to the nature of XSLT, all variables defined by the template are required
+spreadsheet column headers. The following spreadsheet column headers are
+reserved and may be required:
+
+<table>
+  <tr>
+    <th>Column</th>
+    <th>Description</th>
+    <th>Required</th>
+  </tr>
+  <tr>
+    <td>pid</td>
+    <td>A PID to assign this object.</td>
+    <td>No; if one is not given, a PID will be assigned in the given namespace.</td>
+  </tr>
+  <tr>
+    <td>parent_object</td>
+    <td>The parent of this object.</td>
+    <td>No, but omitting will generate an object with no parent.</td>
+  </tr>
+  <tr>
+    <td>parent_predicate</td>
+    <td>The predicate relationship between this object 
+      and its given parent_object.</td>
+    <td>No; defaults to "isMemberOfCollection".</td>
+  </tr>
+  <tr>
+    <td>parent_uri</td>
+    <td>The URI of the predicate relationship between this object 
+      and its given parent object.</td>
+    <td>No; defaults to "info:fedora/fedora-system:def/relations-external#"</td>
+  </tr>
+  <tr>
+    <td>cmodel</td>
+    <td>A PID representing the content model to be applied to this object.</td>
+    <td>Yes</td>
+  </tr>
+  <tr>
+    <td>binary_file</td>
+    <td>The relative path from the Base Binaries Folder to the file 
+      to use as the entry's OBJ datastream.</td>
+    <td>No</td>
+  </tr>
+  <tr>
+    <td>label</td>
+    <td>The label to give the object.</td>
+    <td>No, but omitting may generate objects with no labels.</td>
+  </tr>
+</table>
 
 ## Usage
 

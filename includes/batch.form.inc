@@ -11,7 +11,7 @@
 function islandora_spreadsheet_ingest_batch_form($form, &$form_state) {
   module_load_include('inc', 'islandora_spreadsheet_ingest', 'includes/utilities');
   module_load_include('inc', 'islandora_spreadsheet_ingest', 'includes/db');
-  $dsids = isset($form_state['values']['template']) ? islandora_spreadsheet_ingest_get_template_dsids($form_state['values']['template']) : array();
+  $dsids = isset($form_state['values']['template']) ? drupal_map_assoc(islandora_spreadsheet_ingest_get_template_dsids($form_state['values']['template'])) : array();
   return array(
     'spreadsheet_parameters' => array(
       '#type' => 'fieldset',
@@ -71,7 +71,14 @@ function islandora_spreadsheet_ingest_batch_form($form, &$form_state) {
       'namespace' => array(
         '#type' => 'textfield',
         '#title' => t('Namespace'),
-        '#description' => t('Ingested items will be given the next available PID in the given namespace. Leave blank to use the default configured namespace in Fedora.'),
+        '#description' =>
+        variable_get('islandora_namespace_restriction_enforced', FALSE) ?
+        t("Values allowed: %pids", array(
+          '%pids' => variable_get('islandora_pids_allowed', ""),
+        )) :
+        t("Ingested items will be given the next available PID in the given
+          namespace. Leave blank to use the default configured namespace
+          in Fedora."),
         '#element_validate' => array('islandora_spreadsheet_ingest_valid_namespace'),
       ),
       'ingest_immediately' => array(
@@ -79,54 +86,6 @@ function islandora_spreadsheet_ingest_batch_form($form, &$form_state) {
         '#title' => t('Ingest immediately'),
         '#description' => t('Whether to process the batch immediately after preprocessing.'),
         '#default_value' => TRUE,
-      ),
-    ),
-    'help_text' => array(
-      '#markup' => t('Column headers represent variables that will be passed into the selected XSLT and must only contain characters valid in XSLT qualified names. Due to the nature of XSLT, all variables defined by the template are required spreadsheet column headers. The following spreadsheet column headers are reserved and may be required:'),
-    ),
-    'help_table' => array(
-      '#theme' => 'table',
-      '#header' => array(
-        t('Column Header'),
-        t('Description'),
-        t('Required'),
-      ),
-      '#rows' => array(
-        array(
-          'pid',
-          t('A PID to assign this object'),
-          t('No; if one is not given, a PID will be assigned in the given namespace.'),
-        ),
-        array(
-          'parent_object',
-          t('A PID representing the parent of the object.'),
-          t('No, but omitting will generate an object with no parent'),
-        ),
-        array(
-          'parent_predicate',
-          t('The predicate relationship between this object and its given parent_object.'),
-          t('No; defaults to "isMemberOfCollection"'),
-        ),
-        array(
-          'parent_uri',
-          t('The URI of the predicate relationship between this object and its given parent object.'),
-          t('No; defaults to "info:fedora/fedora-system:def/relations-external#"'),
-        ),
-        array(
-          'cmodel',
-          t('A PID representing the content model to be applied to this object.'),
-          t('Yes'),
-        ),
-        array(
-          'binary_file',
-          t("The relative path from the Base Binaries Folder to the file to use as the entry's OBJ datastream."),
-          t('No'),
-        ),
-        array(
-          'label',
-          t('The label to give the object'),
-          t('No, but omitting may generate objects with no labels'),
-        ),
       ),
     ),
     'submit' => array(
