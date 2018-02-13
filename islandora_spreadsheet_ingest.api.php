@@ -23,3 +23,21 @@ function hook_islandora_spreadsheet_ingest_templates() {
     ),
   );
 }
+
+/**
+ * Allows modules to modify generated objects.
+ *
+ * Before the alter hook is called, parent relationships are added to the
+ * object. Immediately before this, autoCommit is turned off for the object's
+ * relationships; committance is not performed until all alterations are
+ * completed. Be aware of this when using the alteration hook to add/modify
+ * relationships.
+ *
+ * @param AbstractObject $object
+ *   The object that was just ingested.
+ */
+function hook_islandora_spreadsheet_ingest_object_alter(AbstractObject $object) {
+  if (in_array('islandora:cool_model', $object->models)) {
+    $object->state = 'I';
+  }
+}
