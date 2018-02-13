@@ -91,6 +91,9 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
    */
   protected $xsltParameters = array();
 
+  // The 'type' of alteration this object performs.
+  const ALTER_TYPE = 'islandora_spreadsheet_ingest_object';
+
   /**
    * Class constructor.
    *
@@ -148,11 +151,14 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
     try {
       $this->addMetadata();
       $this->addBinary();
+      $this->relationships->autoCommit = FALSE;
       $this->addRelationships();
       $label = $this->getValue('label');
       if ($label) {
         $this->label = $label;
       }
+      $this->alter();
+      $this->relationships->commitRelationships();
     }
     catch (Exception $e) {
       return array(
@@ -288,9 +294,16 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
     $this->models = $this->getValue('cmodel');
     if ($parent_object = $this->getValue('parent_object')) {
       $parent_uri = $this->getValue('parent_uri', FEDORA_RELS_EXT_URI);
-      $parent_predicate = $this->getValue('parent_uri', 'isMemberOfCollection');
+      $parent_predicate = $this->getValue('parent_predicate', 'isMemberOfCollection');
       $this->relationships->add($parent_uri, $parent_predicate, $parent_object);
     }
+  }
+
+  /**
+   * Allows other modules to hook in and alter the processed object.
+   */
+  public function alter() {
+    drupal_alter(static::ALTER_TYPE, $this);
   }
 
 }

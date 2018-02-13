@@ -100,13 +100,13 @@ reserved and may be required:
   </tr>
   <tr>
     <td>parent_predicate</td>
-    <td>The predicate relationship between this object 
+    <td>The predicate relationship between this object
       and its given parent_object.</td>
     <td>No; defaults to "isMemberOfCollection".</td>
   </tr>
   <tr>
     <td>parent_uri</td>
-    <td>The URI of the predicate relationship between this object 
+    <td>The URI of the predicate relationship between this object
       and its given parent object.</td>
     <td>No; defaults to "info:fedora/fedora-system:def/relations-external#"</td>
   </tr>
@@ -117,7 +117,7 @@ reserved and may be required:
   </tr>
   <tr>
     <td>binary_file</td>
-    <td>The relative path from the Base Binaries Folder to the file 
+    <td>The relative path from the Base Binaries Folder to the file
       to use as the entry's OBJ datastream.</td>
     <td>No</td>
   </tr>
