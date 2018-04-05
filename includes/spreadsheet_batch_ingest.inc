@@ -29,25 +29,33 @@ class IslandoraSpreadsheetIngestBatch extends IslandoraBatchPreprocessor {
   public function preprocess() {
     // Open the CSV file and start reading lines.
     $csv_file = fopen($this->parameters['spreadsheet_file'], 'r');
+    if (!$csv_file) {
+      throw new InvalidArgumentException(t('Failed to open @file.', array('@file' => $this->parameters['spreadsheet_file'])));
+    }
     $header_line = fgetcsv($csv_file, 0, $this->parameters['cell_delimiter']);
     // Key map will be used later to determine values for columns.
     $key_map = array_flip($header_line);
     $base_parameters = $this->getBaseParameters($key_map);
-    $added = 0;
-    while (!feof($csv_file)) {
+
+    while ($csv_file && !feof($csv_file)) {
       $row = fgetcsv($csv_file, 0, $this->parameters['cell_delimiter']);
-      // Blank lines are considered NULL.
-      if (!is_null($row)) {
-        $parameters = $base_parameters + array(
-          'value_map' => $row,
-          'dsid' => $this->parameters['dsid'],
-        );
-        $object = new IslandoraSpreadsheetIngestBatchObject($this->connection, $parameters);
-        $this->addToDatabase($object);
-        $added++;
+      if (!$row || $row === array(NULL)) {
+        // XXX: As per the documentation: "A blank line in a CSV file will be
+        // returned as an array comprising a single null field, and will not be
+        // treated as an error."... We want to skip it.
+        //
+        // @see http://php.net/manual/function.fgetcsv.php
+        continue;
       }
+
+      $parameters = $base_parameters + array(
+        'value_map' => $row,
+        'dsid' => $this->parameters['dsid'],
+      );
+      $object = new IslandoraSpreadsheetIngestBatchObject($this->connection, $parameters);
+      $this->addToDatabase($object);
+      $this->total++;
     }
-    $this->total = $added;
   }
 
   /**
@@ -249,13 +257,11 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
    * Builds a list of parameters to be passed to Saxon.
    */
   protected function buildParameterList() {
-    $parameters = array();
     foreach ($this->parameters['key_map'] as $key => $idx) {
       if (!empty($this->parameters['value_map'][$idx])) {
-        $parameters[] = escapeshellarg("{$key}={$this->parameters['value_map'][$idx]}");
+        $this->xsltParameters[] = escapeshellarg("{$key}={$this->parameters['value_map'][$idx]}");
       }
     }
-    $this->xsltParameters = $parameters;
   }
 
   /**
