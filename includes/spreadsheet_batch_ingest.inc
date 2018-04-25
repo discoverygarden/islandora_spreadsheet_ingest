@@ -53,7 +53,7 @@ class IslandoraSpreadsheetIngestBatch extends IslandoraBatchPreprocessor {
         'dsid' => $this->parameters['dsid'],
       );
       $object = new IslandoraSpreadsheetIngestBatchObject($this->connection, $parameters);
-      $this->addToDatabase($object);
+      call_user_func_array(array($this, 'addToDatabase'), $object->getInitialDatabaseInfo($this->getSetId()));
       $this->total++;
     }
   }
@@ -312,4 +312,50 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
     drupal_alter(static::ALTER_TYPE, $this);
   }
 
+  /**
+   * Helper; gather together info to write to the DB during preprocessing.
+   *
+   * @param int $set_id
+   *   The ID of the set to which we are to be added.
+   *
+   * @return array
+   *   An array representing the parameters which might be passed to
+   *   IslandoraBatchPreprocessor::addToDatabase().
+   */
+  public function getInitialDatabaseInfo($set_id) {
+    return array($this);
+  }
+
+  protected static function getPagedContentModelInfo() {
+    static $info = array();
+    if (module_exists('islandora_paged_content') && empty($info)) {
+      module_load_include('inc', 'islandora_paged_content', 'includes/utilities');
+      $info = islandora_paged_content_retrieve_applicable_cmodels();
+    }
+    return $info;
+  }
+
+  protected static function getPagedContentModels() {
+    static $info = NULL;
+    if ($info === NULL) {
+      $info = array_keys(static::getPagedContentModelInfo());
+    }
+    return $info;
+  }
+
+  protected static function getPagedContentModelPages() {
+    static $info = NULL;
+    if ($info === NULL) {
+      $info = array();
+      foreach (static::getPagesContentModelInfo() as $content_model => $page_info) {
+        foreach (array_keys($page_info['children']) as $child_model) {
+          if (!isset($info[$child_model])) {
+            $info[$child_model] = array();
+          }
+          $info[$child_model][] = $content_model;
+        }
+      }
+    }
+    return $info;
+  }
 }
