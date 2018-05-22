@@ -52,7 +52,7 @@ class IslandoraSpreadsheetIngestBatch extends IslandoraBatchPreprocessor {
         'value_map' => $row,
         'dsid' => $this->parameters['dsid'],
       );
-      $object = new IslandoraSpreadsheetIngestBatchObject($this->connection, $parameters);
+      $object = IslandoraSpreadsheetIngestBatchObject::create($this->connection, $parameters);
       call_user_func_array(array($this, 'addToDatabase'), $object->getInitialDatabaseInfo($this->getSetId()));
       $this->total++;
     }
@@ -79,6 +79,10 @@ class IslandoraSpreadsheetIngestBatch extends IslandoraBatchPreprocessor {
       'template' => $this->parameters['template'],
       'binary_path' => $this->parameters['base_binary_path'],
       'key_map' => $key_map,
+      'create_pdfs' => isset($this->parameters['paged_content_create_pdfs']) ? (bool) $this->parameters['paged_content_create_pdfs'] : FALSE,
+      'generate_ocr' => isset($this->parameters['paged_content_generate_ocr']) ? (bool) $this->parameters['paged_content_generate_ocr'] : FALSE,
+      'generate_hocr' => isset($this->parameters['paged_content_generate_hocr']) ? (bool) $this->parameters['paged_content_generate_hocr'] : FALSE,
+      'aggregate_ocr' => isset($this->parameters['paged_content_generate_ocr']) && (bool) $this->parameters['paged_content_generate_ocr'] ? (bool) $this->parameters['paged_content_aggregate_ocr'] : FALSE,
     );
   }
 
@@ -118,12 +122,56 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
    *     position.
    *   - 'value_map': Array of string values.
    *   - 'dsid': The ID of the datastream that the template will generate.
+   *   - 'create_pdfs': Whether to create PDFs for paged content parent objects.
+   *   - 'generate_ocr': Whether to generate OCR for paged content children.
+   *   - 'generate_hocr': Whether to generate HOCR for paged content children.
+   *   - 'aggregate_ocr': Whether to aggregate OCR from children to parents.
    */
   public function __construct(IslandoraTuque $connection, array $parameters) {
     $this->connection = $connection;
     $this->parameters = $parameters;
     $id = $this->getValue('pid', empty($this->parameters['namespace']) ? NULL : $this->parameters['namespace']);
     parent::__construct($id, $connection->repository);
+  }
+
+  /**
+   * Creates a new typed object given the content model.
+   *
+   * @param IslandoraTuque $connection
+   *   Connection to Fedora.
+   * @param array $parameters
+   *   Associative array containing preprocessor parameters, requiring:
+   *   - 'namespace': A namespace to give this object if a 'pid' isn't set in
+   *     the value_map.
+   *   - 'template': The ID of the template to use with the given value map.
+   *   - 'binary_path': Base path to a binary for this object, or NULL if not
+   *     specified.
+   *   - 'key_map': Associative array mapping column headers to their column
+   *     position.
+   *   - 'value_map': Array of string values.
+   *   - 'dsid': The ID of the datastream that the template will generate.
+   *   - 'create_pdfs': Whether to create PDFs for paged content parent objects.
+   *   - 'generate_ocr': Whether to generate OCR for paged content children.
+   *   - 'generate_hocr': Whether to generate HOCR for paged content children.
+   *   - 'aggregate_ocr': Whether to aggregate OCR from children to parents.
+   *
+   * @return IslandoraSpreadsheetIngestPagedContentParentBatchObject|IslandoraSpreadsheetIngestPagedContentChildBatchObject|IslandoraSpreadsheetIngestBatchObject
+   *   The object to be ingested.
+   */
+  public static function create(IslandoraTuque $connection, array $parameters) {
+    $parent_paged = static::getPagedContentModelInfo();
+    $child_paged = static::getPagedContentModelPages();
+    $cmodel = static::getValueFromArray($parameters, 'cmodel');
+
+    if (isset($parent_paged[$cmodel])) {
+      return new IslandoraSpreadsheetIngestPagedContentParentBatchObject($connection, $parameters);
+    }
+    elseif (isset($child_paged[$cmodel])) {
+      return new IslandoraSpreadsheetIngestPagedContentChildBatchObject($connection, $parameters);
+    }
+    else {
+      return new static($connection, $parameters);
+    }
   }
 
   /**
@@ -139,10 +187,41 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
    *   if the key doesn't exist or the value is not set for it.
    */
   protected function getValue($key, $default = NULL) {
-    if (!isset($this->parameters['key_map'][$key]) || empty($this->parameters['value_map'][$this->parameters['key_map'][$key]])) {
+    return static::getValueFromArray($this->parameters, $key, $default);
+  }
+
+  /**
+   * Gets a value directly from the value_map array in the parameters.
+   *
+   * @param array $params
+   *   Associative array containing preprocessor parameters, requiring:
+   *   - 'namespace': A namespace to give this object if a 'pid' isn't set in
+   *     the value_map.
+   *   - 'template': The ID of the template to use with the given value map.
+   *   - 'binary_path': Base path to a binary for this object, or NULL if not
+   *     specified.
+   *   - 'key_map': Associative array mapping column headers to their column
+   *     position.
+   *   - 'value_map': Array of string values.
+   *   - 'dsid': The ID of the datastream that the template will generate.
+   *   - 'create_pdfs': Whether to create PDFs for paged content parent objects.
+   *   - 'generate_ocr': Whether to generate OCR for paged content children.
+   *   - 'generate_hocr': Whether to generate HOCR for paged content children.
+   *   - 'aggregate_ocr': Whether to aggregate OCR from children to parents.
+   * @param string $key
+   *   The key to get a value for.
+   * @param string|null $default
+   *   A default value to fall back on.
+   *
+   * @return mixed
+   *   Returns the value of the key given in the value_map. Returns the default
+   *   if the key doesn't exist or the value is not set for it.
+   */
+  protected static function getValueFromArray(array $params, $key, $default = NULL) {
+    if (!isset($params['key_map'][$key]) || empty($params['value_map'][$params['key_map'][$key]])) {
       return $default;
     }
-    return $this->parameters['value_map'][$this->parameters['key_map'][$key]];
+    return $params['value_map'][$params['key_map'][$key]];
   }
 
   /**
@@ -326,6 +405,12 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
     return array($this);
   }
 
+  /**
+   * Gets the paged content model info from the module.
+   *
+   * @return array
+   *   An empty array or an array keyed by parent content model,
+   */
   protected static function getPagedContentModelInfo() {
     static $info = array();
     if (module_exists('islandora_paged_content') && empty($info)) {
@@ -335,19 +420,18 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
     return $info;
   }
 
-  protected static function getPagedContentModels() {
-    static $info = NULL;
-    if ($info === NULL) {
-      $info = array_keys(static::getPagedContentModelInfo());
-    }
-    return $info;
-  }
-
+  /**
+   * Helper to retrieve the paged content content models.
+   *
+   * @return array|null
+   *   An array keyed by the children content model where its values are
+   *   applicable parent content models.
+   */
   protected static function getPagedContentModelPages() {
     static $info = NULL;
     if ($info === NULL) {
       $info = array();
-      foreach (static::getPagesContentModelInfo() as $content_model => $page_info) {
+      foreach (static::getPagedContentModelInfo() as $content_model => $page_info) {
         foreach (array_keys($page_info['children']) as $child_model) {
           if (!isset($info[$child_model])) {
             $info[$child_model] = array();
@@ -358,4 +442,116 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
     }
     return $info;
   }
+
+}
+
+/**
+ * Class definition for parent paged content spreadsheet ingest objects.
+ */
+class IslandoraSpreadsheetIngestPagedContentParentBatchObject extends IslandoraSpreadsheetIngestBatchObject {
+
+  /**
+   * Adds relationships.
+   */
+  public function addRelationships() {
+    module_load_include('inc', 'islandora_paged_content', 'includes/derivatives');
+    parent::addRelationships();
+    // Set the paged content specific relationships.
+    if (isset($this->parameters['create_pdfs']) && $this->parameters['create_pdfs']) {
+      islandora_paged_content_set_pdf_flag($this);
+    }
+    if (isset($this->parameters['aggregate_ocr']) && $this->parameters['aggregate_ocr']) {
+      islandora_paged_content_set_ocr_flag($this);
+    }
+  }
+
+}
+
+
+/**
+ * Class definition for child paged content spreadsheet ingest objects.
+ */
+class IslandoraSpreadsheetIngestPagedContentChildBatchObject extends IslandoraSpreadsheetIngestBatchObject {
+  protected $sequence;
+  protected $parent;
+
+  /**
+   * Constructor for the paged content batch object.
+   *
+   * @param IslandoraTuque $connection
+   *   Connection to Fedora.
+   * @param array $parameters
+   *   Associative array containing preprocessor parameters, requiring:
+   *   - 'namespace': A namespace to give this object if a 'pid' isn't set in
+   *     the value_map.
+   *   - 'template': The ID of the template to use with the given value map.
+   *   - 'binary_path': Base path to a binary for this object, or NULL if not
+   *     specified.
+   *   - 'key_map': Associative array mapping column headers to their column
+   *     position.
+   *   - 'value_map': Array of string values.
+   *   - 'dsid': The ID of the datastream that the template will generate.
+   *   - 'create_pdfs': Whether to create PDFs for paged content parent objects.
+   *   - 'generate_ocr': Whether to generate OCR for paged content children.
+   *   - 'generate_hocr': Whether to generate HOCR for paged content children.
+   *   - 'aggregate_ocr': Whether to aggregate OCR from children to parents.
+   */
+  public function __construct(IslandoraTuque $connection, array $parameters) {
+    parent::__construct($connection, $parameters);
+    $this->parent = $this->getValue('parent_object');
+  }
+
+  /**
+   * Helper; gather together info to write to the DB during preprocessing.
+   *
+   * @param int $set_id
+   *   The ID of the set to which we are to be added.
+   *
+   * @return array
+   *   An array representing the parameters which might be passed to
+   *   IslandoraBatchPreprocessor::addToDatabase().
+   */
+  public function getInitialDatabaseInfo($set_id) {
+    $this->sequence = $this->getSequenceNumber($set_id);
+    return array($this, array(), $this->parent);
+  }
+
+  /**
+   * Helper that determines the sequence of the child object.
+   *
+   * @param string $set_id
+   *   The set ID of which the child belongs to you.
+   *
+   * @return int
+   *   The sequence number of the child.
+   */
+  protected function getSequenceNumber($set_id) {
+    return db_select('islandora_batch_queue', 'i')
+      ->fields('i', array('id'))
+      ->condition('sid', $set_id)
+      ->condition('parent', $this->parent)
+      ->execute()
+      ->rowCount() + 1;
+  }
+
+  /**
+   * Adds relationships.
+   */
+  public function addRelationships() {
+    parent::addRelationships();
+
+    // Add specific paged content relationships.
+    $rels_ext = $this->relationships;
+    islandora_paged_content_set_relationship($rels_ext, ISLANDORA_RELS_EXT_URI, 'isSequenceNumber', (string) $this->sequence, TRUE);
+    islandora_paged_content_set_relationship($rels_ext, ISLANDORA_RELS_EXT_URI, 'isPageNumber', (string) $this->sequence, TRUE);
+    islandora_paged_content_set_relationship($rels_ext, ISLANDORA_RELS_EXT_URI, 'isSection', '1', TRUE);
+    islandora_paged_content_set_relationship($rels_ext, FEDORA_RELS_EXT_URI, 'isMemberOf', $this->getValue('parent_object'));
+    if (isset($this->parameters['generate_ocr'])) {
+      module_load_include('inc', 'islandora_ocr', 'includes/derivatives');
+      islandora_ocr_set_generating_rels_ext_statements($this,
+        isset($this->parameters['generate_ocr']) ? $this->parameters['generate_ocr'] : FALSE,
+        isset($this->parameters['generate_hocr']) ? $this->parameters['generate_hocr'] : FALSE);
+    }
+  }
+
 }

@@ -12,87 +12,136 @@ function islandora_spreadsheet_ingest_batch_form($form, &$form_state) {
   module_load_include('inc', 'islandora_spreadsheet_ingest', 'includes/utilities');
   module_load_include('inc', 'islandora_spreadsheet_ingest', 'includes/db');
   $dsids = isset($form_state['values']['template']) ? drupal_map_assoc(islandora_spreadsheet_ingest_get_template_dsids($form_state['values']['template'])) : array();
-  return array(
-    'spreadsheet_parameters' => array(
-      '#type' => 'fieldset',
-      '#title' => t('Spreadsheet Ingest Parameters'),
-      '#collapsible' => FALSE,
-      'spreadsheet_file' => array(
-        '#type' => 'managed_file',
-        '#title' => t('CSV File'),
-        '#required' => TRUE,
-        '#description' => t('Select a CSV file to upload, delimited using the below-configured delimiters.'),
-        '#upload_location' => file_default_scheme() . '://',
-        '#upload_validators' => array(
-          'file_validate_extensions' => array('csv'),
-          'file_validate_size' => array(min((int) ini_get('post_max_size'), (int) ini_get('upload_max_filesize')) * 1024 * 1024),
-        ),
-      ),
-      'template' => array(
-        '#type' => 'select',
-        '#title' => t('Template'),
-        '#description' => t('Select the template to apply the given CSV to'),
-        '#required' => TRUE,
-        '#options' => islandora_spreadsheet_ingest_get_templates_as_form_options(),
-        '#ajax' => array(
-          'callback' => 'islandora_spreadsheet_ingest_batch_form_update_dsids',
-          'wrapper' => 'islandora-spreadsheet-ingest-dsids',
-          'effect' => 'fade',
-        ),
-      ),
-      'dsid' => array(
-        '#type' => 'select',
-        '#title' => t('Output DSID'),
-        '#description' => t('ID of the datastream that generated metadata should be placed in.'),
-        '#required' => TRUE,
-        '#options' => $dsids,
-        '#prefix' => '<div id="islandora-spreadsheet-ingest-dsids">',
-        '#suffix' => '</div>',
-      ),
-      'base_binary_path' => array(
-        '#type' => 'textfield',
-        '#title' => t('Base Binaries Folder'),
-        '#description' => t('Path to a folder on the local filesystem where binaries are being kept. Files under the <strong>binary_file</strong> column will be sourced relative to this path.'),
-        '#default_value' => variable_get('islandora_spreadsheet_ingest_default_binary_path', ''),
-        '#element_validate' => array('islandora_spreadsheet_ingest_valid_base_binaries_folder'),
-      ),
-      'delimiters' => array(
-        '#type' => 'fieldset',
-        '#title' => t('CSV Delimiters'),
-        '#collapsible' => TRUE,
-        '#collapsed' => TRUE,
-        'cell_delimiter' => array(
-          '#type' => 'textfield',
-          '#title' => t('Cell Delimiter'),
-          '#description' => t('Character to delimit individual cells in a row.'),
-          '#default_value' => variable_get('islandora_spreadsheet_ingest_default_cell_delimiter', ','),
-        ),
-      ),
-      'namespace' => array(
-        '#type' => 'textfield',
-        '#title' => t('Namespace'),
-        '#description' =>
-        variable_get('islandora_namespace_restriction_enforced', FALSE) ?
-        t("Values allowed: %pids", array(
-          '%pids' => variable_get('islandora_pids_allowed', ""),
-        )) :
-        t("Ingested items will be given the next available PID in the given
-          namespace. Leave blank to use the default configured namespace
-          in Fedora."),
-        '#element_validate' => array('islandora_spreadsheet_ingest_valid_namespace'),
-      ),
-      'ingest_immediately' => array(
-        '#type' => 'checkbox',
-        '#title' => t('Ingest immediately'),
-        '#description' => t('Whether to process the batch immediately after preprocessing.'),
-        '#default_value' => TRUE,
-      ),
-    ),
-    'submit' => array(
-      '#type' => 'submit',
-      '#value' => t('Batch Ingest'),
+  $form['spreadsheet_parameters'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Spreadsheet Ingest Parameters'),
+    '#collapsible' => FALSE,
+  );
+  $form['spreadsheet_parameters']['spreadsheet_file'] = array(
+    '#type' => 'managed_file',
+    '#title' => t('CSV File'),
+    '#required' => TRUE,
+    '#description' => t('Select a CSV file to upload, delimited using the below-configured delimiters.'),
+    '#upload_location' => file_default_scheme() . '://',
+    '#upload_validators' => array(
+      'file_validate_extensions' => array('csv'),
+      'file_validate_size' => array(min((int) ini_get('post_max_size'), (int) ini_get('upload_max_filesize')) * 1024 * 1024),
     ),
   );
+  $form['spreadsheet_parameters']['template'] = array(
+    '#type' => 'select',
+    '#title' => t('Template'),
+    '#description' => t('Select the template to apply the given CSV to'),
+    '#required' => TRUE,
+    '#options' => islandora_spreadsheet_ingest_get_templates_as_form_options(),
+    '#ajax' => array(
+      'callback' => 'islandora_spreadsheet_ingest_batch_form_update_dsids',
+      'wrapper' => 'islandora-spreadsheet-ingest-dsids',
+      'effect' => 'fade',
+    ),
+  );
+  $form['spreadsheet_parameters']['dsid'] = array(
+    '#type' => 'select',
+    '#title' => t('Output DSID'),
+    '#description' => t('ID of the datastream that generated metadata should be placed in.'),
+    '#required' => TRUE,
+    '#options' => $dsids,
+    '#prefix' => '<div id="islandora-spreadsheet-ingest-dsids">',
+    '#suffix' => '</div>',
+  );
+  $form['spreadsheet_parameters']['base_binary_path'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Base Binaries Folder'),
+    '#description' => t('Path to a folder on the local filesystem where binaries are being kept. Files under the <strong>binary_file</strong> column will be sourced relative to this path.'),
+    '#default_value' => variable_get('islandora_spreadsheet_ingest_default_binary_path', ''),
+    '#element_validate' => array('islandora_spreadsheet_ingest_valid_base_binaries_folder'),
+  );
+  $form['spreadsheet_parameters']['delimeters'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('CSV Delimiters'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+    'cell_delimiter' => array(
+      '#type' => 'textfield',
+      '#title' => t('Cell Delimiter'),
+      '#description' => t('Character to delimit individual cells in a row.'),
+      '#default_value' => variable_get('islandora_spreadsheet_ingest_default_cell_delimiter', ','),
+    ),
+  );
+  $form['spreadsheet_parameters']['paged_content'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Contains paged content objects'),
+    '#default_value' => FALSE,
+  );
+  $form['spreadsheet_parameters']['paged_content_fieldset'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Paged content derivatives'),
+    '#states' => array(
+      'visible' => array(
+        ':input[name="paged_content"]' => array("checked" => TRUE),
+      ),
+    ),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+  );
+  $form['spreadsheet_parameters']['paged_content_fieldset']['paged_content_create_pdfs'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Create PDFs'),
+    '#description' => t('Whether or not we should generate PDFs for the paged content parent objects after ingesting all of the pages.'),
+  );
+  if (module_exists('islandora_ocr')) {
+    module_load_include('inc', 'islandora_paged_content', 'includes/utilities');
+    $book_derive = islandora_paged_content_get_enabled_ingest_derivatives('islandora_book');
+    $newspaper_derive = islandora_paged_content_get_enabled_ingest_derivatives('islandora_newspaper');
+    if ($book_derive['ocr'] || $newspaper_derive['ocr']) {
+      $form['spreadsheet_parameters']['paged_content_fieldset']['paged_content_generate_ocr'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Generate OCR'),
+        '#description' => t('Generate OCR for the pages of each paged content object.'),
+        '#default_value' => TRUE,
+      );
+      $form['spreadsheet_parameters']['paged_content_fieldset']['paged_content_generate_hocr'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Generate HOCR'),
+        '#description' => t('Generate HOCR for the pages of each paged content object.'),
+        '#default_value' => TRUE,
+      );
+      $form['spreadsheet_parameters']['paged_content_fieldset']['paged_content_aggregate_ocr'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Aggregate OCR'),
+        '#description' => t('Consolidate the page OCR and add it to the paged content parent objects after ingesting all of the pages.'),
+        '#default_value' => FALSE,
+        '#states' => array(
+          'invisible' => array(
+            ':input[name="paged_content_generate_ocr"]' => array('checked' => FALSE),
+          ),
+        ),
+      );
+    }
+  }
+  $form['spreadsheet_parameters']['namespace'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Namespace'),
+    '#description' => variable_get('islandora_namespace_restriction_enforced', FALSE) ?
+    t("Values allowed: %pids", array(
+      '%pids' => variable_get('islandora_pids_allowed', ""),
+    )) :
+    t("Ingested items will be given the next available PID in the given
+      namespace. Leave blank to use the default configured namespace
+      in Fedora."),
+    '#element_validate' => array('islandora_spreadsheet_ingest_valid_namespace'),
+  );
+  $form['spreadsheet_parameters']['ingest_immediately'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Ingest immediately'),
+    '#description' => t('Whether to process the batch immediately after preprocessing.'),
+    '#default_value' => TRUE,
+  );
+  $form['spreadsheet_parameters']['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Batch Ingest'),
+  );
+  return $form;
 }
 
 /**
