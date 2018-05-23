@@ -56,7 +56,7 @@ function islandora_spreadsheet_ingest_batch_form($form, &$form_state) {
     '#default_value' => variable_get('islandora_spreadsheet_ingest_default_binary_path', ''),
     '#element_validate' => array('islandora_spreadsheet_ingest_valid_base_binaries_folder'),
   );
-  $form['spreadsheet_parameters']['delimeters'] = array(
+  $form['spreadsheet_parameters']['delimiters'] = array(
     '#type' => 'fieldset',
     '#title' => t('CSV Delimiters'),
     '#collapsible' => TRUE,
@@ -89,7 +89,7 @@ function islandora_spreadsheet_ingest_batch_form($form, &$form_state) {
     '#title' => t('Create PDFs'),
     '#description' => t('Whether or not we should generate PDFs for the paged content parent objects after ingesting all of the pages.'),
   );
-  if (module_exists('islandora_ocr')) {
+  if (module_exists('islandora_ocr') && module_exists('islandora_paged_content')) {
     module_load_include('inc', 'islandora_paged_content', 'includes/utilities');
     $book_derive = islandora_paged_content_get_enabled_ingest_derivatives('islandora_book');
     $newspaper_derive = islandora_paged_content_get_enabled_ingest_derivatives('islandora_newspaper');

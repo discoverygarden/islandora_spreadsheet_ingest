@@ -75,6 +75,12 @@ class IslandoraSpreadsheetIngestBatch extends IslandoraBatchPreprocessor {
    *   Base parameter set.
    */
   protected function getBaseParameters(array $key_map) {
+    // XXX: The aggregate OCR option is dependent on generating OCR being
+    // selected.
+    $aggregate_ocr = FALSE;
+    if (isset($this->parameters['paged_content_generate_ocr']) && (bool) $this->parameters['paged_content_generate_ocr'] && isset($this->parameters['paged_content_aggregate_ocr'])) {
+      $aggregate_ocr = (bool) $this->parameters['paged_content_aggregate_ocr'];
+    }
     return array(
       'template' => $this->parameters['template'],
       'binary_path' => $this->parameters['base_binary_path'],
@@ -82,7 +88,7 @@ class IslandoraSpreadsheetIngestBatch extends IslandoraBatchPreprocessor {
       'create_pdfs' => isset($this->parameters['paged_content_create_pdfs']) ? (bool) $this->parameters['paged_content_create_pdfs'] : FALSE,
       'generate_ocr' => isset($this->parameters['paged_content_generate_ocr']) ? (bool) $this->parameters['paged_content_generate_ocr'] : FALSE,
       'generate_hocr' => isset($this->parameters['paged_content_generate_hocr']) ? (bool) $this->parameters['paged_content_generate_hocr'] : FALSE,
-      'aggregate_ocr' => isset($this->parameters['paged_content_generate_ocr']) && (bool) $this->parameters['paged_content_generate_ocr'] ? (bool) $this->parameters['paged_content_aggregate_ocr'] : FALSE,
+      'aggregate_ocr' => $aggregate_ocr,
     );
   }
 
@@ -512,7 +518,7 @@ class IslandoraSpreadsheetIngestPagedContentChildBatchObject extends IslandoraSp
    *   IslandoraBatchPreprocessor::addToDatabase().
    */
   public function getInitialDatabaseInfo($set_id) {
-    $this->sequence = $this->getSequenceNumber($set_id);
+    $this->getSequenceNumber($set_id);
     return array($this, array(), $this->parent);
   }
 
@@ -526,19 +532,24 @@ class IslandoraSpreadsheetIngestPagedContentChildBatchObject extends IslandoraSp
    *   The sequence number of the child.
    */
   protected function getSequenceNumber($set_id) {
-    return db_select('islandora_batch_queue', 'i')
-      ->fields('i', array('id'))
-      ->condition('sid', $set_id)
-      ->condition('parent', $this->parent)
-      ->execute()
-      ->rowCount() + 1;
+    if (!isset($this->sequence)) {
+      $this->sequence = db_select('islandora_batch_queue', 'i')
+        ->fields('i', array('id'))
+        ->condition('sid', $set_id)
+        ->condition('parent', $this->parent)
+        ->execute()
+        ->rowCount() + 1;
+    }
+    return $this->sequence;
   }
 
   /**
    * Adds relationships.
    */
   public function addRelationships() {
-    parent::addRelationships();
+    // Ignore the parent relationship that adds the membership as we are doing
+    // the paged things ourselves.
+    $this->models = $this->getValue('cmodel');
 
     // Add specific paged content relationships.
     $rels_ext = $this->relationships;
