@@ -553,6 +553,7 @@ class IslandoraSpreadsheetIngestPagedContentChildBatchObject extends IslandoraSp
 
     // Add specific paged content relationships.
     $rels_ext = $this->relationships;
+    islandora_paged_content_set_relationship($rels_ext, ISLANDORA_RELS_EXT_URI, 'isPageOf', $this->getValue('parent_object'));
     islandora_paged_content_set_relationship($rels_ext, ISLANDORA_RELS_EXT_URI, 'isSequenceNumber', (string) $this->sequence, TRUE);
     islandora_paged_content_set_relationship($rels_ext, ISLANDORA_RELS_EXT_URI, 'isPageNumber', (string) $this->sequence, TRUE);
     islandora_paged_content_set_relationship($rels_ext, ISLANDORA_RELS_EXT_URI, 'isSection', '1', TRUE);
