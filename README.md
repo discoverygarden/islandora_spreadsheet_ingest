@@ -96,19 +96,19 @@ reserved and may be required:
   <tr>
     <td>parent_object</td>
     <td>The parent of this object.</td>
-    <td>No, but omitting will generate an object with no parent.</td>
+    <td>Required when creating a paged content child object.<br/> Not required when creating a general object, omitting will generate an object with no parent.</td>
   </tr>
   <tr>
     <td>parent_predicate</td>
     <td>The predicate relationship between this object
       and its given parent_object.</td>
-    <td>No; defaults to "isMemberOfCollection".</td>
+    <td>Not used when ingesting a paged content child object.<br/> For general objects it is also not required; defaults to "isMemberOfCollection".</td>
   </tr>
   <tr>
     <td>parent_uri</td>
     <td>The URI of the predicate relationship between this object
       and its given parent object.</td>
-    <td>No; defaults to "info:fedora/fedora-system:def/relations-external#"</td>
+    <td>Not used when ingesting a paged content child object.<br/> For general objects it is also not required; defaults to "isMemberOfCollection".</td>
   </tr>
   <tr>
     <td>cmodel</td>
