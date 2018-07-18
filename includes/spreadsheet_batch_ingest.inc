@@ -39,7 +39,7 @@ class IslandoraSpreadsheetIngestBatch extends IslandoraBatchPreprocessor {
 
     while ($csv_file && !feof($csv_file)) {
       $row = fgetcsv($csv_file, 0, $this->parameters['cell_delimiter']);
-      if (!$row || $row === array(NULL)) {
+      if ($row === array(NULL)) {
         // XXX: As per the documentation: "A blank line in a CSV file will be
         // returned as an array comprising a single null field, and will not be
         // treated as an error."... We want to skip it.
