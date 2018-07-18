@@ -26,6 +26,7 @@ function islandora_spreadsheet_ingest_batch_form($form, &$form_state) {
     '#upload_validators' => array(
       'file_validate_extensions' => array('csv'),
       'file_validate_size' => array(min((int) ini_get('post_max_size'), (int) ini_get('upload_max_filesize')) * 1024 * 1024),
+      'islandora_spreadsheet_ingest_csv_validate' => array(),
     ),
   );
   $form['spreadsheet_parameters']['template'] = array(
@@ -176,11 +177,36 @@ function islandora_spreadsheet_ingest_valid_namespace($element, &$form_state, $f
  * Validation handler for spreadsheet ingest.
  */
 function islandora_spreadsheet_ingest_batch_form_validate(&$form, &$form_state) {
-  if (isset($form_state['values']['base_binary_path']) && !file_exists($form_state['values']['base_binary_path'])) {
+  if (
+    isset($form_state['values']['base_binary_path']) &&
+    !empty($form_state['values']['base_binary_path']) &&
+    !file_exists($form_state['values']['base_binary_path'])
+  ) {
     form_set_error('base_binary_path', t('Failed to resolve base binary path at @path', array(
       '@path' => $form_state['values']['base_binary_path'],
     )));
   }
+}
+
+/**
+ * Custom upload validator for the .csv ingest file.
+ * @param stdClass $csv_file
+ *   The file uploaded in the spreadsheet_file element of the form.
+ *
+ * @return array
+ *   An array containing errors, empty if the file is valid.
+ */
+function islandora_spreadsheet_ingest_csv_validate(stdClass $csv_file) {
+  // Open the CSV file and start reading lines into an array.
+
+  // Falsey rows are bad.
+
+  // Verify rows are all the same length.
+
+  // Check required/reserved columns.
+
+  // Return empty array to indicate all checks passed.
+  return array();
 }
 
 /**
