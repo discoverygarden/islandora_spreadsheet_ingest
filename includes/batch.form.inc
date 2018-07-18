@@ -208,6 +208,11 @@ function islandora_spreadsheet_ingest_csv_validate(stdClass $csv_file) {
   // Verify rows are all the same length.
 
   // Check required/reserved columns.
+  // Check cmodel, required.
+    // Validate cmodels.
+  // Check pid column.
+    // Validate pids.
+  // Check parent_object, required when creating a paged content child object.
 
   // Return empty array to indicate all checks passed.
   return array();
