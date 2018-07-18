@@ -47,6 +47,8 @@ class IslandoraSpreadsheetIngestBatch extends IslandoraBatchPreprocessor {
         // @see http://php.net/manual/function.fgetcsv.php
         continue;
       }
+      // If header contains binary_file, validate file in that column.
+        // Insert code here.
 
       $parameters = $base_parameters + array(
         'value_map' => $row,
