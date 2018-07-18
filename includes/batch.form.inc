@@ -53,7 +53,11 @@ function islandora_spreadsheet_ingest_batch_form($form, &$form_state) {
   $form['spreadsheet_parameters']['base_binary_path'] = array(
     '#type' => 'textfield',
     '#title' => t('Base Binaries Folder'),
-    '#description' => t('Path to a folder on the local filesystem where binaries are being kept. Files under the <strong>binary_file</strong> column will be sourced relative to this path.'),
+    '#description' => t(
+      'Path to a folder on the local filesystem where binaries are being kept.' .
+      ' Files under the <strong>binary_file</strong> column will be sourced relative to this path.' .
+      ' If the CSV file being uploaded does not contain a <strong>binary_file</strong> column, this path may be left blank.' .
+      ' <strong>Files under binary_file must be uploaded before this ingest</strong>.'),
     '#default_value' => variable_get('islandora_spreadsheet_ingest_default_binary_path', ''),
     '#element_validate' => array('islandora_spreadsheet_ingest_valid_base_binaries_folder'),
   );

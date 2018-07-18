@@ -77,10 +77,8 @@ An example of a
 file that would work with the above sample template.
 
 Column headers represent variables that will be passed into the selected XSLT
-and must only contain characters valid in XSLT qualified names.
-Due to the nature of XSLT, all variables defined by the template are required
-spreadsheet column headers. The following spreadsheet column headers are
-reserved and may be required:
+and must only contain characters valid in XSLT qualified names. The following
+spreadsheet column headers are reserved and may be required:
 
 <table>
   <tr>
@@ -118,7 +116,8 @@ reserved and may be required:
   <tr>
     <td>binary_file</td>
     <td>The relative path from the Base Binaries Folder to the file
-      to use as the entry's OBJ datastream.</td>
+      to use as the entry's OBJ datastream. The file to be used <strong>must</strong> be uploaded
+      before the spreadsheet is ingested.</td>
     <td>No</td>
   </tr>
   <tr>
