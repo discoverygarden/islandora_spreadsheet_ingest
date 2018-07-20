@@ -36,8 +36,10 @@ class IslandoraSpreadsheetIngestBatch extends IslandoraBatchPreprocessor {
     // Key map will be used later to determine values for columns.
     $key_map = array_flip($header_line);
     $base_parameters = $this->getBaseParameters($key_map);
+    $row_count = 0;
 
     while ($csv_file && !feof($csv_file)) {
+      $row_count++;
       $row = fgetcsv($csv_file, 0, $this->parameters['cell_delimiter']);
       if ($row === array(NULL)) {
         // XXX: As per the documentation: "A blank line in a CSV file will be
@@ -48,8 +50,20 @@ class IslandoraSpreadsheetIngestBatch extends IslandoraBatchPreprocessor {
         continue;
       }
       // If header contains binary_file, validate file in that column.
-        // Insert code here.
-
+      if (in_array('binary_file', $header_line)) {
+        $binary_file = $row[$key_map['binary_file']];
+        if ($binary_file) {
+          // Normalize the path on the way through.
+          $path = rtrim($this->parameters['binary_path'], '/') . '/' . ltrim($binary_file, '/');
+          if (!is_readable($path)) {
+            throw new IslandoraSpreadsheetIngestBatchException(t('Failed to find or read the given binary file at @path on line @row of @csv', array(
+              '@path' => $path,
+              '@row' => $row_count,
+              '@csv' => $this->parameters['spreadsheet_file'],
+            )));
+          }
+        }
+      }
       $parameters = $base_parameters + array(
         'value_map' => $row,
         'dsid' => $this->parameters['dsid'],

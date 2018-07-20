@@ -215,7 +215,12 @@ function islandora_spreadsheet_ingest_csv_validate(array &$form_state) {
   if (!$header_line || $header_line === array(NULL)) {
     dsm('ya done goofed yer header');
   }
-
+  // Check Base Binaries Folder if binary_file header exists.
+  if (in_array('binary_file', $header_line) && !file_exists($form_state['values']['base_binary_path'])) {
+    form_set_error('base_binary_path', t('Failed to resolve base binary path at @path', array(
+      '@path' => $form_state['values']['base_binary_path'],
+    )));
+  }
   // Verify that headers contain only valid characters in XSLT qualified names.
   foreach ($header_line as $header) {
     $local_name = '';
@@ -285,7 +290,6 @@ function islandora_spreadsheet_ingest_csv_validate(array &$form_state) {
       }
     }
   }
-  file_delete($csv_file);
 }
 
 /**
