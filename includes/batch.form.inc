@@ -12,6 +12,10 @@ function islandora_spreadsheet_ingest_batch_form($form, &$form_state) {
   module_load_include('inc', 'islandora_spreadsheet_ingest', 'includes/utilities');
   module_load_include('inc', 'islandora_spreadsheet_ingest', 'includes/db');
   $dsids = isset($form_state['values']['template']) ? drupal_map_assoc(islandora_spreadsheet_ingest_get_template_dsids($form_state['values']['template'])) : array();
+  $form['#validate'] = array(
+    'islandora_spreadsheet_ingest_csv_validate',
+    'islandora_spreadsheet_ingest_batch_form_validate',
+  );
   $form['spreadsheet_parameters'] = array(
     '#type' => 'fieldset',
     '#title' => t('Spreadsheet Ingest Parameters'),
@@ -52,11 +56,7 @@ function islandora_spreadsheet_ingest_batch_form($form, &$form_state) {
   $form['spreadsheet_parameters']['base_binary_path'] = array(
     '#type' => 'textfield',
     '#title' => t('Base Binaries Folder'),
-    '#description' => t(
-      'Path to a folder on the local filesystem where binaries are being kept.' .
-      ' Files under the <strong>binary_file</strong> column will be sourced relative to this path.' .
-      ' If the CSV file being uploaded does not contain a <strong>binary_file</strong> column, this path may be left blank.' .
-      ' <strong>Files under binary_file must be uploaded before this ingest</strong>.'),
+    '#description' => t('Path to a folder on the local filesystem where binaries are being kept. Files under the <strong>binary_file</strong> column will be sourced relative to this path. If the CSV file being uploaded does not contain a <strong>binary_file</strong> column, this path may be left blank. <strong>Files under binary_file must be uploaded before this ingest</strong>.'),
     '#default_value' => variable_get('islandora_spreadsheet_ingest_default_binary_path', ''),
     '#element_validate' => array('islandora_spreadsheet_ingest_valid_base_binaries_folder'),
   );
@@ -189,18 +189,12 @@ function islandora_spreadsheet_ingest_batch_form_validate(&$form, &$form_state) 
       '@path' => $form_state['values']['base_binary_path'],
     )));
   }
-
-  islandora_spreadsheet_ingest_csv_validate($form_state);
 }
 
 /**
  * Custom validator for the .csv file.
- * @param $form_state
- *
- * @return array
- *   An array containing errors, empty if the file is valid.
  */
-function islandora_spreadsheet_ingest_csv_validate(array &$form_state) {
+function islandora_spreadsheet_ingest_csv_validate($form, &$form_state) {
   module_load_include('inc', 'islandora', 'includes/utilites');
   $fid = $form_state['values']['spreadsheet_file'];
   // Open the CSV file and start reading lines into an array.
@@ -213,7 +207,10 @@ function islandora_spreadsheet_ingest_csv_validate(array &$form_state) {
   $header_line = fgetcsv($csv_open_file, 0, $form_state['values']['cell_delimiter']);
   // Check if the .csv starts with a valid header line.
   if (!$header_line || $header_line === array(NULL)) {
-    dsm('ya done goofed yer header');
+    form_set_error('spreadsheet_file', t('Header line of @csv is either blank or malformed and needs review.', array(
+      '@csv' => $csv_file->uri,
+    )));
+    return;
   }
   // Check Base Binaries Folder if binary_file header exists.
   if (in_array('binary_file', $header_line) && !file_exists($form_state['values']['base_binary_path'])) {
@@ -225,11 +222,15 @@ function islandora_spreadsheet_ingest_csv_validate(array &$form_state) {
   foreach ($header_line as $header) {
     $local_name = '';
     // If prefixed QName.
-    if (strpos($header, ':') !== false) {
+    if (strpos($header, ':') !== FALSE) {
       // Validate prefix.
       $prefix = substr($header, 0, strpos($header, ':'));
       if (!islandora_spreadsheet_ingest_is_valid_xml_name($prefix)) {
-        dsm('give error about ' . $header . ' not having a valid prefix.');
+        form_set_error('spreadsheet_file', t('The prefix @prefix in header @header of @csv is not a valid prefix for an XSLT qualified name.', array(
+          '@prefix' => $prefix,
+          '@header' => $header,
+          '@csv' => $csv_file->uri,
+        )));
       }
 
       $local_name = substr($header, (strpos($header, ':') + 1));
@@ -240,13 +241,19 @@ function islandora_spreadsheet_ingest_csv_validate(array &$form_state) {
     }
     // Validate local name.
     if (!islandora_spreadsheet_ingest_is_valid_xml_name($local_name)) {
-      dsm('give error about ' . $header . ' not having a valid local name.');
+      form_set_error('spreadsheet_file', t('The name @local in header @header of @csv is not a valid XSLT qualified name.', array(
+        '@local' => $local_name,
+        '@header' => $header,
+        '@csv' => $csv_file->uri,
+      )));
     }
   }
 
   // Verify that required headers are in the file.
   if (!in_array('cmodel', $header_line)) {
-    dsm('give error message for no cmodel');
+    form_set_error('spreadsheet_file', t('The required header, cmodel, is missing from @csv.', array(
+      '@csv' => $csv_file->uri,
+    )));
   }
 
   // Key map will be used late to determine values for columns.
@@ -261,7 +268,11 @@ function islandora_spreadsheet_ingest_csv_validate(array &$form_state) {
     $row = fgetcsv($csv_open_file, 0, $form_state['values']['cell_delimiter']);
     if (!$row) {
       // Falsey rows are bad.
-      dsm('give error message for falsey row');
+      form_set_error('spreadsheet_file', t('Row @row in @csv is invalid', array(
+        '@row' => $row_number,
+        '@csv' => $csv_file->uri,
+      )));
+      continue;
     }
     if ($row === array(NULL)) {
       // XXX: As per the documentation: "A blank line in a CSV file will be
@@ -274,19 +285,31 @@ function islandora_spreadsheet_ingest_csv_validate(array &$form_state) {
 
     // Verify rows are all the same length.
     if (count($row) != count($header_line)) {
-      dsm('give error message for missing row elements on row ' . $row_number);
+      form_set_error('spreadsheet_file', t('Row @row in @csv is missing elements.', array(
+        '@row' => $row_number,
+        '@csv' => $csv_file->uri,
+      )));
+      // With missing elements, existing elements cannot be validated since
+      // they might not line up with the correct columns.
+      continue;
     }
 
     // Check required/reserved columns.
     // Validate cmodel.
     if (!in_array($row[$key_map['cmodel']], array_keys(islandora_get_content_models()))) {
-      dsm('give error message for invalid cmodel in row ' . $row_number . ': ' . $row[$key_map['cmodel']]);
+      form_set_error('spreadsheet_file', t('Invalid cmodel found in row @row: @cmodel.', array(
+        '@row' => $row_number,
+        '@cmodel' => $row[$key_map['cmodel']],
+      )));
     }
     // Check pid column.
     if (in_array('pid', $header_line) && !empty($row[$key_map['pid']])) {
       // Validate pids.
       if (!islandora_is_valid_pid($row[$key_map['pid']])) {
-        dsm('give error message for invalid pid in row ' . $row_number);
+        form_set_error('spreadsheet_file', t('Invalid pid found in row @row: @pid', array(
+          '@row' => $row_number,
+          '@pid' => $row[$key_map['pid']],
+        )));
       }
     }
   }
@@ -298,10 +321,10 @@ function islandora_spreadsheet_ingest_csv_validate(array &$form_state) {
 function islandora_spreadsheet_ingest_is_valid_xml_name($xml_name) {
   try {
     new DOMElement($xml_name);
-    return true;
+    return TRUE;
   }
-  catch(DOMException $e) {
-    return false;
+  catch (DOMException $e) {
+    return FALSE;
   }
 }
 
