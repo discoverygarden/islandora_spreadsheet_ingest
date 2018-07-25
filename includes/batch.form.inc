@@ -215,10 +215,8 @@ function islandora_spreadsheet_ingest_csv_validate($form, &$form_state) {
     return;
   }
   // Check Base Binaries Folder if binary_file header exists.
-  if (in_array('binary_file', $header_line) && !file_exists($form_state['values']['base_binary_path'])) {
-    form_set_error('base_binary_path', t('Failed to resolve base binary path at @path', array(
-      '@path' => $form_state['values']['base_binary_path'],
-    )));
+  if (in_array('binary_file', $header_line) && empty($form_state['values']['base_binary_path'])) {
+    form_set_error('base_binary_path', t('Base Binaries Folder must be present for CSV files that contain the binary_file header.'));
   }
   // Verify that headers contain only valid characters in XSLT qualified names.
   foreach ($header_line as $header) {
