@@ -54,7 +54,7 @@ class IslandoraSpreadsheetIngestBatch extends IslandoraBatchPreprocessor {
         $binary_file = $row[$key_map['binary_file']];
         if ($binary_file) {
           // Normalize the path on the way through.
-          $path = normalizeBinaryFilePath($this->parameters['binary_path'], $binary_file);
+          $path = $this->normalizeBinaryFilePath($this->parameters['binary_path'], $binary_file);
           if (!is_readable($path)) {
             throw new IslandoraSpreadsheetIngestBatchException(t('Failed to find or read the given binary file at @path on line @row of @csv', array(
               '@path' => $path,
@@ -111,7 +111,7 @@ class IslandoraSpreadsheetIngestBatch extends IslandoraBatchPreprocessor {
   /**
    * Helper function for normalizing the binary_file path.
    */
-  public function normalizeBinaryFilePath($folder_path, $file_path) {
+  public static function normalizeBinaryFilePath($folder_path, $file_path) {
     return rtrim($folder_path, '/') . '/' . ltrim($file_path, '/');
   }
 
@@ -379,7 +379,7 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
     $binary_file = $this->getValue('binary_file');
     if ($binary_file) {
       // Normalize the path on the way through.
-      $path = normalizeBinaryFilePath($this->parameters['binary_path'], $binary_file);
+      $path = IslandoraSpreadsheetIngestBatch::normalizeBinaryFilePath($this->parameters['binary_path'], $binary_file);
       if (!is_readable($path)) {
         throw new IslandoraSpreadsheetIngestBatchException(t('Failed to find or read the given binary file at @path', array(
           '@path' => $path,
