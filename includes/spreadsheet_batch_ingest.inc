@@ -54,7 +54,7 @@ class IslandoraSpreadsheetIngestBatch extends IslandoraBatchPreprocessor {
         $binary_file = $row[$key_map['binary_file']];
         if ($binary_file) {
           // Normalize the path on the way through.
-          $path = rtrim($this->parameters['binary_path'], '/') . '/' . ltrim($binary_file, '/');
+          $path = normalizeBinaryFilePath($this->parameters['binary_path'], $binary_file);
           if (!is_readable($path)) {
             throw new IslandoraSpreadsheetIngestBatchException(t('Failed to find or read the given binary file at @path on line @row of @csv', array(
               '@path' => $path,
@@ -106,6 +106,13 @@ class IslandoraSpreadsheetIngestBatch extends IslandoraBatchPreprocessor {
       'generate_hocr' => isset($this->parameters['paged_content_generate_hocr']) ? (bool) $this->parameters['paged_content_generate_hocr'] : FALSE,
       'aggregate_ocr' => $aggregate_ocr,
     );
+  }
+
+  /**
+   * Helper function for normalizing the binary_file path.
+   */
+  public function normalizeBinaryFilePath($folder_path, $file_path) {
+    return rtrim($folder_path, '/') . '/' . ltrim($file_path, '/');
   }
 
 }
@@ -372,7 +379,7 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
     $binary_file = $this->getValue('binary_file');
     if ($binary_file) {
       // Normalize the path on the way through.
-      $path = rtrim($this->parameters['binary_path'], '/') . '/' . ltrim($binary_file, '/');
+      $path = normalizeBinaryFilePath($this->parameters['binary_path'], $binary_file);
       if (!is_readable($path)) {
         throw new IslandoraSpreadsheetIngestBatchException(t('Failed to find or read the given binary file at @path', array(
           '@path' => $path,
