@@ -36,10 +36,12 @@ class IslandoraSpreadsheetIngestBatch extends IslandoraBatchPreprocessor {
     // Key map will be used later to determine values for columns.
     $key_map = array_flip($header_line);
     $base_parameters = $this->getBaseParameters($key_map);
+    $row_count = 0;
 
     while ($csv_file && !feof($csv_file)) {
+      $row_count++;
       $row = fgetcsv($csv_file, 0, $this->parameters['cell_delimiter']);
-      if (!$row || $row === array(NULL)) {
+      if ($row === array(NULL)) {
         // XXX: As per the documentation: "A blank line in a CSV file will be
         // returned as an array comprising a single null field, and will not be
         // treated as an error."... We want to skip it.
@@ -47,7 +49,21 @@ class IslandoraSpreadsheetIngestBatch extends IslandoraBatchPreprocessor {
         // @see http://php.net/manual/function.fgetcsv.php
         continue;
       }
-
+      // If header contains binary_file, validate file in that column.
+      if (in_array('binary_file', $header_line)) {
+        $binary_file = $row[$key_map['binary_file']];
+        if ($binary_file) {
+          // Normalize the path on the way through.
+          $path = static::normalizeBinaryFilePath($this->parameters['binary_path'], $binary_file);
+          if (!is_readable($path)) {
+            throw new IslandoraSpreadsheetIngestBatchException(t('Failed to find or read the given binary file at @path on line @row of @csv', array(
+              '@path' => $path,
+              '@row' => $row_count,
+              '@csv' => $this->parameters['spreadsheet_file'],
+            )));
+          }
+        }
+      }
       $parameters = $base_parameters + array(
         'value_map' => $row,
         'dsid' => $this->parameters['dsid'],
@@ -90,6 +106,13 @@ class IslandoraSpreadsheetIngestBatch extends IslandoraBatchPreprocessor {
       'generate_hocr' => isset($this->parameters['paged_content_generate_hocr']) ? (bool) $this->parameters['paged_content_generate_hocr'] : FALSE,
       'aggregate_ocr' => $aggregate_ocr,
     );
+  }
+
+  /**
+   * Helper function for normalizing the binary_file path.
+   */
+  public static function normalizeBinaryFilePath($folder_path, $file_path) {
+    return rtrim($folder_path, '/') . '/' . ltrim($file_path, '/');
   }
 
 }
@@ -356,7 +379,7 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
     $binary_file = $this->getValue('binary_file');
     if ($binary_file) {
       // Normalize the path on the way through.
-      $path = rtrim($this->parameters['binary_path'], '/') . '/' . ltrim($binary_file, '/');
+      $path = IslandoraSpreadsheetIngestBatch::normalizeBinaryFilePath($this->parameters['binary_path'], $binary_file);
       if (!is_readable($path)) {
         throw new IslandoraSpreadsheetIngestBatchException(t('Failed to find or read the given binary file at @path', array(
           '@path' => $path,
