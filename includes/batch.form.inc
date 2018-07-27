@@ -297,14 +297,14 @@ function islandora_spreadsheet_ingest_csv_validate($form, &$form_state) {
 
     // Check required/reserved columns.
     // Validate cmodel.
-    if (!in_array($row[$key_map['cmodel']], array_keys(islandora_get_content_models()))) {
+    if (in_array('cmodel', $header_line) && !in_array($row[$key_map['cmodel']], array_keys(islandora_get_content_models()))) {
       form_set_error('spreadsheet_file', t('Invalid cmodel found in row @row: @cmodel.', array(
         '@row' => $row_number,
         '@cmodel' => $row[$key_map['cmodel']],
       )));
     }
     // Check pid column.
-    if (in_array('pid', $header_line) && (!empty($row[$key_map['pid']]) || $row[$key_map['pid']] == "0" || $row[$key_map['pid']] == 0)) {
+    if (in_array('pid', $header_line) && (!empty($row[$key_map['pid']]) || $row[$key_map['pid']] === "0" || $row[$key_map['pid']] === 0)) {
       // Validate pids.
       if (!islandora_is_valid_pid($row[$key_map['pid']])) {
         form_set_error('spreadsheet_file', t('Invalid pid found in row @row: @pid', array(
