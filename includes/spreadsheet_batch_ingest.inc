@@ -49,21 +49,6 @@ class IslandoraSpreadsheetIngestBatch extends IslandoraBatchPreprocessor {
         // @see http://php.net/manual/function.fgetcsv.php
         continue;
       }
-      // If header contains binary_file, validate file in that column.
-      if (in_array('binary_file', $header_line)) {
-        $binary_file = $row[$key_map['binary_file']];
-        if ($binary_file) {
-          // Normalize the path on the way through.
-          $path = static::normalizeBinaryFilePath($this->parameters['base_binary_path'], $binary_file);
-          if (!is_readable($path)) {
-            throw new IslandoraSpreadsheetIngestBatchException(t('Failed to find or read the given binary file at @path on line @row of @csv', array(
-              '@path' => $path,
-              '@row' => $row_count,
-              '@csv' => $this->parameters['spreadsheet_file'],
-            )));
-          }
-        }
-      }
       $parameters = $base_parameters + array(
         'value_map' => $row,
         'dsid' => $this->parameters['dsid'],
@@ -106,13 +91,6 @@ class IslandoraSpreadsheetIngestBatch extends IslandoraBatchPreprocessor {
       'generate_hocr' => isset($this->parameters['paged_content_generate_hocr']) ? (bool) $this->parameters['paged_content_generate_hocr'] : FALSE,
       'aggregate_ocr' => $aggregate_ocr,
     );
-  }
-
-  /**
-   * Helper function for normalizing the binary_file path.
-   */
-  public static function normalizeBinaryFilePath($folder_path, $file_path) {
-    return rtrim($folder_path, '/') . '/' . ltrim($file_path, '/');
   }
 
 }
@@ -376,10 +354,11 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
    * Adds the OBJ datastream if necessary.
    */
   public function addBinary() {
+    module_load_include('inc', 'islandora_spreadsheet_ingest', 'includes/utilities');
     $binary_file = $this->getValue('binary_file');
     if ($binary_file) {
       // Normalize the path on the way through.
-      $path = IslandoraSpreadsheetIngestBatch::normalizeBinaryFilePath($this->parameters['binary_path'], $binary_file);
+      $path = islandora_spreadsheet_ingest_normalize_binary_file_path($this->parameters['binary_path'], $binary_file);
       if (!is_readable($path)) {
         throw new IslandoraSpreadsheetIngestBatchException(t('Failed to find or read the given binary file at @path', array(
           '@path' => $path,
