@@ -27,6 +27,7 @@ class IslandoraSpreadsheetIngestBatch extends IslandoraBatchPreprocessor {
    * Preprocess the batch.
    */
   public function preprocess() {
+    module_load_include('inc', 'islandora_spreadsheet_ingest', 'includes/utilities');
     // Open the CSV file and start reading lines.
     $csv_file = fopen($this->parameters['spreadsheet_file'], 'r');
     if (!$csv_file) {
@@ -48,6 +49,21 @@ class IslandoraSpreadsheetIngestBatch extends IslandoraBatchPreprocessor {
         //
         // @see http://php.net/manual/function.fgetcsv.php
         continue;
+      }
+      // If header contains binary_file, validate file in that column.
+      if (in_array('binary_file', $header_line)) {
+        $binary_file = $row[$key_map['binary_file']];
+        if ($binary_file) {
+          // Normalize the path on the way through.
+          $path = islandora_spreadsheet_ingest_normalize_binary_file_path($this->parameters['base_binary_path'], $binary_file);
+          if (!is_readable($path)) {
+            throw new IslandoraSpreadsheetIngestBatchException(t('Failed to find or read the given binary file at @path on line @row of @csv', array(
+              '@path' => $path,
+              '@row' => $row_count,
+              '@csv' => $this->parameters['spreadsheet_file'],
+            )));
+          }
+        }
       }
       $parameters = $base_parameters + array(
         'value_map' => $row,
