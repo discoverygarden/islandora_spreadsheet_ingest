@@ -67,3 +67,10 @@ function islandora_spreadsheet_ingest_get_template_dsids($id) {
   $template = islandora_spreadsheet_ingest_get_template($id);
   return $template['dsids'];
 }
+
+/**
+ * Helper function for normalizing the binary_file path.
+ */
+function islandora_spreadsheet_ingest_normalize_binary_file_path($folder_path, $file_path) {
+  return rtrim($folder_path, '/') . '/' . ltrim($file_path, '/');
+}

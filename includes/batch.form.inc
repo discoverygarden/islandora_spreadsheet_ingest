@@ -198,6 +198,7 @@ function islandora_spreadsheet_ingest_batch_form_validate(&$form, &$form_state) 
  */
 function islandora_spreadsheet_ingest_csv_validate($form, &$form_state) {
   module_load_include('inc', 'islandora', 'includes/utilites');
+  module_load_include('inc', 'islandora_spreadsheet_ingest', 'includes/utilities');
   $fid = $form_state['values']['spreadsheet_file'];
   // Open the CSV file and start reading lines into an array.
   $csv_file = file_load($fid);
@@ -311,6 +312,21 @@ function islandora_spreadsheet_ingest_csv_validate($form, &$form_state) {
           '@row' => $row_number,
           '@pid' => $row[$key_map['pid']],
         )));
+      }
+    }
+    // If header contains binary_file, validate file in that column.
+    if (in_array('binary_file', $header_line)) {
+      $binary_file = $row[$key_map['binary_file']];
+      if ($binary_file) {
+        // Normalize the path on the way through.
+        $path = islandora_spreadsheet_ingest_normalize_binary_file_path($form_state['values']['base_binary_path'], $binary_file);
+        if (!is_readable($path)) {
+          form_set_error('spreadsheet_file', t('Failed to find or read the given binary file at @path on line @row of @csv', array(
+            '@path' => $path,
+            '@row' => $row_number,
+            '@csv' => $csv_file->uri,
+          )));
+        }
       }
     }
   }
