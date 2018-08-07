@@ -19,7 +19,12 @@ function islandora_spreadsheet_ingest_admin_form(array $form, array &$form_state
       implode(', ', $template['dsids']),
     );
     if (isset($template['uri'])) {
-      $options[$template['id']][] = l(t('Download'), file_create_url($template['uri']));
+      // Kind of hacky, but the colspan needs to be 3 so this cell is the same
+      // width as the ones that have Download, Update, and Delete.
+      $options[$template['id']][] = array(
+        'data' => l(t('Download'), file_create_url($template['uri'])),
+        'colspan' => 3,
+      );
     }
     elseif (isset($template['fid'])) {
       $options[$template['id']][] = l(t('Download'), file_create_url(file_load($template['fid'])->uri));
