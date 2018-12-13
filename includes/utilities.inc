@@ -69,6 +69,17 @@ function islandora_spreadsheet_ingest_get_template_dsids($id) {
 }
 
 /**
+ * Gets the correct default self transform for a template.
+ */
+function islandora_spreadsheet_ingest_get_template_default_self_transform($id) {
+  $template = islandora_spreadsheet_ingest_get_template($id);
+  if (!isset($template['self_transform'])) {
+    return 'No Transform';
+  }
+  return $template['self_transform'];
+}
+
+/**
  * Helper function for normalizing the binary_file path.
  */
 function islandora_spreadsheet_ingest_normalize_binary_file_path($folder_path, $file_path) {
