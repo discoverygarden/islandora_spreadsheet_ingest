@@ -10,8 +10,10 @@
  *
  * @return array
  *   An associative array mapping an id to an array with the keys 'name', 'uri'
- *   and 'dsids' containing a human readable name, URI, and valid output dsids
- *   for the template.
+ *   and 'dsids' containing a human readable name, URI, valid output dsids for
+ *   the template, and an optional 'self_transform' to specify which self
+ *   transform should be applied for this template (these are populated from
+ *   hook_xml_form_builder_get_self_transforms).
  */
 function hook_islandora_spreadsheet_ingest_templates() {
   return array(
@@ -20,6 +22,7 @@ function hook_islandora_spreadsheet_ingest_templates() {
       'name' => 'my awesome template',
       'uri' => 'uri/to_my/template',
       'dsids' => array('MODS'),
+      'self_transform' => 'my_self_transform.xslt',
     ),
   );
 }

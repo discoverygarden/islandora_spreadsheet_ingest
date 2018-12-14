@@ -303,7 +303,10 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
     else {
       $ds = $this[$dsid];
     }
-    $ds->setContentFromString($this->transformWithSaxon($template_uri));
+    $dom = new DOMDocument();
+    $dom->loadXML($this->transformWithSaxon($template_uri));
+    $dom = xml_form_builder_transform_metadata_datastream($dom, $this->parameters['self_transform']);
+    $ds->setContentFromString($dom->saveXML());
     if (!$ds_exists) {
       $this->ingestDatastream($ds);
     }
