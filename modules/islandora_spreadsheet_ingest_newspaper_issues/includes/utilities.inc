@@ -17,7 +17,7 @@ function _islandora_spreadsheet_ingest_newspaper_issues_sequence(AbstractObject 
     return FALSE;
   }
 
-  $parent_pid = islandora_newspaper_get_newspaper($object)
+  $parent_pid = islandora_newspaper_get_newspaper($object);
   if (!$parent_pid) {
     throw new Exception(t('Issue (@pid) missing relationship to parent.', array(
       '@pid' => $object->id,
