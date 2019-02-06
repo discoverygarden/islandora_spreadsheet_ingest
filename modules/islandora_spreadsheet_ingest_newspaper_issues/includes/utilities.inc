@@ -37,5 +37,5 @@ function _islandora_spreadsheet_ingest_newspaper_issues_sequence(AbstractObject 
 
   $sequence_numbers = array_column($issues, 'sequence');
   $last_sequence = empty($sequence_numbers) ? 0 : max($sequence_numbers);
-  $object->relationships->add(FEDORA_RELS_EXT_URI, 'isSequenceNumber', $last_sequence + 1, TRUE);
+  $object->relationships->add(ISLANDORA_RELS_EXT_URI, 'isSequenceNumber', $last_sequence + 1, TRUE);
 }
