@@ -106,6 +106,7 @@ class IslandoraSpreadsheetIngestBatch extends IslandoraBatchPreprocessor {
       'generate_ocr' => isset($this->parameters['paged_content_generate_ocr']) ? (bool) $this->parameters['paged_content_generate_ocr'] : FALSE,
       'generate_hocr' => isset($this->parameters['paged_content_generate_hocr']) ? (bool) $this->parameters['paged_content_generate_hocr'] : FALSE,
       'aggregate_ocr' => $aggregate_ocr,
+      'self_transform' => $this->parameters['self_transform'],
     );
   }
 
@@ -149,6 +150,7 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
    *   - 'generate_ocr': Whether to generate OCR for paged content children.
    *   - 'generate_hocr': Whether to generate HOCR for paged content children.
    *   - 'aggregate_ocr': Whether to aggregate OCR from children to parents.
+   *   - 'self_transform': A self transformation to be ran or 'No Transform'.
    */
   public function __construct(IslandoraTuque $connection, array $parameters) {
     $this->connection = $connection;
@@ -177,6 +179,7 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
    *   - 'generate_ocr': Whether to generate OCR for paged content children.
    *   - 'generate_hocr': Whether to generate HOCR for paged content children.
    *   - 'aggregate_ocr': Whether to aggregate OCR from children to parents.
+   *   - 'self_transform': A self transformation to be ran or 'No Transform'.
    *
    * @return IslandoraSpreadsheetIngestPagedContentParentBatchObject|IslandoraSpreadsheetIngestPagedContentChildBatchObject|IslandoraSpreadsheetIngestBatchObject
    *   The object to be ingested.
@@ -231,6 +234,7 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
    *   - 'generate_ocr': Whether to generate OCR for paged content children.
    *   - 'generate_hocr': Whether to generate HOCR for paged content children.
    *   - 'aggregate_ocr': Whether to aggregate OCR from children to parents.
+   *   - 'self_transform': A self transformation to be ran or 'No Transform'.
    * @param string $key
    *   The key to get a value for.
    * @param string|null $default
