@@ -106,6 +106,9 @@ class IslandoraSpreadsheetIngestBatch extends IslandoraBatchPreprocessor {
       'generate_ocr' => isset($this->parameters['paged_content_generate_ocr']) ? (bool) $this->parameters['paged_content_generate_ocr'] : FALSE,
       'generate_hocr' => isset($this->parameters['paged_content_generate_hocr']) ? (bool) $this->parameters['paged_content_generate_hocr'] : FALSE,
       'aggregate_ocr' => $aggregate_ocr,
+      'self_transform' => $this->parameters['self_transform'],
+      'transform_dsid' => $this->parameters['transform'] ? $this->parameters['transform_dsid'] : FALSE,
+      'transform_template' => $this->parameters['transform'] ? $this->parameters['transform_template'] : FALSE,
     );
   }
 
@@ -149,6 +152,11 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
    *   - 'generate_ocr': Whether to generate OCR for paged content children.
    *   - 'generate_hocr': Whether to generate HOCR for paged content children.
    *   - 'aggregate_ocr': Whether to aggregate OCR from children to parents.
+   *   - 'self_transform': A self transformation to be ran or 'No Transform'.
+   *   - 'transform_dsid': The DSID to be transformed to or FALSE if one is not
+   *   occurring.
+   *   - 'transform_template': The XSL to be used for transforming or FALSE if
+   *   one is not occurring.
    */
   public function __construct(IslandoraTuque $connection, array $parameters) {
     $this->connection = $connection;
@@ -177,6 +185,11 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
    *   - 'generate_ocr': Whether to generate OCR for paged content children.
    *   - 'generate_hocr': Whether to generate HOCR for paged content children.
    *   - 'aggregate_ocr': Whether to aggregate OCR from children to parents.
+   *   - 'self_transform': A self transformation to be ran or 'No Transform'.
+   *   - 'transform_dsid': The DSID to be transformed to or FALSE if one is not
+   *   occurring.
+   *   - 'transform_template': The XSL to be used for transforming or FALSE if
+   *   one is not occurring.
    *
    * @return IslandoraSpreadsheetIngestPagedContentParentBatchObject|IslandoraSpreadsheetIngestPagedContentChildBatchObject|IslandoraSpreadsheetIngestBatchObject
    *   The object to be ingested.
@@ -231,6 +244,11 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
    *   - 'generate_ocr': Whether to generate OCR for paged content children.
    *   - 'generate_hocr': Whether to generate HOCR for paged content children.
    *   - 'aggregate_ocr': Whether to aggregate OCR from children to parents.
+   *   - 'self_transform': A self transformation to be ran or 'No Transform'.
+   *   - 'transform_dsid': The DSID to be transformed to or FALSE if one is not
+   *   occurring.
+   *   - 'transform_template': The XSL to be used for transforming or FALSE if
+   *   one is not occurring.
    * @param string $key
    *   The key to get a value for.
    * @param string|null $default
@@ -299,6 +317,7 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
     if (!$ds_exists) {
       $ds = $this->constructDatastream($dsid, 'M');
       $ds->label = t('@dsid Datastream', array('@dsid' => $dsid));
+      $ds->mimetype = 'application/xml';
     }
     else {
       $ds = $this[$dsid];
@@ -309,6 +328,26 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
     $ds->setContentFromString($dom->saveXML());
     if (!$ds_exists) {
       $this->ingestDatastream($ds);
+    }
+
+    if ($this->parameters['transform_dsid']) {
+      $transform_dsid = $this->parameters['transform_dsid'];
+      $transform_ds_exists = isset($this[$transform_dsid]);
+      if ($transform_ds_exists) {
+        $transform_ds = $this[$transform_dsid];
+      }
+      else {
+        $transform_ds = $this->constructDatastream($transform_dsid);
+        $transform_ds->label = t('@dsid Datastream', array('@dsid' => $transform_dsid));
+        $transform_ds->mimetype = 'application/xml';
+      }
+      $transform_dom = new DOMDocument();
+      $transform_dom->loadXML($this[$dsid]->content);
+      $transform_dom = xml_form_builder_transform_metadata_datastream($dom, $this->parameters['transform_template']);
+      $transform_ds->content = $transform_dom->saveXML();
+      if (!$transform_ds_exists) {
+        $this->ingestDatastream($transform_ds);
+      }
     }
   }
 

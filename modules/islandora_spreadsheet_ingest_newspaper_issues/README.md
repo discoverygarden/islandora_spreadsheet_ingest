@@ -9,8 +9,10 @@ the newspaper to which they belong.
 
 This module requires the following modules/libraries:
 
-* [Islandora Spreadsheet Ingest](https://github.com/discoverygarden/islandora_spreadsheet_ingest)
-* [Islandora Newspaper SP](https://github.com/islandora/islandora_solution_pack_newspaper)
+* [Islandora Spreadsheet
+Ingest](https://github.com/discoverygarden/islandora_spreadsheet_ingest)
+* [Islandora Newspaper
+SP](https://github.com/islandora/islandora_solution_pack_newspaper)
 
 ## Installation
 

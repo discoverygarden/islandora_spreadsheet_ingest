@@ -11,6 +11,7 @@
 function islandora_spreadsheet_ingest_batch_form($form, &$form_state) {
   module_load_include('inc', 'islandora_spreadsheet_ingest', 'includes/utilities');
   module_load_include('inc', 'islandora_spreadsheet_ingest', 'includes/db');
+  module_load_include('inc', 'xml_form_builder', 'includes/associations');
   $dsids = isset($form_state['values']['template']) ? drupal_map_assoc(islandora_spreadsheet_ingest_get_template_dsids($form_state['values']['template'])) : array();
   $form['#validate'] = array(
     'islandora_spreadsheet_ingest_csv_validate',
@@ -52,6 +53,49 @@ function islandora_spreadsheet_ingest_batch_form($form, &$form_state) {
     '#options' => $dsids,
     '#prefix' => '<div id="islandora-spreadsheet-ingest-dsids">',
     '#suffix' => '</div>',
+  );
+  $form['spreadsheet_parameters']['transform'] = array(
+    '#type' => 'checkbox',
+    '#title' => ('Transform output'),
+    '#description' => t('Transform the output datastream to another (ex: MODS to Dublin Core).'),
+  );
+  $form['spreadsheet_parameters']['transform_dsid'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Transform DSID'),
+    '#states' => array(
+      'visible' => array(
+        ':input[name="transform"]' => array(
+          'checked' => TRUE,
+        ),
+      ),
+      'required' => array(
+        ':input[name="transform"]' => array(
+          'checked' => TRUE,
+        ),
+      ),
+    ),
+  );
+
+  // Remove the 'No Transform' option as it's redundant.
+  $options = xml_form_builder_get_transforms();
+  unset($options['No Transform']);
+  $form['spreadsheet_parameters']['transform_template'] = array(
+    '#type' => 'select',
+    '#title' => t('Transform XSLT'),
+    '#options' => $options,
+    '#empty_option' => t('- Select -'),
+    '#states' => array(
+      'visible' => array(
+        ':input[name="transform"]' => array(
+          'checked' => TRUE,
+        ),
+      ),
+      'required' => array(
+        ':input[name="transform"]' => array(
+          'checked' => TRUE,
+        ),
+      ),
+    ),
   );
   $form['spreadsheet_parameters']['base_binary_path'] = array(
     '#type' => 'textfield',
@@ -190,6 +234,14 @@ function islandora_spreadsheet_ingest_batch_form_validate(&$form, &$form_state) 
     form_set_error('base_binary_path', t('Failed to resolve base binary path at @path', array(
       '@path' => $form_state['values']['base_binary_path'],
     )));
+  }
+  if ($form_state['values']['transform']) {
+    if (empty($form_state['values']['transform_dsid'])) {
+      form_error($form['spreadsheet_parameters']['transform_dsid'], t('A Transform DSID is required.'));
+    }
+    if (empty($form_state['values']['transform_template'])) {
+      form_error($form['spreadsheet_parameters']['transform_template'], t('A Transform XSLT is required.'));
+    }
   }
 }
 
