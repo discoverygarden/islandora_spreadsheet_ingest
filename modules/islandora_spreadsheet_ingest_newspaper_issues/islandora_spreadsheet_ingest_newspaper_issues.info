@@ -1,0 +1,8 @@
+name = "Islandora Spreadsheet Ingest Newspaper Issuess"
+description = "Alters ingested newspaper issues to establish order."
+package = "Islandora Tools"
+dependencies[] = islandora_spreadsheet_ingest
+dependencies[] = islandora_newspaper
+version = 7.x-dev
+core = 7.x
+php = 5.5
