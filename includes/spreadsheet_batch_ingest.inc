@@ -365,8 +365,8 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
     $pipes = array();
     $param_string = implode(' ', $this->xsltParameters);
     $command = variable_get('islandora_spreadsheet_ingest_saxon_command', '/usr/bin/saxonb-xslt');
-    $xsl_path = drupal_realpath($template_uri);
-    $process = proc_open("$command -versionmsg:off -ext:on -it:root '$xsl_path' $param_string",
+    $xsl_path = escapeshellarg(drupal_realpath($template_uri));
+    $process = proc_open("$command -versionmsg:off -ext:on -it:root $xsl_path $param_string",
       array(
         // STDIN; not used.
         0 => array(
