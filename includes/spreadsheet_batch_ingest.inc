@@ -343,7 +343,8 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
       }
       $transform_dom = new DOMDocument();
       $transform_dom->loadXML($this[$dsid]->content);
-      $transform_dom = xml_form_builder_transform_metadata_datastream($dom, $this->parameters['transform_template']);
+      $transform_file = xml_form_builder_get_transform_file($this->parameters['transform_template']);
+      $transform_dom = xml_form_builder_transform_document($transform_file, $transform_dom);
       $transform_ds->content = $transform_dom->saveXML();
       if (!$transform_ds_exists) {
         $this->ingestDatastream($transform_ds);
