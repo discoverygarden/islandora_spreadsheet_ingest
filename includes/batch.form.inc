@@ -367,9 +367,21 @@ function islandora_spreadsheet_ingest_csv_validate($form, &$form_state) {
           )));
         }
       }
-      // If header contains object_location and it is not a URL, validate file in that column.
+      // Check that object_location and binary_file headers are not both set.
+      if (in_array('object_location', $header_line) && in_array('binary_file', $header_line)) {
+        form_set_error('spreadsheet_file', t('Header cannot include both object_location and binary_file.'));
+      }
+
+      // If header contains object_location or binary_file, and it is not a URL, validate file in that column.
+      $object_header = NULL;
       if (in_array('object_location', $header_line)) {
-        $object_location = $row[$key_map['object_location']];
+        $object_header = 'object_location';
+      }
+      elseif (in_array('binary_file', $header_line)) {
+        $object_header = 'binary_file';
+      }
+      if ($object_header) {
+        $object_location = $row[$key_map[$object_header]];
         if ($object_location && !valid_url($object_location, TRUE)) {
           // Normalize the path on the way through.
           $path = islandora_spreadsheet_ingest_normalize_binary_file_path($form_state['values']['base_binary_path'], $object_location);

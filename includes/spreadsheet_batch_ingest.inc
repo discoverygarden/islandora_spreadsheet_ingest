@@ -36,6 +36,12 @@ class IslandoraSpreadsheetIngestBatch extends IslandoraBatchPreprocessor {
     $header_line = fgetcsv($csv_file, 0, $this->parameters['cell_delimiter']);
     // Key map will be used later to determine values for columns.
     $key_map = array_flip($header_line);
+
+    // For backwards compatibility, check for a binary_file column.
+    if (in_array('binary_file', $key_map) && !isset($key_map['object_location'])) {
+      $key_map['object_location'] = $key_map['binary_file'];
+    }
+
     $base_parameters = $this->getBaseParameters($key_map);
     $row_count = 0;
 

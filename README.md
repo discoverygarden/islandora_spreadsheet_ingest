@@ -123,8 +123,13 @@ spreadsheet column headers are reserved and may be required:
     <td>If ingesting binary files, the relative path from the base binaries
       to the file to use as the entry's OBJ datastream. The file to be used
       <strong>must</strong> be uploaded before the spreadsheet is ingested.
-      Alternatively, this column can contain URLs to set redirect OBJ
-      datastreams instead of binary file paths.</td>
+      Alternatively, this column can contain absolute URLs to set redirect
+      OBJ datastreams instead of binary file paths.</td>
+    <td>No</td>
+  </tr>
+  <tr>
+    <td>binary_file</td>
+    <td>Alias for object_location. For backwards compatibility.</td>
     <td>No</td>
   </tr>
   <tr>
