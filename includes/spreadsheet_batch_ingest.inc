@@ -422,26 +422,46 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
     module_load_include('inc', 'islandora_spreadsheet_ingest', 'includes/utilities');
     $object_location = $this->getValue('object_location');
     if ($object_location) {
-
-      // Normalize the path on the way through.
-      $path = islandora_spreadsheet_ingest_normalize_binary_file_path($this->parameters['binary_path'], $object_location);
-      if (!is_readable($path)) {
-        throw new IslandoraSpreadsheetIngestBatchException(t('Failed to find or read the given binary file at @path', array(
-          '@path' => $path,
-        )));
-      }
       $exists = isset($this['OBJ']);
-      if (!$exists) {
-        $obj = $this->constructDatastream('OBJ', 'M');
-        $obj->label = t('OBJ Datastream');
+
+      if (valid_url($object_location, TRUE)) {
+        if ($exists && !in_array($obj->controlGroup, array('E', 'R'))) {
+          // The controlGroup is immutable, and we have to attach a URL,
+          // so purge this OBJ so we can create a fresh one.
+          $this['OBJ']->purgeDatastrem('OBJ');
+          $exists = FALSE;
+        }
+
+        if (!$exists) {
+          $obj = $this->constructDatastream('OBJ', 'R');
+        }
+        $obj->url = $object_location;
+        $obj->label = pathinfo($object_location, PATHINFO_BASENAME);
+        $obj->mimetype = file_get_mimetype($object_location);
+        if (!$exists) {
+          $this->ingestDatastream($obj);
+        }
       }
       else {
-        $obj = $this['OBJ'];
-      }
-      $obj->setContentFromFile($path);
-      $obj->mimetype = file_get_mimetype($path);
-      if (!$exists) {
-        $this->ingestDatastream($obj);
+        // Normalize the path on the way through.
+        $path = islandora_spreadsheet_ingest_normalize_binary_file_path($this->parameters['binary_path'], $object_location);
+        if (!is_readable($path)) {
+          throw new IslandoraSpreadsheetIngestBatchException(t('Failed to find or read the given binary file at @path', array(
+            '@path' => $path,
+          )));
+        }
+        if (!$exists) {
+          $obj = $this->constructDatastream('OBJ', 'M');
+          $obj->label = t('OBJ Datastream');
+        }
+        else {
+          $obj = $this['OBJ'];
+        }
+        $obj->setContentFromFile($path);
+        $obj->mimetype = file_get_mimetype($path);
+        if (!$exists) {
+          $this->ingestDatastream($obj);
+        }
       }
     }
   }
