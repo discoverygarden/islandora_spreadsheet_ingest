@@ -100,8 +100,8 @@ function islandora_spreadsheet_ingest_batch_form($form, &$form_state) {
   $form['spreadsheet_parameters']['base_binary_path'] = array(
     '#type' => 'textfield',
     '#title' => t('Base Binaries Folder'),
-    '#description' => t('Path to a folder on the local filesystem where binaries are being kept. Files under the <strong>@binary_file</strong> column will be sourced relative to this path. If the CSV file being uploaded does not contain a <strong>@binary_file</strong> column, this path may be left blank. <strong>Files under @binary_file must be uploaded before this ingest</strong>.', array(
-      '@binary_file' => 'binary_file',
+    '#description' => t('Path to a folder on the local filesystem where binaries are being kept. Files under the <strong>@object_location</strong> (formerly <strong>binary_file</strong>) column will be sourced relative to this path. If the CSV file being uploaded does not contain an <strong>@object_location</strong> column, or the <strong>@object_location</strong> values are URLs, this path may be left blank. <strong>Files under @object_location must be uploaded before this ingest</strong>.', array(
+      '@object_location' => 'object_location',
     )),
     '#default_value' => variable_get('islandora_spreadsheet_ingest_default_binary_path', ''),
     '#element_validate' => array('islandora_spreadsheet_ingest_valid_base_binaries_folder'),
@@ -271,10 +271,7 @@ function islandora_spreadsheet_ingest_csv_validate($form, &$form_state) {
       )));
       return;
     }
-    // Check Base Binaries Folder if binary_file header exists.
-    if (in_array('binary_file', $header_line) && empty($form_state['values']['base_binary_path'])) {
-      form_set_error('base_binary_path', t('Base Binaries Folder must be present for CSV files that contain the binary_file header.'));
-    }
+
     // Verify that headers only use characters valid in XSLT qualified names.
     foreach ($header_line as $header) {
       $local_name = '';
@@ -370,12 +367,12 @@ function islandora_spreadsheet_ingest_csv_validate($form, &$form_state) {
           )));
         }
       }
-      // If header contains binary_file, validate file in that column.
-      if (in_array('binary_file', $header_line)) {
-        $binary_file = $row[$key_map['binary_file']];
-        if ($binary_file) {
+      // If header contains object_location and it is not a URL, validate file in that column.
+      if (in_array('object_location', $header_line)) {
+        $object_location = $row[$key_map['object_location']];
+        if ($object_location && !valid_url($object_location, TRUE)) {
           // Normalize the path on the way through.
-          $path = islandora_spreadsheet_ingest_normalize_binary_file_path($form_state['values']['base_binary_path'], $binary_file);
+          $path = islandora_spreadsheet_ingest_normalize_binary_file_path($form_state['values']['base_binary_path'], $object_location);
           if (!is_readable($path)) {
             form_set_error('spreadsheet_file', t('Failed to find or read the given binary file at @path on line @row of @csv', array(
               '@path' => $path,

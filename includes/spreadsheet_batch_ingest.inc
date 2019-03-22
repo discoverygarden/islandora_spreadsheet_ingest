@@ -50,12 +50,12 @@ class IslandoraSpreadsheetIngestBatch extends IslandoraBatchPreprocessor {
         // @see http://php.net/manual/function.fgetcsv.php
         continue;
       }
-      // If header contains binary_file, validate file in that column.
-      if (in_array('binary_file', $header_line)) {
-        $binary_file = $row[$key_map['binary_file']];
-        if ($binary_file) {
+      // If header contains object_location, validate file in that column.
+      if (in_array('object_location', $header_line)) {
+        $object_location = $row[$key_map['object_location']];
+        if ($object_location && !valid_url($object_location, TRUE)) {
           // Normalize the path on the way through.
-          $path = islandora_spreadsheet_ingest_normalize_binary_file_path($this->parameters['base_binary_path'], $binary_file);
+          $path = islandora_spreadsheet_ingest_normalize_binary_file_path($this->parameters['base_binary_path'], $object_location);
           if (!is_readable($path)) {
             throw new IslandoraSpreadsheetIngestBatchException(t('Failed to find or read the given binary file at @path on line @row of @csv', array(
               '@path' => $path,
@@ -278,7 +278,7 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
   public function batchProcess() {
     try {
       $this->addMetadata();
-      $this->addBinary();
+      $this->addObj();
       $this->relationships->autoCommit = FALSE;
       $this->addRelationships();
       $label = $this->getValue('label');
@@ -412,12 +412,13 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
   /**
    * Adds the OBJ datastream if necessary.
    */
-  public function addBinary() {
+  public function addObj() {
     module_load_include('inc', 'islandora_spreadsheet_ingest', 'includes/utilities');
-    $binary_file = $this->getValue('binary_file');
-    if ($binary_file) {
+    $object_location = $this->getValue('object_location');
+    if ($object_location) {
+
       // Normalize the path on the way through.
-      $path = islandora_spreadsheet_ingest_normalize_binary_file_path($this->parameters['binary_path'], $binary_file);
+      $path = islandora_spreadsheet_ingest_normalize_binary_file_path($this->parameters['binary_path'], $object_location);
       if (!is_readable($path)) {
         throw new IslandoraSpreadsheetIngestBatchException(t('Failed to find or read the given binary file at @path', array(
           '@path' => $path,

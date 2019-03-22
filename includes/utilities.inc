@@ -80,7 +80,7 @@ function islandora_spreadsheet_ingest_get_template_default_self_transform($id) {
 }
 
 /**
- * Helper function for normalizing the binary_file path.
+ * Helper function for normalizing the object_location path for binary files.
  */
 function islandora_spreadsheet_ingest_normalize_binary_file_path($folder_path, $file_path) {
   return rtrim($folder_path, '/') . '/' . ltrim($file_path, '/');
