@@ -438,7 +438,7 @@ function islandora_spreadsheet_ingest_batch_form_submit(&$form, &$form_state) {
     islandora_batch_handle_preprocessor($preprocessor);
     $set_id = $preprocessor->getSetId();
     drupal_set_message(t('Preprocessed <a href="@url">set ID @set_id</a> with @total items.', array(
-      '@url' => "admin/reports/islandora_batch_queue/$set_id",
+      '@url' => url("admin/reports/islandora_batch_queue/$set_id"),
       '@set_id' => $set_id,
       '@total' => $preprocessor->getTotal(),
     )));
