@@ -436,8 +436,10 @@ function islandora_spreadsheet_ingest_batch_form_submit(&$form, &$form_state) {
   }
   else {
     islandora_batch_handle_preprocessor($preprocessor);
-    drupal_set_message(t('Preprocessed <a href="admin/reports/islandora_batch_queue/@set_id">set ID @set_id</a> with @total items.', array(
-      '@set_id' => $preprocessor->getSetId(),
+    $set_id = $preprocessor->getSetId();
+    drupal_set_message(t('Preprocessed <a href="@url">set ID @set_id</a> with @total items.', array(
+      '@url' => url("admin/reports/islandora_batch_queue/$set_id"),
+      '@set_id' => $set_id,
       '@total' => $preprocessor->getTotal(),
     )));
   }
