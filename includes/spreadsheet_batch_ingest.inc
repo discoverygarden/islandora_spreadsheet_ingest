@@ -76,8 +76,27 @@ class IslandoraSpreadsheetIngestBatch extends IslandoraBatchPreprocessor {
         'dsid' => $this->parameters['dsid'],
       );
       $object = IslandoraSpreadsheetIngestBatchObject::create($this->connection, $parameters);
-      call_user_func_array(array($this, 'addToDatabase'), $object->getInitialDatabaseInfo($this->getSetId()));
-      $this->total++;
+      try {
+        // Only add to be ingested if it does not already exist.
+        if (!islandora_object_load($object->id)) {
+          call_user_func_array(array(
+            $this,
+            'addToDatabase',
+          ), $object->getInitialDatabaseInfo($this->getSetId()));
+          $this->total++;
+        }
+      }
+      catch (Exception $e) {
+        watchdog_exception('islandora_spreadsheet_ingest', $e);
+        if ($e instanceof PDOException) {
+          drupal_set_message(t('Items in the batch set are incomplete due to duplicate PIDs (@identifier). Please review existing sets.', array(
+            '@identifier' => $object->id,
+          )), 'error');
+        }
+        else {
+          drupal_set_message(t('An exception occurred during preprocessing, check the watchdogs for more information.'), 'error');
+        }
+      }
     }
   }
 
