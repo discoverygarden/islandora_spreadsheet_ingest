@@ -383,7 +383,7 @@ function islandora_spreadsheet_ingest_csv_validate($form, &$form_state) {
       }
       if ($object_header) {
         $object_location = $row[$key_map[$object_header]];
-        if ($object_location && valid_url($object_location, TRUE)) {
+        if ($object_location && !valid_url($object_location, TRUE)) {
           // Normalize the path on the way through.
           $path = islandora_spreadsheet_ingest_normalize_binary_file_path($form_state['values']['base_binary_path'], $object_location);
           if (!is_readable($path)) {
