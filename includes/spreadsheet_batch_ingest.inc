@@ -514,7 +514,7 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
         '@path' => $object_location,
       )));
     }
-    foreach ($this->scanDirectory($object_location) as $file) {
+    foreach (file_scan_directory(drupal_realpath($object_location), '/.*/') as $file) {
       if (!isset($this[$file->name])) {
         $ds = $this->constructDatastream($file->name, 'M');
       }
@@ -528,28 +528,6 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
         $this->ingestDatastream($ds);
       }
     }
-  }
-
-  /**
-   * Scans a directory for a list of files inside. Non-recursive.
-   *
-   * @param string $dir
-   *   The path to be scanned.
-   * @param string $pattern
-   *   The pattern of files to scan for.
-   */
-  protected function scanDirectory($dir, $pattern = '/.*/') {
-    $dir = drupal_realpath($dir);
-    $dir_length = strlen($dir) + 1;
-    $contents = file_scan_directory(
-      $dir,
-      $pattern,
-      array('recurse' => FALSE)
-    );
-    foreach ($contents as $uri => $value) {
-      $files[substr($uri, $dir_length)] = $value;
-    }
-    return $files;
   }
 
   /**
