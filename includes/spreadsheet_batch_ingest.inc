@@ -63,7 +63,7 @@ class IslandoraSpreadsheetIngestBatch extends IslandoraBatchPreprocessor {
           // Normalize the path on the way through.
           $path = islandora_spreadsheet_ingest_normalize_binary_file_path($this->parameters['base_binary_path'], $object_location);
           if (!is_readable($path)) {
-            throw new IslandoraSpreadsheetIngestBatchException(t('Failed to find or read the given binary file at @path on line @row of @csv', array(
+            throw new IslandoraSpreadsheetIngestBatchException(t('Failed to find or read the given path (@path) on line @row of @csv', array(
               '@path' => $path,
               '@row' => $row_count,
               '@csv' => $this->parameters['spreadsheet_file'],
@@ -301,9 +301,24 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
    * Processes the object.
    */
   public function batchProcess() {
+    module_load_include('inc', 'islandora_spreadsheet_ingest', 'includes/utilities');
     try {
       $this->addMetadata();
-      $this->addObj();
+      $object_location = $this->getValue('object_location');
+      if ($object_location) {
+        if (filter_var($object_location, FILTER_VALIDATE_URL)) {
+          $this->addObj($object_location);
+        }
+        else {
+          $object_location = islandora_spreadsheet_ingest_normalize_binary_file_path($this->parameters['binary_path'], $object_location);
+          if (is_file($object_location)) {
+            $this->addObj($object_location);
+          }
+          elseif (is_dir($object_location)) {
+            $this->addDatastreams($object_location);
+          }
+        }
+      }
       $this->relationships->autoCommit = FALSE;
       $this->addRelationships();
       $label = $this->getValue('label');
@@ -435,54 +450,106 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
   }
 
   /**
-   * Adds the OBJ datastream if necessary.
+   * Adds the OBJ datastream at the given location.
+   *
+   * @param string $object_location
+   *   The relative path to the file to use as the OBJ, or an absolute URL to
+   *   use as a redirect datastream OBJ.
    */
-  public function addObj() {
-    module_load_include('inc', 'islandora_spreadsheet_ingest', 'includes/utilities');
-    $object_location = $this->getValue('object_location');
-    if ($object_location) {
-      $exists = isset($this['OBJ']);
+  public function addObj($object_location) {
+    $exists = isset($this['OBJ']);
+    if ($exists) {
+      $obj = $this['OBJ'];
+    }
 
-      if (valid_url($object_location, TRUE)) {
-        if ($exists && !in_array($obj->controlGroup, array('E', 'R'))) {
-          // The controlGroup is immutable, and we have to attach a URL,
-          // so purge this OBJ so we can create a fresh one.
-          $this['OBJ']->purgeDatastrem('OBJ');
-          $exists = FALSE;
-        }
-
-        if (!$exists) {
-          $obj = $this->constructDatastream('OBJ', 'R');
-        }
-        $obj->url = $object_location;
-        $obj->label = pathinfo($object_location, PATHINFO_BASENAME);
-        $obj->mimetype = file_get_mimetype($object_location);
-        if (!$exists) {
-          $this->ingestDatastream($obj);
-        }
+    if (valid_url($object_location, TRUE)) {
+      if ($exists && !in_array($obj->controlGroup, array('E', 'R'))) {
+        // The controlGroup is immutable, and we have to attach a URL,
+        // so purge this OBJ so we can create a fresh one.
+        $this['OBJ']->purgeDatastream('OBJ');
+        $exists = FALSE;
       }
-      else {
-        // Normalize the path on the way through.
-        $path = islandora_spreadsheet_ingest_normalize_binary_file_path($this->parameters['binary_path'], $object_location);
-        if (!is_readable($path)) {
-          throw new IslandoraSpreadsheetIngestBatchException(t('Failed to find or read the given binary file at @path', array(
-            '@path' => $path,
-          )));
-        }
-        if (!$exists) {
-          $obj = $this->constructDatastream('OBJ', 'M');
-          $obj->label = t('OBJ Datastream');
-        }
-        else {
-          $obj = $this['OBJ'];
-        }
-        $obj->setContentFromFile($path);
-        $obj->mimetype = file_get_mimetype($path);
-        if (!$exists) {
-          $this->ingestDatastream($obj);
-        }
+
+      if (!$exists) {
+        $obj = $this->constructDatastream('OBJ', 'R');
+      }
+      $obj->url = $object_location;
+      $obj->label = pathinfo($object_location, PATHINFO_BASENAME);
+      $obj->mimetype = file_get_mimetype($object_location);
+      if (!$exists) {
+        $this->ingestDatastream($obj);
       }
     }
+    else {
+      if (!is_readable($object_location)) {
+        throw new IslandoraSpreadsheetIngestBatchException(t('Failed to find or read the given binary file at @path', array(
+          '@path' => $object_location,
+        )));
+      }
+      if (!$exists) {
+        $obj = $this->constructDatastream('OBJ', 'M');
+        $obj->label = t('OBJ Datastream');
+      }
+      else {
+        $obj = $this['OBJ'];
+      }
+      $obj->setContentFromFile($object_location);
+      $obj->mimetype = file_get_mimetype($object_location);
+      if (!$exists) {
+        $this->ingestDatastream($obj);
+      }
+    }
+  }
+
+  /**
+   * Adds arbitrary datastreams in the given directory.
+   *
+   * @param string $object_location
+   *   The relative path to a folder where arbitrary datastreams are being held.
+   */
+  public function addDatastreams($object_location) {
+    module_load_include('inc', 'islandora', 'includes/utilities');
+    if (!is_readable($object_location) || !is_dir($object_location)) {
+      throw new IslandoraSpreadsheetIngestBatchException(t('Failed to find or read the path to the datastreams at @path', array(
+        '@path' => $object_location,
+      )));
+    }
+    foreach ($this->scanDirectory($object_location) as $file) {
+      if (!isset($this[$file->name])) {
+        $ds = $this->constructDatastream($file->name, 'M');
+      }
+      else {
+        $ds = $this[$file->name];
+      }
+      $ds->setContentFromFile($file->uri);
+      $ds->mimetype = file_get_mimetype($file->uri);
+      $ds->label = "{$file->name} Datastream";
+      if (!isset($this[$file->name])) {
+        $this->ingestDatastream($ds);
+      }
+    }
+  }
+
+  /**
+   * Scans a directory for a list of files inside. Non-recursive.
+   *
+   * @param string $dir
+   *   The path to be scanned.
+   * @param string $pattern
+   *   The pattern of files to scan for.
+   */
+  protected function scanDirectory($dir, $pattern = '/.*/') {
+    $dir = drupal_realpath($dir);
+    $dir_length = strlen($dir) + 1;
+    $contents = file_scan_directory(
+      $dir,
+      $pattern,
+      array('recurse' => FALSE)
+    );
+    foreach ($contents as $uri => $value) {
+      $files[substr($uri, $dir_length)] = $value;
+    }
+    return $files;
   }
 
   /**
