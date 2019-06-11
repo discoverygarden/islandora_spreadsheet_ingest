@@ -306,7 +306,7 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
       $this->addMetadata();
       $object_location = $this->getValue('object_location');
       if ($object_location) {
-        if (filter_var($object_location, FILTER_VALIDATE_URL)) {
+        if (valid_url($object_location, TRUE)) {
           $this->addObj($object_location);
         }
         else {
