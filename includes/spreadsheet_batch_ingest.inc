@@ -514,7 +514,11 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
         '@path' => $object_location,
       )));
     }
-    foreach (file_scan_directory(drupal_realpath($object_location), '/.*/') as $file) {
+    $files = file_scan_directory(
+      drupal_realpath($object_location),
+      '/.*/',
+      array('recurse' => FALSE));
+    foreach ($files as $file) {
       if (!isset($this[$file->name])) {
         $ds = $this->constructDatastream($file->name, 'M');
       }
