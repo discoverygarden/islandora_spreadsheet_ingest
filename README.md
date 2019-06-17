@@ -120,11 +120,9 @@ spreadsheet column headers are reserved and may be required:
   </tr>
   <tr>
     <td>object_location</td>
-    <td>If ingesting binary files, the relative path from the base binaries
-      to the file to use as the entry's OBJ datastream. The file to be used
-      <strong>must</strong> be uploaded before the spreadsheet is ingested.
-      Alternatively, this column can contain absolute URLs to set redirect
-      OBJ datastreams instead of binary file paths.</td>
+    <td> Column used for attaching files to the resultant object; this is a
+      complex column, see the entry in the "usage" section below for
+      details.</td>
     <td>No</td>
   </tr>
   <tr>
@@ -168,6 +166,25 @@ example:
   some processes (such as Islandora IP Embargo's embargo-lifting cron job) can
   override the global batch, preventing PHP from being refreshed and exposing
   the batch process to the potential for timeouts.
+
+### The `object_location` column
+
+The `object_location` column is used to specify where the files to be attached
+to each object exist. The contents of each cell in this column can be one of
+three things (each row can pull from a different type of `object_location` if
+needs be):
+
+* The relative path (assuming the given base binaries path as the starting
+  point) to a file on the filesystem. In this case, the given file will be used
+  to create a managed OBJ datastream on the newly created object.
+* An absolute URL. In this case, the URL will be used to create a redirect OBJ
+  datastream on the newly created object.
+* The relative path (assuming the given base binaries path as the starting
+  point) to a folder on the filesystem. In this case, the given folder is
+  expected to contain one or more files to be transformed into managed
+  datastreams. The portion before the final `.` will be used as the datastream's
+  identifier, and the extension will be used to determine the datastream's
+  mimetype.
 
 ## Troubleshooting/Issues
 
