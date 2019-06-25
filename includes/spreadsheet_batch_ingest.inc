@@ -703,6 +703,7 @@ class IslandoraSpreadsheetIngestPagedContentChildBatchObject extends IslandoraSp
    * Adds relationships.
    */
   public function addRelationships() {
+    module_load_include('inc', 'islandora_paged_content', 'includes/utilities');
     // Ignore the parent relationship that adds the membership as we are doing
     // the paged things ourselves.
     $this->models = $this->getValue('cmodel');
