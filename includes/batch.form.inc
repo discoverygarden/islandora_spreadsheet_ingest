@@ -423,27 +423,34 @@ function islandora_spreadsheet_ingest_batch_form_submit(&$form, &$form_state) {
   $csv_file->status = FILE_STATUS_PERMANENT;
   file_save($csv_file);
 
-  module_load_include('inc', 'islandora_spreadsheet_ingest', 'includes/utilities');
-  $form_state['values']['self_transform'] = islandora_spreadsheet_ingest_get_template_default_self_transform($form_state['values']['template']);
+  try {
+    module_load_include('inc', 'islandora_spreadsheet_ingest', 'includes/utilities');
+    $form_state['values']['self_transform'] = islandora_spreadsheet_ingest_get_template_default_self_transform($form_state['values']['template']);
 
-  $connection = islandora_get_tuque_connection();
-  $preprocessor = new IslandoraSpreadsheetIngestBatch($connection, $form_state['values']);
-  file_usage_add($csv_file, 'islandora_batch', 'islandora_batch_set', $preprocessor->getSetId());
+    $connection = islandora_get_tuque_connection();
 
-  if ($form_state['values']['ingest_immediately']) {
-    islandora_batch_ingest(array(
-      'preprocessor' => $preprocessor,
-    ));
+    $preprocessor = new IslandoraSpreadsheetIngestBatch($connection, $form_state['values']);
+    file_usage_add($csv_file, 'islandora_batch', 'islandora_batch_set', $preprocessor->getSetId());
+
+    if ($form_state['values']['ingest_immediately']) {
+      islandora_batch_ingest(array(
+        'preprocessor' => $preprocessor,
+      ));
+    }
+    else {
+      islandora_batch_handle_preprocessor($preprocessor);
+      $set_id = $preprocessor->getSetId();
+      drupal_set_message(t('Preprocessed <a href="@url">set ID @set_id</a> with @total items.', array(
+        '@url' => url("admin/reports/islandora_batch_queue/$set_id"),
+        '@set_id' => $set_id,
+        '@total' => $preprocessor->getTotal(),
+      )));
+    }
   }
-  else {
-    islandora_batch_handle_preprocessor($preprocessor);
-    $set_id = $preprocessor->getSetId();
-    drupal_set_message(t('Preprocessed <a href="@url">set ID @set_id</a> with @total items.', array(
-      '@url' => url("admin/reports/islandora_batch_queue/$set_id"),
-      '@set_id' => $set_id,
-      '@total' => $preprocessor->getTotal(),
-    )));
+  catch (Exception $exc) {
+    drupal_set_message(t('An error occurred, please contact your system Administrator for more info.'), 'error');
   }
+
   file_usage_delete($csv_file, 'islandora_batch', 'islandora_batch_set', $preprocessor->getSetId());
   file_delete($csv_file);
 }
