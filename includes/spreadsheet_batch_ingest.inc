@@ -363,9 +363,12 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
       $ds = $this[$dsid];
     }
     $dom = new DOMDocument();
+    $old_locale = setlocale(LC_CTYPE, 0);
+    setlocale(LC_CTYPE, 'en_US.UTF-8');
     $dom->loadXML($this->transformWithSaxon($template_uri));
     $dom = xml_form_builder_transform_metadata_datastream($dom, $this->parameters['self_transform']);
     $ds->setContentFromString($dom->saveXML());
+    setlocale(LC_CTYPE, $old_locale);
     if (!$ds_exists) {
       $this->ingestDatastream($ds);
     }
@@ -425,7 +428,7 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
           'w',
         ),
       ),
-      $pipes);
+      $pipes, NULL, array('LANG' => 'en_US.UTF-8'));
     $transformed = stream_get_contents($pipes[1]);
     fclose($pipes[1]);
     // If STDERR was written to, something went wrong.
