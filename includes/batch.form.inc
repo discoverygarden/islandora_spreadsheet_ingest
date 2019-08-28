@@ -105,6 +105,7 @@ function islandora_spreadsheet_ingest_batch_form($form, &$form_state) {
     )),
     '#default_value' => variable_get('islandora_spreadsheet_ingest_default_binary_path', ''),
     '#element_validate' => array('islandora_spreadsheet_ingest_valid_base_binaries_folder'),
+    '#maxlength' => 250,
   );
   $form['spreadsheet_parameters']['delimiters'] = array(
     '#type' => 'fieldset',
