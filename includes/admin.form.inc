@@ -59,6 +59,7 @@ function islandora_spreadsheet_ingest_admin_form(array $form, array &$form_state
     '#title' => t('Default Binaries Path'),
     '#description' => t('The default path that will be referenced to find OBJ datastreams.'),
     '#default_value' => variable_get('islandora_spreadsheet_ingest_default_binary_path', ''),
+    '#maxlength' => 250,
   );
   $saxon_path = isset($form_state['values']['saxon_command']) ? $form_state['values']['saxon_command'] : variable_get('islandora_spreadsheet_ingest_saxon_command', '/usr/bin/saxonb-xslt');
   $form['saxon_command'] = array(
