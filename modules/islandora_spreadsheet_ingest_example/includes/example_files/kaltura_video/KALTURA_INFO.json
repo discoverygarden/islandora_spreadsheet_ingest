@@ -1,0 +1,9 @@
+{
+  "type": "video",
+  "info": {
+    "base_url": "http://www.kaltura.com",
+    "partner_id": "some_partner_id",
+    "entry_id": "some_entry_id",
+    "ui_conf_id": "some_conf_id"
+  }
+}
