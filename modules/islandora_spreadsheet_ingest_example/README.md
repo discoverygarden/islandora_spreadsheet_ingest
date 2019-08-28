@@ -8,7 +8,7 @@ templates and providing those templates through a hook implementation.
 
 Module contains:
 * a sample template file /includes/example_template.xslt
-* a sample dataset to be used the the template /includes/example_data.csv
+* a sample dataset to be used with the template /includes/example_data.csv
 
 ## Requirements
 
@@ -21,7 +21,14 @@ Ingest](https://github.com/discoverygarden/islandora_spreadsheet_ingest)
 
 Install as usual, see
 [this](https://drupal.org/documentation/install/modules-themes/modules-7) for
-further information.                                         
+further information.
+
+## Usage
+
+In order to facilitate the ingest of the attached files, the
+includes/example_files directory should be directly referenced as the base
+binaries folder when using the included example_data.csv. Provide the
+Spreadsheet Ingest form a full path to this example files folder on the server.
 
 ## Troubleshooting/Issues
 
