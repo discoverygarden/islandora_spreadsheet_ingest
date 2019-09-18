@@ -61,35 +61,11 @@ function islandora_spreadsheet_ingest_admin_form(array $form, array &$form_state
     '#default_value' => variable_get('islandora_spreadsheet_ingest_default_binary_path', ''),
     '#maxlength' => 250,
   );
-  $saxon_path = isset($form_state['values']['saxon_command']) ? $form_state['values']['saxon_command'] : variable_get('islandora_spreadsheet_ingest_saxon_command', '/usr/bin/saxonb-xslt');
-  $form['saxon_command'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Saxon Command'),
-    '#description' => t('The path to the Saxon XSLT processor. !available', array(
-      '!available' => islandora_executable_available_message($saxon_path),
-    )),
-    '#default_value' => $saxon_path,
-    '#prefix' => '<div id="saxon-wrapper">',
-    '#suffix' => '</div>',
-    '#ajax' => array(
-      'callback' => 'islandora_spreadsheet_ingest_admin_form_saxon_ajax_callback',
-      'wrapper' => 'saxon-wrapper',
-      'effect' => 'fade',
-      'event' => 'change',
-    ),
-  );
   $form['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Update Configuration'),
   );
   return $form;
-}
-
-/**
- * Ajax callback for the Saxon command chunk.
- */
-function islandora_spreadsheet_ingest_admin_form_saxon_ajax_callback(array $form, array $form_state) {
-  return $form['saxon_command'];
 }
 
 /**
@@ -110,7 +86,6 @@ function islandora_spreadsheet_ingest_admin_form_validate(array &$form, array &$
 function islandora_spreadsheet_ingest_admin_form_submit(array &$form, array &$form_state) {
   variable_set('islandora_spreadsheet_ingest_default_cell_delimiter', $form_state['values']['default_cell_delimiter']);
   variable_set('islandora_spreadsheet_ingest_default_binary_path', $form_state['values']['default_binary_path']);
-  variable_set('islandora_spreadsheet_ingest_saxon_command', $form_state['values']['saxon_command']);
   drupal_set_message(t('The configuration has been saved'));
 }
 

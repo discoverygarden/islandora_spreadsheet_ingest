@@ -402,40 +402,27 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
    *   Transformed XML.
    */
   protected function transformWithSaxon($template_uri) {
+    module_load_include('inc', 'dgi_saxon_helper', 'includes/utilities');
     $this->buildParameterList();
-    $pipes = array();
-    $param_string = implode(' ', $this->xsltParameters);
-    $command = variable_get('islandora_spreadsheet_ingest_saxon_command', '/usr/bin/saxonb-xslt');
-    $xsl_path = escapeshellarg(drupal_realpath($template_uri));
-    $process = proc_open("$command -versionmsg:off -ext:on -it:root $xsl_path $param_string",
-      array(
-        // STDIN; not used.
-        0 => array(
-          'pipe',
-          'r',
-        ),
-        // STDOUT; XML comes out the end here.
-        1 => array(
-          'pipe',
-          'w',
-        ),
-        // STDERR; used to determine if Saxon-B failed.
-        2 => array(
-          'pipe',
-          'w',
-        ),
-      ),
-      $pipes);
-    $transformed = stream_get_contents($pipes[1]);
-    fclose($pipes[1]);
-    // If STDERR was written to, something went wrong.
-    $stderr = stream_get_contents($pipes[2]);
-    fclose($pipes[2]);
-    proc_close($process);
-    if (!empty($stderr)) {
-      throw new IslandoraSpreadsheetIngestBatchException(filter_xss($stderr));
+
+    // Spreadsheet doesn't have an input file so open an empty one.
+    $empty_input_file_pointer = fopen('php://temp', 'rb');
+    $saxon_output_file_pointer = fopen('php://temp', 'r+b');
+    if (!$saxon_output_file_pointer) {
+      throw new IslandoraSpreadsheetIngestBatchException('Failed to open file pointer for Saxon.');
     }
-    return $transformed;
+    try {
+      dgi_saxon_helper_transform($empty_input_file_pointer, $saxon_output_file_pointer, $template_uri, $this->xsltParameters, array('it' => 'root'));
+      fseek($saxon_output_file_pointer, 0);
+      return stream_get_contents($saxon_output_file_pointer);
+    }
+    catch (DgiSaxonHelperTransformationException $e) {
+      throw new IslandoraSpreadsheetIngestBatchException($e);
+    }
+    finally {
+      fclose($empty_input_file_pointer);
+      fclose($saxon_output_file_pointer);
+    }
   }
 
   /**
@@ -444,7 +431,7 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
   protected function buildParameterList() {
     foreach ($this->parameters['key_map'] as $key => $idx) {
       if (!empty($this->parameters['value_map'][$idx])) {
-        $this->xsltParameters[] = escapeshellarg("{$key}={$this->parameters['value_map'][$idx]}");
+        $this->xsltParameters[$key] = $this->parameters['value_map'][$idx];
       }
     }
   }

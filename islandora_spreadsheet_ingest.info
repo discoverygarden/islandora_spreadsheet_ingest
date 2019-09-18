@@ -5,6 +5,7 @@ package = Islandora Tools
 dependencies[] = islandora
 dependencies[] = islandora_batch
 dependencies[] = xml_form_builder
+dependencies[] = dgi_saxon_helper
 files[] = includes/spreadsheet_batch_ingest.inc
 version = 7.x-dev
 core = 7.x
