@@ -14,6 +14,9 @@ This module requires the following modules/libraries:
 * [DGI Saxon Helper](
   https://github.com/discoverygarden/dgi_saxon_helper
   )
+* [XML Form Builder](
+  https://github.com/Islandora/islandora_xml_forms
+  )
 
 ## Installation
 
