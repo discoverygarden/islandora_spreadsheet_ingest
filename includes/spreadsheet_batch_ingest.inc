@@ -85,11 +85,14 @@ class IslandoraSpreadsheetIngestBatch extends IslandoraBatchPreprocessor {
           ), $object->getInitialDatabaseInfo($this->getSetId()));
           $this->total++;
         }
+        else {
+          throw new IslandoraSpreadsheetIngestBatchException('Object already exists in Islandora.');
+        }
       }
       catch (Exception $e) {
         watchdog_exception('islandora_spreadsheet_ingest', $e);
-        if ($e instanceof PDOException) {
-          drupal_set_message(t('Items in the batch set are incomplete due to duplicate PIDs (@identifier). Please review existing sets.', array(
+        if ($e instanceof PDOException || $e instanceof IslandoraSpreadsheetIngestBatchException) {
+          drupal_set_message(t('Items in the batch set are incomplete due to duplicate PIDs (@identifier). Please review existing sets and ingested objects.', array(
             '@identifier' => $object->id,
           )), 'error');
         }
