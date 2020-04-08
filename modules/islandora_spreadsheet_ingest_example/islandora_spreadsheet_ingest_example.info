@@ -1,5 +1,0 @@
-name = "Islandora Spreadsheet Ingest Example"
-description = "Example files and implementation for Islandora Spreadsheet Ingest module"
-package = Islandora Tools
-version = 7.x-dev
-core = 7.x
