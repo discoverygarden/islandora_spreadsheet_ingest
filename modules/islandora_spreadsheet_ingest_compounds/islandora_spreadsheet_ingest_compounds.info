@@ -1,7 +1,0 @@
-name = "Islandora Spreadsheet Ingest Compounds"
-description = "Alters ingested compound children to add sort ordering"
-package = "Islandora Tools"
-dependencies[] = islandora_spreadsheet_ingest
-dependencies[] = islandora_compound_object
-version = 7.x-dev
-core = 7.x
