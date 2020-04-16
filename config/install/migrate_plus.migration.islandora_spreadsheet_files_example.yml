@@ -1,0 +1,56 @@
+id: islandora_spreadsheet_files_example
+label: Create files from rows in the csv.
+migration_group: islandora_spreadsheet_example
+source:
+  constants:
+    DRUPAL_FILE_DIRECTORY: 'public://islandora_spreadsheet_ingest_example/'
+    SOURCE_BINARY_DIRECTORY: '/opt/www/drupal/modules/contrib/islandora_spreadsheet_ingest/fixtures/images/'
+  plugin: spreadsheet
+  # Worksheet nonsensical but required.
+  worksheet: nada
+  track_changes: true
+  file: 'modules/contrib/islandora_spreadsheet_ingest/fixtures/images.csv'
+  header_row: 1
+  columns:
+    - 'ID'
+    - 'Digital_File'
+    - 'Mime'
+  keys:
+    'ID':
+      type: integer
+process:
+  destination_filename:
+    - plugin: callback
+      callable: basename
+      source: 'Digital_File'
+  destination_full_path:
+    - plugin: concat
+      source:
+        - constants/DRUPAL_FILE_DIRECTORY
+        - '@destination_filename'
+    - plugin: urlencode
+    - plugin: dgi_migrate.process.log
+      template: 'Destination Full Path: :value'
+      level: 4
+  source_image_path:
+    - plugin: concat
+      source:
+        - constants/SOURCE_BINARY_DIRECTORY
+        - 'Digital_File'
+  uri:
+    - plugin: file_copy
+      source:
+        - '@source_image_path'
+        - '@destination_full_path'
+      file_exists: 'rename'
+      # Should probably be a move in non-examples.
+      move: FALSE
+  filemime: Mime
+  filename: '@destination_filename'
+destination:
+  plugin: 'entity:file'
+  validate: true
+dependencies:
+  enforced:
+    module:
+      - islandora_spreadsheet_ingest

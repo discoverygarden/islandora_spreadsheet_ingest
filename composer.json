@@ -1,0 +1,8 @@
+{
+    "name": "discoverygarden/islandora_spreadsheet_ingest",
+    "type": "drupal-module",
+    "license": "GPL-3.0-only",
+    "require": {
+      "discoverygarden/dgi_migrate": "^1"
+    }
+}

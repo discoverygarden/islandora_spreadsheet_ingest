@@ -1,0 +1,8 @@
+id: islandora_spreadsheet_example
+label: CSV to Islandora Repository Object nodes
+description: Mapping from CSV to I8.
+source_type: CSV
+dependencies:
+  enforced:
+    module:
+      - islandora_spreadsheet_ingest
