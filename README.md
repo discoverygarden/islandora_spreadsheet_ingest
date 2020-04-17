@@ -8,6 +8,17 @@ A module to facilitate the ingest of data using a spreadsheet.
 
 This module requires the following modules/libraries:
 
+@todo: re-visit (and in .info.yml)
+@todo: link
+* migrate
+* node
+* media
+* islandora
+* migrate_directory
+* migrate_plus
+* dgi_migrate
+* migrate_source_csv
+* migrate_source_ui
 
 ## Installation
 

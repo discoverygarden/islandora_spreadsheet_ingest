@@ -1,0 +1,13 @@
+name: 'Islandora Spreadsheet Ingest'
+description: "Support for CSV import of Islandora content."
+type: module
+package: DGI
+core: 8.x
+dependencies:
+  - migrate
+  - node
+  - media
+  - islandora
+  - migrate_plus
+  - dgi_migrate
+  - migrate_spreadsheet
