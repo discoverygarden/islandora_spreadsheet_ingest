@@ -1,0 +1,29 @@
+id: islandora_spreadsheet_media_example
+label: Create media from rows in the csv.
+migration_group: islandora_spreadsheet_example
+source:
+  columns:
+    - 'ID'
+    - 'Title'
+    - 'Digital_File'
+process:
+  field_digital_file_exists:
+    - plugin: skip_on_empty
+      method: row
+      source: 'Digital_File'
+      message: 'Field Digital_File is missing'
+  name: Title
+  #name:
+  #  - plugin: migration_lookup
+  #    migration: islandora_spreadsheet_files_example
+  #    source: ID
+destination:
+  plugin: entity:media
+  default_bundle: file
+migration_dependencies:
+  required:
+    - islandora_spreadsheet_files_example
+dependencies:
+  enforced:
+    module:
+      - islandora_spreadsheet_ingest

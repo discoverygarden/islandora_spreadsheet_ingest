@@ -1,8 +1,7 @@
 # things needing doing
 
-1. try out migrate spreadsheet req'd `sudo apt-get install php7.2-zip`
 2. update composer
-3. draft & test migration
+3. draft & test migration (dates, display hints... etc)
 4. template & queue DB
 5. build UI & reusability
 6. drush command

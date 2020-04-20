@@ -1,0 +1,66 @@
+id: islandora_spreadsheet_nodes_example
+label: Create nodes from rows in the csv.
+migration_group: islandora_spreadsheet_example
+source:
+  columns:
+    - 'ID'
+    - 'Title'
+    - 'Model'
+process:
+  field_digital_file_exists:
+    plugin: skip_on_empty
+    method: row
+    source: 'Model'
+    message: 'Field Model is missing'
+  title: Title
+  _i8_model_uri:
+    - plugin: static_map
+      source: 'Model'
+      bypass: false
+      map:
+        'Image': 'http://purl.org/coar/resource_type/c_c513'
+        'Digital Document': 'https://schema.org/DigitalDocument'
+        'Video': 'http://purl.org/coar/resource_type/c_12ce'
+        'Collection': 'http://purl.org/dc/dcmitype/Collection'
+        'Audio': 'http://purl.org/coar/resource_type/c_18cc'
+        'Binary': 'http://purl.org/coar/resource_type/c_1843'
+  field_model:
+    - plugin: entity_lookup
+      source: '@_i8_model_uri'
+      bundle_key: vid
+      bundle: islandora_models
+      value_key: field_external_uri
+      entity_type: taxonomy_term
+      # XXX: migrate_plus's case comparison makes assumptions about the entity's
+      # "main" property... we want "uri", but it assumes "value".
+      ignore_case: true
+  field_display_hints:
+    - plugin: static_map
+      source: 'Model'
+      bypass: true
+      map:
+        'Image': 'http://openseadragon.github.io'
+        'Digital Document': 'http://openseadragon.github.io'
+   # - plugin: skip_on_empty
+   #   method: process
+    - plugin: entity_lookup
+      bundle_key: vid
+      bundle: islandora_display
+      value_key: field_external_uri
+      entity_type: taxonomy_term
+      # XXX: migrate_plus's case comparison makes assumptions about the entity's
+      # "main" property... we want "uri", but it assumes "value".
+      ignore_case: true
+destination:
+  plugin: entity:node
+  default_bundle: islandora_object
+# Validation etc. will make it so nodes won't delete on rollback.
+#  translations: true
+#  validate: true
+migration_dependencies:
+  required:
+    - islandora_spreadsheet_media_example
+dependencies:
+  enforced:
+    module:
+      - islandora_spreadsheet_ingest

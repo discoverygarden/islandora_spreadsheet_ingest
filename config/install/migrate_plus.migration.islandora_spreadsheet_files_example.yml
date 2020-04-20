@@ -5,19 +5,10 @@ source:
   constants:
     DRUPAL_FILE_DIRECTORY: 'public://islandora_spreadsheet_ingest_example/'
     SOURCE_BINARY_DIRECTORY: '/opt/www/drupal/modules/contrib/islandora_spreadsheet_ingest/fixtures/'
-  plugin: spreadsheet
-  # Worksheet nonsensical but required.
-  worksheet: nada
-  track_changes: true
-  file: 'modules/contrib/islandora_spreadsheet_ingest/fixtures/migration_example.csv'
-  header_row: 1
   columns:
     - 'ID'
     - 'Digital_File'
     - 'Mime'
-  keys:
-    'ID':
-      type: integer
 process:
   field_digital_file_exists:
     plugin: skip_on_empty
@@ -52,6 +43,13 @@ process:
       move: FALSE
   filemime: Mime
   filename: '@destination_filename'
+  status:
+    - plugin: default_value
+      default_value: 1
+  filesize:
+    - plugin: callback
+      source: '@uri'
+      callable: filesize
 destination:
   plugin: 'entity:file'
   validate: true
