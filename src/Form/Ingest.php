@@ -35,19 +35,24 @@ class Ingest extends FormBase {
         ->t('CSV'),
       'template' => $this
         ->t('Template'),
+      'status' => $this
+        ->t('Status'),
     ];
     $options = [
       1 => [
         'csv' => 'HARDCODED CSV VAL',
         'template' => 'HARDCODED TEMPLATE VAL',
+        'status' => 'DONE',
       ],
       2 => [
         'csv' => 'HARDCODED CSV VAL',
         'template' => 'HARDCODED TEMPLATE VAL',
+        'status' => 'DONE',
       ],
       3 => [
         'csv' => 'HARDCODED CSV VAL',
         'template' => 'HARDCODED TEMPLATE VAL',
+        'status' => 'Queued',
       ],
     ];
     $form['ingests_fieldset']['ingests'] = [
@@ -74,7 +79,7 @@ class Ingest extends FormBase {
       '#type' => 'managed_file',
       '#title' => $this->t('Source CSV'),
       '#upload_validators' => ['file_validate_extensions' => ['csv']],
-      '#description' => $this->t('Only accpets .csv files.'),
+      '#description' => $this->t('Please provide a .csv file.'),
       '#upload_location' => 'temporoary://',
     ];
     $options = [
