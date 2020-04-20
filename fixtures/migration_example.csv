@@ -1,0 +1,9 @@
+ID,Member_of_by_ID,Member_of_by_UUID,Content_Type,Model,Digital_File,Title,Description,Mime,Date_created
+1,,UUID_PLACEHOLDER,Repository Item,Collection,,Collection 1,desc 1,,
+2,1,,Repository Item,Image,images/dg1.png,title 1,desc 1,image/png,
+3,1,,Repository Item,Image,images/dg2.png,title 2,desc 2,image/png,4/18/2008
+4,1,,Repository Item,Image,images/dg3.png,title 3,desc 3,image/png,4/18/2008
+5,1,,Repository Item,Audio,audio/tailtoddle_lo.mp3,title 1,desc 1,audio/mpeg,
+6,1,,Repository Item,Video,video/video_countdown.mp4,title 2,desc 2,video/mp4,4/18/2008
+7,1,,Repository Item,Digital Document,docs/embeded_text.pdf,title 3,desc 3,application/pdf,4/18/2008
+7,1,,Repository Item,Binary,binary/bin.bin,title 3,desc 3,application/octet-stream,4/18/2008

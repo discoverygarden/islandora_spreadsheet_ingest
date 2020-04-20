@@ -4,12 +4,12 @@ migration_group: islandora_spreadsheet_example
 source:
   constants:
     DRUPAL_FILE_DIRECTORY: 'public://islandora_spreadsheet_ingest_example/'
-    SOURCE_BINARY_DIRECTORY: '/opt/www/drupal/modules/contrib/islandora_spreadsheet_ingest/fixtures/images/'
+    SOURCE_BINARY_DIRECTORY: '/opt/www/drupal/modules/contrib/islandora_spreadsheet_ingest/fixtures/'
   plugin: spreadsheet
   # Worksheet nonsensical but required.
   worksheet: nada
   track_changes: true
-  file: 'modules/contrib/islandora_spreadsheet_ingest/fixtures/images.csv'
+  file: 'modules/contrib/islandora_spreadsheet_ingest/fixtures/migration_example.csv'
   header_row: 1
   columns:
     - 'ID'
@@ -19,6 +19,11 @@ source:
     'ID':
       type: integer
 process:
+  field_digital_file_exists:
+    plugin: skip_on_empty
+    method: row
+    source: 'Digital_File'
+    message: 'Field Digital_File is missing'
   destination_filename:
     - plugin: callback
       callable: basename
