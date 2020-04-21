@@ -8,17 +8,14 @@ A module to facilitate the ingest of data using a spreadsheet.
 
 This module requires the following modules/libraries:
 
-@todo: re-visit (and in .info.yml)
-@todo: link
-* migrate
-* node
-* media
-* islandora
-* migrate_directory
-* migrate_plus
-* dgi_migrate
-* migrate_source_csv
-* migrate_source_ui
+* [migrate_plus](https://www.drupal.org/project/migrate_plus)
+* [dgi_migrate](https://github.com/discoverygarden/dgi_migrate)
+* [migrate_spreadsheet](https://www.drupal.org/project/migrate_spreadsheet)
+* [islandora](https://github.com/Islandora/islandora/tree/8.x-1.x)
+
+## Usage
+
+An example migration that can be used as a starting point is provided.
 
 ## Installation
 
@@ -39,6 +36,7 @@ Current maintainers:
 
 ## Development
 
+An example migration and cmd that can help with development is provided.
 If you would like to contribute to this module create an issue, pull request
 and or contact
 [discoverygarden](http://support.discoverygarden.ca).

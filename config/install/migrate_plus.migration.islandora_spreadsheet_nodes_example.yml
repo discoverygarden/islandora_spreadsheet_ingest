@@ -41,8 +41,8 @@ process:
       map:
         'Image': 'http://openseadragon.github.io'
         'Digital Document': 'http://openseadragon.github.io'
-   # - plugin: skip_on_empty
-   #   method: process
+    - plugin: skip_on_empty
+      method: process
     - plugin: entity_lookup
       bundle_key: vid
       bundle: islandora_display
@@ -54,12 +54,9 @@ process:
 destination:
   plugin: entity:node
   default_bundle: islandora_object
-# Validation etc. will make it so nodes won't delete on rollback.
+# Translation will make it so nodes won't delete on rollback.
 #  translations: true
-#  validate: true
-migration_dependencies:
-  required:
-    - islandora_spreadsheet_media_example
+  validate: true
 dependencies:
   enforced:
     module:
