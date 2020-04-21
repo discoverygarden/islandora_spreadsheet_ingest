@@ -1,4 +1,4 @@
-ID,Member_of_by_ID,Model,Digital_File,Title,Description,Mime,Date_created
+ID,Member_of,Model,Digital_File,Title,Description,Mime,Date_created
 1,,Collection,,Collection 1,desc 1,,
 2,1,Image,images/dg1.png,title 1,desc 1,image/png,
 3,1,Image,images/dg2.png,title 2,desc 2,image/png,4/18/2008

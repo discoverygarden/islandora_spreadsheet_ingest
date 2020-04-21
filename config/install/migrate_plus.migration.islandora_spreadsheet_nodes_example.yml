@@ -6,13 +6,16 @@ source:
     - 'ID'
     - 'Title'
     - 'Model'
+    - 'Member_of'
 process:
   field_digital_file_exists:
     plugin: skip_on_empty
     method: row
     source: 'Model'
     message: 'Field Model is missing'
+
   title: Title
+
   _i8_model_uri:
     - plugin: static_map
       source: 'Model'
@@ -34,6 +37,7 @@ process:
       # XXX: migrate_plus's case comparison makes assumptions about the entity's
       # "main" property... we want "uri", but it assumes "value".
       ignore_case: true
+
   field_display_hints:
     - plugin: static_map
       source: 'Model'
@@ -51,6 +55,14 @@ process:
       # XXX: migrate_plus's case comparison makes assumptions about the entity's
       # "main" property... we want "uri", but it assumes "value".
       ignore_case: true
+
+  field_member_of:
+    - plugin: skip_on_empty
+      method: process
+      source: 'Member_of'
+    - plugin: migration_lookup
+      migration: islandora_spreadsheet_nodes_example
+
 destination:
   plugin: entity:node
   default_bundle: islandora_object
