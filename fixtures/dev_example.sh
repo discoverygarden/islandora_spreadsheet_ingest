@@ -11,7 +11,8 @@ drush-test-no-empty islandora_spreadsheet_ingest &&\
 drush migrate-reset-status islandora_spreadsheet_nodes_example &&\
 drush migrate-reset-status islandora_spreadsheet_files_example &&\
 drush migrate-reset-status islandora_spreadsheet_media_example &&\
-drush migrate:batch-import -v --execute-dependencies --group=islandora_spreadsheet_example ;\
+# Update user as needed.
+sudo -u www-data drush migrate:batch-import -u 1 -v --uri=http://localhost --execute-dependencies --group=islandora_spreadsheet_example ;\
 echo Files &&\
 drush migrate-messages islandora_spreadsheet_files_example &&\
 echo Nodes &&\
