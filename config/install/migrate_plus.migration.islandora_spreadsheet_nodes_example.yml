@@ -7,6 +7,8 @@ source:
     - 'Title'
     - 'Model'
     - 'Member_of'
+    - 'Date_created'
+    - 'Description'
 process:
   field_digital_file_exists:
     plugin: skip_on_empty
@@ -14,8 +16,18 @@ process:
     source: 'Model'
     message: 'Field Model is missing'
 
+  # Metadata.
   title: Title
+  field_description: Description
+  field_edtf_date_created:
+    - plugin: callback
+      callable: strtotime
+      source: 'Date_created'
+    - plugin: format_date
+      from_format: 'U'
+      to_format: 'c'
 
+  # Technical model.
   _i8_model_uri:
     - plugin: static_map
       source: 'Model'
@@ -37,7 +49,6 @@ process:
       # XXX: migrate_plus's case comparison makes assumptions about the entity's
       # "main" property... we want "uri", but it assumes "value".
       ignore_case: true
-
   field_display_hints:
     - plugin: static_map
       source: 'Model'
@@ -55,7 +66,6 @@ process:
       # XXX: migrate_plus's case comparison makes assumptions about the entity's
       # "main" property... we want "uri", but it assumes "value".
       ignore_case: true
-
   field_member_of:
     - plugin: skip_on_empty
       method: process
@@ -65,6 +75,7 @@ process:
 
 destination:
   plugin: entity:node
+# Update bundle when necessary.
   default_bundle: islandora_object
 # Translation will make it so nodes won't delete on rollback.
 #  translations: true
