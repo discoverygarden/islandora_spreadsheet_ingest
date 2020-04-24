@@ -90,7 +90,7 @@ class Templates extends FormBase {
       '#title' => $this->t('Template'),
       '#upload_validators' => ['file_validate_extensions' => ['zip']],
       '#description' => $this->t('Only accpets .zip files.'),
-      '#upload_location' => 'temporary://',
+      '#upload_location' => 'private://',
     ];
     $form['new_template_fieldset']['add'] = [
       '#type' => 'submit',

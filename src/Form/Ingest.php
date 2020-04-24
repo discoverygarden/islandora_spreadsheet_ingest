@@ -96,7 +96,7 @@ class Ingest extends FormBase {
       '#title' => $this->t('Source CSV'),
       '#upload_validators' => ['file_validate_extensions' => ['csv']],
       '#description' => $this->t('Please provide a .csv file.'),
-      '#upload_location' => 'temporary://',
+      '#upload_location' => 'private://',
     ];
     $template_options = [];
     foreach ($templates as $template) {

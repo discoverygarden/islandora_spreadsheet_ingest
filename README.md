@@ -16,6 +16,9 @@ This module requires the following modules/libraries:
 ## Usage
 
 An example migration that can be used as a starting point is provided.
+Currently a cache clear is necessary to register new migrations.
+Keep your migration names short.
+Generated names over 63 characters will be truncated.
 
 ## Installation
 
