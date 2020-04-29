@@ -19,6 +19,8 @@ An example migration that can be used as a starting point is provided.
 Use short migraiton names as generated names over 63 bytes will be truncated.
 A tag `isimd` is added to all derived migrations so they can be operated on
 with a single command.
+Automatic scheduling of ingests is recommended:
+`sudo -u www-data drush migrate:batch-import -u 1 -v --uri=http://localhost --execute-dependencies --tag=isimd`
 
 ## Installation
 
