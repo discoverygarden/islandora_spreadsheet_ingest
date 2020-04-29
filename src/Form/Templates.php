@@ -133,6 +133,7 @@ class Templates extends FormBase {
       if (!empty($form_state->getValue(['new_template_fieldset', 'new_template']))) {
         $file = $this->fileEntityStorage->load(reset($form_state->getValue(['new_template_fieldset', 'new_template'])));
         $file->setPermanent();
+        $file->save();
         islandora_spreadsheet_ingest_add_template($file->id());
       }
     }

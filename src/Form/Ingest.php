@@ -151,6 +151,7 @@ class Ingest extends FormBase {
         $template = $form_state->getValue(['new_ingest_fieldset', 'template']);
         $file = $this->fileEntityStorage->load(reset($form_state->getValue(['new_ingest_fieldset', 'new_ingest'])));
         $file->setPermanent();
+        $file->save();
         islandora_spreadsheet_ingest_add_ingest($file->id(), $template);
       }
     }

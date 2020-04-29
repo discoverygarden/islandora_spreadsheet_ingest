@@ -110,6 +110,10 @@ class SpreadsheetDeriver extends DeriverBase implements ContainerDeriverInterfac
             }
           }
         }
+        // Add our tag for easy migrations.
+        if (!isset($yaml['migration_tags']) || !in_array('isimd', $yaml['migration_tags'])) {
+          $yaml['migration_tags'][] = 'isimd';
+        }
         $this->derivatives[$yaml['id']] = $yaml;
       }
     }
