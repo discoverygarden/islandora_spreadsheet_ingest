@@ -5,6 +5,7 @@ namespace Drupal\islandora_spreadsheet_ingest\Form;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Entity\EntityStorageInterface;
+use Drupal\Core\Cache\CacheTagsInvalidatorInterface;
 
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -18,8 +19,9 @@ class Ingest extends FormBase {
   /**
    * Constructor.
    */
-  public function __construct(MigrationPluginManager $migrationPluginManager, EntityStorageInterface $file_entity_storage) {
-    $this->migrationPluginManager = $migrationPluginManager;
+  public function __construct(CacheTagsInvalidatorInterface $cache_invalidator, MigrationPluginManager $migration_plugin_manager, EntityStorageInterface $file_entity_storage) {
+    $this->cacheInvalidator = $cache_invalidator;
+    $this->migrationPluginManager = $migration_plugin_manager;
     $this->fileEntityStorage = $file_entity_storage;
   }
 
@@ -28,6 +30,7 @@ class Ingest extends FormBase {
    */
   public static function create(ContainerInterface $container) {
     return new static(
+      $container->get('cache_tags.invalidator'),
       $container->get('plugin.manager.migration'),
       $container->get('entity_type.manager')->getStorage('file')
     );
@@ -194,6 +197,8 @@ class Ingest extends FormBase {
         islandora_spreadsheet_ingest_delete_ingests($delete_ingests);
       }
     }
+    // @see: https://www.drupal.org/project/drupal/issues/3001284
+    $this->cacheInvalidator->invalidateTags(['migration_plugins']);
   }
 
 }
