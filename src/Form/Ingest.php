@@ -8,6 +8,8 @@ use Drupal\Core\Entity\EntityStorageInterface;
 
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
+use Drupal\migrate\Plugin\MigrationPluginManager;
+
 /**
  * Form for setting up ingests.
  */
@@ -16,7 +18,8 @@ class Ingest extends FormBase {
   /**
    * Constructor.
    */
-  public function __construct(EntityStorageInterface $file_entity_storage) {
+  public function __construct(MigrationPluginManager $migrationPluginManager, EntityStorageInterface $file_entity_storage) {
+    $this->migrationPluginManager = $migrationPluginManager;
     $this->fileEntityStorage = $file_entity_storage;
   }
 
@@ -25,6 +28,7 @@ class Ingest extends FormBase {
    */
   public static function create(ContainerInterface $container) {
     return new static(
+      $container->get('plugin.manager.migration'),
       $container->get('entity_type.manager')->getStorage('file')
     );
   }
@@ -60,6 +64,26 @@ class Ingest extends FormBase {
       'status' => $this
         ->t('Status'),
     ];
+    // Get statuses.
+    $migrations = $this->migrationPluginManager->createInstances([]);
+    $migration_statuses = [];
+    foreach ($migrations as $migration_id => $migration) {
+      if (strpos($migration_id, 'isimd:') !== 0) {
+        continue;
+      }
+      $id_parts = explode('_', $migration_id);
+      $migration_id = array_pop($id_parts);
+      $migration_status = $migration->allRowsProcessed();
+      if (!$migration_status ||
+        (isset($migration_statuses[$migration_id]) && !$migration_statuses[$migration_id])
+        ) {
+        $migration_statuses[$migration_id] = FALSE;
+      }
+      else {
+        $migration_statuses[$migration_id] = TRUE;
+      }
+    }
+    // Populate table.
     $options = [];
     foreach ($ingests as $ingest) {
       $ingest_file = $this->fileEntityStorage->load($ingest['fid']);
@@ -67,7 +91,7 @@ class Ingest extends FormBase {
       $options[$ingest['id']] = [
         'csv' => $ingest_file->getFilename(),
         'template' => $template_file->getFilename(),
-        'status' => '@todo: implement',
+        'status' => $migration_statuses[$ingest['id']] ? $this->t('Complete') : $this->t('Incomplete'),
       ];
     }
     $form['ingests_fieldset']['ingests'] = [
