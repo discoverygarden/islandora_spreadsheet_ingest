@@ -453,6 +453,8 @@ function islandora_spreadsheet_ingest_batch_form_submit(&$form, &$form_state) {
     drupal_set_message(t('An error occurred, please contact your system Administrator for more info.'), 'error');
   }
 
-  file_usage_delete($csv_file, 'islandora_batch', 'islandora_batch_set', $preprocessor->getSetId());
+  if (isset($preprocessor)) {
+    file_usage_delete($csv_file, 'islandora_batch', 'islandora_batch_set', $preprocessor->getSetId());
+  }
   file_delete($csv_file);
 }
