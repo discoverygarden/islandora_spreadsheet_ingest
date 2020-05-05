@@ -55,7 +55,7 @@ process:
       bypass: true
       map:
         'Image': 'http://openseadragon.github.io'
-        'Digital Document': 'http://openseadragon.github.io'
+        'Digital Document': 'http://mozilla.github.io/pdf.js'
     - plugin: skip_on_empty
       method: process
     - plugin: entity_lookup
