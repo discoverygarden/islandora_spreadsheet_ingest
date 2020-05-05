@@ -85,6 +85,7 @@ class Templates extends FormBase {
       '#name' => 'delete_template',
       '#value' => $this->t('Delete'),
       '#submit' => [[$this, 'delete']],
+      '#validate' => [[$this, 'validateDelete']],
     ];
 
     // Add.
@@ -105,30 +106,32 @@ class Templates extends FormBase {
       '#name' => 'add_template',
       '#value' => $this->t('Add Template'),
       '#submit' => [[$this, 'add']],
+      '#validate' => [[$this, 'validateAdd']],
     ];
     return $form;
   }
 
   /**
-   * {@inheritdoc}
+   * Validate adding a template.
    */
-  public function validateForm(array &$form, FormStateInterface $form_state) {
-    $triggering_element = $form_state->getTriggeringElement();
-    if ($triggering_element['#name'] == 'add_template') {
-      if (empty($form_state->getValue(['new_template_fieldset', 'new_template']))) {
-        $form_state->setError(
-          $form['new_template_fieldset']['new_template'],
-          $this->t('Please provide a template.')
-        );
-      }
+  public function validateAdd(array &$form, FormStateInterface $form_state) {
+    if (empty($form_state->getValue(['new_template_fieldset', 'new_template']))) {
+      $form_state->setError(
+        $form['new_template_fieldset']['new_template'],
+        $this->t('Please provide a template.')
+      );
     }
-    else {
-      if (!array_filter($form_state->getValue(['templates_fieldset', 'templates']))) {
-        $form_state->setError(
-          $form['templates_fieldset']['templates'],
-          $this->t('Please indicate one or more templates.')
-        );
-      }
+  }
+
+  /**
+   * Validate deleting templates.
+   */
+  public function validateDelete(array &$form, FormStateInterface $form_state) {
+    if (!array_filter($form_state->getValue(['templates_fieldset', 'templates']))) {
+      $form_state->setError(
+        $form['templates_fieldset']['templates'],
+        $this->t('Please indicate one or more templates.')
+      );
     }
   }
 

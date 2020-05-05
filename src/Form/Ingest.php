@@ -132,6 +132,7 @@ class Ingest extends FormBase {
       '#name' => 'delete_ingest',
       '#value' => $this->t('Delete'),
       '#submit' => [[$this, 'delete']],
+      '#validate' => [[$this, 'validateDelete']],
     ];
 
     // Add.
@@ -162,30 +163,32 @@ class Ingest extends FormBase {
       '#name' => 'add_ingest',
       '#value' => $this->t('Queue Ingest'),
       '#submit' => [[$this, 'add']],
+      '#validate' => [[$this, 'validateAdd']],
     ];
     return $form;
   }
 
   /**
-   * {@inheritdoc}
+   * Validating deleting templates.
    */
-  public function validateForm(array &$form, FormStateInterface $form_state) {
-    $triggering_element = $form_state->getTriggeringElement();
-    if ($triggering_element['#name'] == 'add_ingest') {
-      if (empty($form_state->getValue(['new_ingest_fieldset', 'new_ingest']))) {
-        $form_state->setError(
-          $form['new_ingest_fieldset']['new_ingest'],
-          $this->t('Please provide a source CSV.')
-        );
-      }
+  public function validateDelete(array &$form, FormStateInterface $form_state) {
+    if (!array_filter($form_state->getValue(['ingests_fieldset', 'ingests']))) {
+      $form_state->setError(
+        $form['ingests_fieldset']['ingests'],
+        $this->t('Please indicate one or more ingests.')
+      );
     }
-    else {
-      if (!array_filter($form_state->getValue(['ingests_fieldset', 'ingests']))) {
-        $form_state->setError(
-          $form['ingests_fieldset']['ingests'],
-          $this->t('Please indicate one or more ingests.')
-        );
-      }
+  }
+
+  /**
+   * Validate adding a template.
+   */
+  public function validateAdd(array &$form, FormStateInterface $form_state) {
+    if (empty($form_state->getValue(['new_ingest_fieldset', 'new_ingest']))) {
+      $form_state->setError(
+        $form['new_ingest_fieldset']['new_ingest'],
+        $this->t('Please provide a source CSV.')
+      );
     }
   }
 
