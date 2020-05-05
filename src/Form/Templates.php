@@ -18,19 +18,19 @@ class Templates extends FormBase {
    *
    * @var Drupal\Core\Entity\EntityStorageInterface
    */
-  private $fileEntityStorage;
+  protected $fileEntityStorage;
 
   /**
    * Constructor.
    */
-  public function __construct(EntityStorageInterface $file_entity_storage) {
+  protected function __construct(EntityStorageInterface $file_entity_storage) {
     $this->fileEntityStorage = $file_entity_storage;
   }
 
   /**
    * {@inheritdoc}
    */
-  public static function create(ContainerInterface $container) {
+  protected static function create(ContainerInterface $container) {
     return new static(
       $container->get('entity_type.manager')->getStorage('file')
     );

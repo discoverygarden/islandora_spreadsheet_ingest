@@ -24,28 +24,28 @@ class SpreadsheetDeriver extends DeriverBase implements ContainerDeriverInterfac
    *
    * @var Drupal\Core\Entity\EntityStorageInterface
    */
-  private $fileEntityStorage;
+  protected $fileEntityStorage;
 
   /**
    * Used to include files.
    *
    * @var Drupal\Core\Extension\ModuleHandlerInterface
    */
-  private $moduleHandler;
+  protected $moduleHandler;
 
   /**
    * Used to inspect zips.
    *
    * @var Drupal\Core\Archiver\ArchiverManager
    */
-  private $archiverManager;
+  protected $archiverManager;
 
   /**
    * Used for URI handling.
    *
    * @var Drupal\Core\File\FileSystem
    */
-  private $fileSystem;
+  protected $fileSystem;
 
   /**
    * Constructor.

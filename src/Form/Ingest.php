@@ -21,21 +21,21 @@ class Ingest extends FormBase {
    *
    * @var Drupal\Core\Cache\CacheTagsInvalidatorInterface
    */
-  private $cacheInvalidator;
+  protected $cacheInvalidator;
 
   /**
    * Used to get migration information.
    *
    * @var Drupal\migrate\Plugin\MigrationPluginManager
    */
-  private $migrationPluginManager;
+  protected $migrationPluginManager;
 
   /**
    * Is entity_type.manager service for `file`.
    *
    * @var Drupal\Core\Entity\EntityStorageInterface
    */
-  private $fileEntityStorage;
+  protected $fileEntityStorage;
 
   /**
    * Constructor.
