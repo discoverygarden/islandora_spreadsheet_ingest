@@ -79,6 +79,7 @@ class SpreadsheetDeriver extends DeriverBase implements ContainerDeriverInterfac
     $templates = islandora_spreadsheet_ingest_get_templates();
     $ingests = islandora_spreadsheet_ingest_get_ingests();
 
+    $group_map = [];
     foreach ($ingests as $ingest) {
       $ingest_file = $this->fileEntityStorage->load($ingest['fid']);
       $template_zip_file = $this->fileEntityStorage->load($templates[$ingest['template']]['fid']);
@@ -99,9 +100,12 @@ class SpreadsheetDeriver extends DeriverBase implements ContainerDeriverInterfac
         // @XXX: Yaml::parseFile didn't like my URI.
         $yaml = Yaml::parse(file_get_contents($content_uri));
 
-        // Setup new group, merge in group info.
-        if (isset($yaml['migration_group'])) {
-          $yaml['migration_group'] = "{$yaml['migration_group']}_{$ingest['id']}";
+        // Get group info.
+        $yaml['migration_group'] = "{$yaml['migration_group']}_{$ingest['id']}";
+        if (isset($group_map[$yaml['migration_group']])) {
+          $group_yaml = $group_map[$yaml['migration_group']];
+        }
+        else {
           foreach ($contents as $group_candidate_name) {
             if (strpos($group_candidate_name, '.migration_group.')) {
               $raw_group_name = $group_candidate_name;
@@ -111,10 +115,30 @@ class SpreadsheetDeriver extends DeriverBase implements ContainerDeriverInterfac
           $group_uri = "zip://$zip_path#$raw_group_name";
           // @XXX: Yaml::parseFile didn't like my URI.
           $group_yaml = Yaml::parse(file_get_contents($group_uri));
-          $yaml = array_merge_recursive($group_yaml['shared_configuration'], $yaml);
+          $group_map[$yaml['migration_group']] = $group_yaml;
         }
+
+        // Merge in group info.
+        // @see: migrate_plus_migration_plugins_alter.
+        foreach ($group_yaml['shared_configuration'] as $key => $group_value) {
+          $migration_value = $yaml[$key];
+          // Where both the migration and the group provide arrays, replace
+          // recursively (so each key collision is resolved in favor of the
+          // migration).
+          if (is_array($migration_value) && is_array($group_value)) {
+            $merged_values = array_replace_recursive($group_value, $migration_value);
+            $yaml[$key] = $merged_values;
+          }
+          // Where the group provides a value the migration doesn't, use the
+          // group value.
+          elseif (is_null($migration_value)) {
+            $yaml[$key] = $group_value;
+          }
+          // Otherwise, the existing migration value overrides the group value.
+        }
+
         // Make them their own migrations!
-        $yaml['source']['file'] = $this->fileSystem->realpath($ingest_file->getFileUri());;
+        $yaml['source']['file'] = $this->fileSystem->realpath($ingest_file->getFileUri());
         $yaml['id'] = "{$yaml['id']}_{$ingest['id']}";
         if (isset($yaml['migration_dependencies']['required'])) {
           foreach ($yaml['migration_dependencies']['required'] as &$required_dependency) {
