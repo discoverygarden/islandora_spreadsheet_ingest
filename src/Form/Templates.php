@@ -14,6 +14,13 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class Templates extends FormBase {
 
   /**
+   * Is entity_type.manager service for `file`.
+   *
+   * @var Drupal\Core\Entity\EntityStorageInterface
+   */
+  private $fileEntityStorage;
+
+  /**
    * Constructor.
    */
   public function __construct(EntityStorageInterface $file_entity_storage) {

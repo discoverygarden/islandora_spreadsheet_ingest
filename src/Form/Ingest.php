@@ -17,6 +17,27 @@ use Drupal\migrate\Plugin\MigrationPluginManager;
 class Ingest extends FormBase {
 
   /**
+   * Used to make sure new migrations are registered.
+   *
+   * @var Drupal\Core\Cache\CacheTagsInvalidatorInterface
+   */
+  private $cacheInvalidator;
+
+  /**
+   * Used to get migration information.
+   *
+   * @var Drupal\migrate\Plugin\MigrationPluginManager
+   */
+  private $migrationPluginManager;
+
+  /**
+   * Is entity_type.manager service for `file`.
+   *
+   * @var Drupal\Core\Entity\EntityStorageInterface
+   */
+  private $fileEntityStorage;
+
+  /**
    * Constructor.
    */
   public function __construct(CacheTagsInvalidatorInterface $cache_invalidator, MigrationPluginManager $migration_plugin_manager, EntityStorageInterface $file_entity_storage) {

@@ -20,6 +20,34 @@ use Symfony\Component\Yaml\Yaml;
 class SpreadsheetDeriver extends DeriverBase implements ContainerDeriverInterface {
 
   /**
+   * Is entity_type.manager service for `file`.
+   *
+   * @var Drupal\Core\Entity\EntityStorageInterface
+   */
+  private $fileEntityStorage;
+
+  /**
+   * Used to include files.
+   *
+   * @var Drupal\Core\Extension\ModuleHandlerInterface
+   */
+  private $moduleHandler;
+
+  /**
+   * Used to inspect zips.
+   *
+   * @var Drupal\Core\Archiver\ArchiverManager
+   */
+  private $archiverManager;
+
+  /**
+   * Used for URI handling.
+   *
+   * @var Drupal\Core\File\FileSystem
+   */
+  private $fileSystem;
+
+  /**
    * Constructor.
    */
   public function __construct($base_plugin_id, EntityStorageInterface $file_entity_storage, ModuleHandlerInterface $module_handler, ArchiverManager $archiver_manager, FileSystem $fileSystem) {
