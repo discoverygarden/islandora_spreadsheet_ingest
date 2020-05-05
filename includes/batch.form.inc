@@ -432,25 +432,31 @@ function islandora_spreadsheet_ingest_batch_form_submit(&$form, &$form_state) {
     $connection = islandora_get_tuque_connection();
 
     $preprocessor = new IslandoraSpreadsheetIngestBatch($connection, $form_state['values']);
-    file_usage_add($csv_file, 'islandora_batch', 'islandora_batch_set', $preprocessor->getSetId());
 
-    if ($form_state['values']['ingest_immediately']) {
-      islandora_batch_ingest(array(
-        'preprocessor' => $preprocessor,
-      ));
-    }
-    else {
-      islandora_batch_handle_preprocessor($preprocessor);
-      $set_id = $preprocessor->getSetId();
-      drupal_set_message(t('Preprocessed <a href="@url">set ID @set_id</a> with @total items.', array(
-        '@url' => url("admin/reports/islandora_batch_queue/$set_id"),
-        '@set_id' => $set_id,
-        '@total' => $preprocessor->getTotal(),
-      )));
+    if (isset($preprocessor)) {
+      file_usage_add($csv_file, 'islandora_batch', 'islandora_batch_set', $preprocessor->getSetId());
+
+      if ($form_state['values']['ingest_immediately']) {
+        islandora_batch_ingest(array(
+          'preprocessor' => $preprocessor,
+        ));
+      }
+      else {
+        islandora_batch_handle_preprocessor($preprocessor);
+        $set_id = $preprocessor->getSetId();
+        drupal_set_message(t('Preprocessed <a href="@url">set ID @set_id</a> with @total items.', array(
+          '@url' => url("admin/reports/islandora_batch_queue/$set_id"),
+          '@set_id' => $set_id,
+          '@total' => $preprocessor->getTotal(),
+        )));
+      }
     }
   }
   catch (Exception $exc) {
     drupal_set_message(t('An error occurred, please contact your system Administrator for more info.'), 'error');
+    watchdog('islandora_spreadsheet_ingest', 'Failed to execute submit due to an exception. Exception message: @message', array(
+      '@message' => $exc->getMessage(),
+    ), WATCHDOG_WARNING);
   }
 
   if (isset($preprocessor)) {
