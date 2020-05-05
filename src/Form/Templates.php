@@ -23,14 +23,14 @@ class Templates extends FormBase {
   /**
    * Constructor.
    */
-  protected function __construct(EntityStorageInterface $file_entity_storage) {
+  public function __construct(EntityStorageInterface $file_entity_storage) {
     $this->fileEntityStorage = $file_entity_storage;
   }
 
   /**
    * {@inheritdoc}
    */
-  protected static function create(ContainerInterface $container) {
+  public static function create(ContainerInterface $container) {
     return new static(
       $container->get('entity_type.manager')->getStorage('file')
     );
