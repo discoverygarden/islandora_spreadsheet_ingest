@@ -70,6 +70,7 @@ class SpreadsheetDeriver extends DeriverBase implements ContainerDeriverInterfac
           continue;
         }
         $content_uri = "zip://$zip_path#$raw_name";
+        // @XXX: Yaml::parseFile didn't like my URI.
         $yaml = Yaml::parse(file_get_contents($content_uri));
 
         // Setup new group, merge in group info.
@@ -82,6 +83,7 @@ class SpreadsheetDeriver extends DeriverBase implements ContainerDeriverInterfac
             }
           }
           $group_uri = "zip://$zip_path#$raw_group_name";
+          // @XXX: Yaml::parseFile didn't like my URI.
           $group_yaml = Yaml::parse(file_get_contents($group_uri));
           $yaml = array_merge_recursive($group_yaml['shared_configuration'], $yaml);
         }
