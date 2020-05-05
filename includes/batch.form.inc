@@ -430,34 +430,22 @@ function islandora_spreadsheet_ingest_batch_form_submit(&$form, &$form_state) {
     $form_state['values']['self_transform'] = islandora_spreadsheet_ingest_get_template_default_self_transform($form_state['values']['template']);
 
     $connection = islandora_get_tuque_connection();
+    $preprocessor = new IslandoraSpreadsheetIngestBatch($connection, $form_state['values']);
+    file_usage_add($csv_file, 'islandora_batch', 'islandora_batch_set', $preprocessor->getSetId());
 
-    if (isset($form_state['values']['self_transform']) && isset($connection)) {
-      $preprocessor = new IslandoraSpreadsheetIngestBatch($connection, $form_state['values']);
+    if ($form_state['values']['ingest_immediately']) {
+      islandora_batch_ingest(array(
+        'preprocessor' => $preprocessor,
+      ));
     }
     else {
-      watchdog('islandora_spreadsheet_ingest', 'Preprocessor object could not be created as self_transform or tuque connection were not valid: @self_transform, @connection', array(
-        '@self_transform' => $form_state['values']['self_transform'],
-        '@connection' => $connection,
-      ), WATCHDOG_WARNING);
-    }
-
-    if (isset($preprocessor)) {
-      file_usage_add($csv_file, 'islandora_batch', 'islandora_batch_set', $preprocessor->getSetId());
-
-      if ($form_state['values']['ingest_immediately']) {
-        islandora_batch_ingest(array(
-          'preprocessor' => $preprocessor,
-        ));
-      }
-      else {
-        islandora_batch_handle_preprocessor($preprocessor);
-        $set_id = $preprocessor->getSetId();
-        drupal_set_message(t('Preprocessed <a href="@url">set ID @set_id</a> with @total items.', array(
-          '@url' => url("admin/reports/islandora_batch_queue/$set_id"),
-          '@set_id' => $set_id,
-          '@total' => $preprocessor->getTotal(),
-        )));
-      }
+      islandora_batch_handle_preprocessor($preprocessor);
+      $set_id = $preprocessor->getSetId();
+      drupal_set_message(t('Preprocessed <a href="@url">set ID @set_id</a> with @total items.', array(
+        '@url' => url("admin/reports/islandora_batch_queue/$set_id"),
+        '@set_id' => $set_id,
+        '@total' => $preprocessor->getTotal(),
+      )));
     }
   }
   catch (Exception $exc) {
@@ -467,7 +455,7 @@ function islandora_spreadsheet_ingest_batch_form_submit(&$form, &$form_state) {
     ), WATCHDOG_WARNING);
   }
 
-  if (isset($preprocessor)) {
+  if (file_usage_list($csv_file)) {
     file_usage_delete($csv_file, 'islandora_batch', 'islandora_batch_set', $preprocessor->getSetId());
   }
   file_delete($csv_file);
