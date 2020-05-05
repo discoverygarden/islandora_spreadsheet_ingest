@@ -51,8 +51,6 @@ class SpreadsheetDeriver extends DeriverBase implements ContainerDeriverInterfac
     $templates = islandora_spreadsheet_ingest_get_templates();
     $ingests = islandora_spreadsheet_ingest_get_ingests();
 
-    $this->derivatives = [];
-
     foreach ($ingests as $ingest) {
       $ingest_file = $this->fileEntityStorage->load($ingest['fid']);
       $template_zip_file = $this->fileEntityStorage->load($templates[$ingest['template']]['fid']);
