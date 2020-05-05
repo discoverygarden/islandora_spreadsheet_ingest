@@ -131,6 +131,7 @@ class Ingest extends FormBase {
       '#type' => 'submit',
       '#name' => 'delete_ingest',
       '#value' => $this->t('Delete'),
+      '#submit' => [[$this, 'delete']],
     ];
 
     // Add.
@@ -160,6 +161,7 @@ class Ingest extends FormBase {
       '#type' => 'submit',
       '#name' => 'add_ingest',
       '#value' => $this->t('Queue Ingest'),
+      '#submit' => [[$this, 'add']],
     ];
     return $form;
   }
@@ -188,38 +190,49 @@ class Ingest extends FormBase {
   }
 
   /**
-   * {@inheritdoc}
+   * Delete ingests.
    */
-  public function submitForm(array &$form, FormStateInterface $form_state) {
+  public function delete(array &$form, FormStateInterface $form_state) {
     $form_state->loadInclude('islandora_spreadsheet_ingest', 'inc', 'includes/db');
 
-    $triggering_element = $form_state->getTriggeringElement();
-    if ($triggering_element['#name'] == 'add_ingest') {
-      if (!empty($form_state->getValue(['new_ingest_fieldset', 'new_ingest']))) {
-        $template = $form_state->getValue(['new_ingest_fieldset', 'template']);
-        $file = $this->fileEntityStorage->load(reset($form_state->getValue(['new_ingest_fieldset', 'new_ingest'])));
-        $file->setPermanent();
-        $file->save();
-        islandora_spreadsheet_ingest_add_ingest($file->id(), $template);
+    $ingests = islandora_spreadsheet_ingest_get_ingests();
+    $delete_ingests = array_filter($form_state->getValue(['ingests_fieldset', 'ingests']));
+    if ($delete_ingests) {
+      foreach ($delete_ingests as $ingest) {
+        $file = $this->fileEntityStorage->load($ingests[$ingest]['fid']);
+        $file_name = $file->getFilename();
+        $file->delete();
+        drupal_set_message($this->t('The ingest @filename has been deleted.', [
+          '@filename' => $file_name,
+        ]));
       }
-    }
-    else {
-      $ingests = islandora_spreadsheet_ingest_get_ingests();
-      $delete_ingests = array_filter($form_state->getValue(['ingests_fieldset', 'ingests']));
-      if ($delete_ingests) {
-        foreach ($delete_ingests as $ingest) {
-          $file = $this->fileEntityStorage->load($ingests[$ingest]['fid']);
-          $file_name = $file->getFilename();
-          $file->delete();
-          drupal_set_message($this->t('The ingest @filename has been deleted.', [
-            '@filename' => $file_name,
-          ]));
-        }
-        islandora_spreadsheet_ingest_delete_ingests($delete_ingests);
-      }
+      islandora_spreadsheet_ingest_delete_ingests($delete_ingests);
     }
     // @see: https://www.drupal.org/project/drupal/issues/3001284
     $this->cacheInvalidator->invalidateTags(['migration_plugins']);
+  }
+
+  /**
+   * Add an ingest.
+   */
+  public function add(array &$form, FormStateInterface $form_state) {
+    $form_state->loadInclude('islandora_spreadsheet_ingest', 'inc', 'includes/db');
+
+    if (!empty($form_state->getValue(['new_ingest_fieldset', 'new_ingest']))) {
+      $template = $form_state->getValue(['new_ingest_fieldset', 'template']);
+      $file = $this->fileEntityStorage->load(reset($form_state->getValue(['new_ingest_fieldset', 'new_ingest'])));
+      $file->setPermanent();
+      $file->save();
+      islandora_spreadsheet_ingest_add_ingest($file->id(), $template);
+    }
+    // @see: https://www.drupal.org/project/drupal/issues/3001284
+    $this->cacheInvalidator->invalidateTags(['migration_plugins']);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function submitForm(array &$form, FormStateInterface $form_state) {
   }
 
 }

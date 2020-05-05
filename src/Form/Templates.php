@@ -84,6 +84,7 @@ class Templates extends FormBase {
       '#type' => 'submit',
       '#name' => 'delete_template',
       '#value' => $this->t('Delete'),
+      '#submit' => [[$this, 'delete']],
     ];
 
     // Add.
@@ -103,6 +104,7 @@ class Templates extends FormBase {
       '#type' => 'submit',
       '#name' => 'add_template',
       '#value' => $this->t('Add Template'),
+      '#submit' => [[$this, 'add']],
     ];
     return $form;
   }
@@ -134,30 +136,38 @@ class Templates extends FormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
+  }
+
+  /**
+   * Remove templates.
+   */
+  public function delete(array &$form, FormStateInterface $form_state) {
     $form_state->loadInclude('islandora_spreadsheet_ingest', 'inc', 'includes/db');
-    $triggering_element = $form_state->getTriggeringElement();
-    if ($triggering_element['#name'] == 'add_template') {
-      if (!empty($form_state->getValue(['new_template_fieldset', 'new_template']))) {
-        $file = $this->fileEntityStorage->load(reset($form_state->getValue(['new_template_fieldset', 'new_template'])));
-        $file->setPermanent();
-        $file->save();
-        islandora_spreadsheet_ingest_add_template($file->id());
+    $templates = islandora_spreadsheet_ingest_get_templates();
+    $delete_templates = array_filter($form_state->getValue(['templates_fieldset', 'templates']));
+    if ($delete_templates) {
+      foreach ($delete_templates as $template) {
+        $file = $this->fileEntityStorage->load($templates[$template]['fid']);
+        $file_name = $file->getFilename();
+        $file->delete();
+        drupal_set_message($this->t('The template @filename has been deleted.', [
+          '@filename' => $file_name,
+        ]));
       }
+      islandora_spreadsheet_ingest_delete_templates($delete_templates);
     }
-    else {
-      $templates = islandora_spreadsheet_ingest_get_templates();
-      $delete_templates = array_filter($form_state->getValue(['templates_fieldset', 'templates']));
-      if ($delete_templates) {
-        foreach ($delete_templates as $template) {
-          $file = $this->fileEntityStorage->load($templates[$template]['fid']);
-          $file_name = $file->getFilename();
-          $file->delete();
-          drupal_set_message($this->t('The template @filename has been deleted.', [
-            '@filename' => $file_name,
-          ]));
-        }
-        islandora_spreadsheet_ingest_delete_templates($delete_templates);
-      }
+  }
+
+  /**
+   * Add a template.
+   */
+  public function add(array &$form, FormStateInterface $form_state) {
+    $form_state->loadInclude('islandora_spreadsheet_ingest', 'inc', 'includes/db');
+    if (!empty($form_state->getValue(['new_template_fieldset', 'new_template']))) {
+      $file = $this->fileEntityStorage->load(reset($form_state->getValue(['new_template_fieldset', 'new_template'])));
+      $file->setPermanent();
+      $file->save();
+      islandora_spreadsheet_ingest_add_template($file->id());
     }
   }
 
