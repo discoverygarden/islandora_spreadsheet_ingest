@@ -431,7 +431,15 @@ function islandora_spreadsheet_ingest_batch_form_submit(&$form, &$form_state) {
 
     $connection = islandora_get_tuque_connection();
 
-    $preprocessor = new IslandoraSpreadsheetIngestBatch($connection, $form_state['values']);
+    if (isset($form_state['values']['self_transform']) && isset($connection)) {
+      $preprocessor = new IslandoraSpreadsheetIngestBatch($connection, $form_state['values']);
+    }
+    else {
+      watchdog('islandora_spreadsheet_ingest', 'Preprocessor object could not be created as self_transform or tuque connection were not valid: @self_transform, @connection', array(
+        '@self_transform' => $form_state['values']['self_transform'],
+        '@connection' => $connection,
+      ), WATCHDOG_WARNING);
+    }
 
     if (isset($preprocessor)) {
       file_usage_add($csv_file, 'islandora_batch', 'islandora_batch_set', $preprocessor->getSetId());
