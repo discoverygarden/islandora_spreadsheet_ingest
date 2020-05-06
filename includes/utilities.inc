@@ -85,3 +85,42 @@ function islandora_spreadsheet_ingest_get_template_default_self_transform($id) {
 function islandora_spreadsheet_ingest_normalize_binary_file_path($folder_path, $file_path) {
   return rtrim($folder_path, '/') . '/' . ltrim($file_path, '/');
 }
+
+/**
+ * Validats whether the MODS namespace declarations begin with xmlns.
+ *
+ * It does this by using the simplexmlelement and verifying that the first
+ * key in the document's namespace is empty.
+ *
+ * @param string $mods_xml
+ *   The MODS content as a string.
+ *
+ * @return bool
+ *   True if the first is empty, and false if it is populated.
+ */
+function islandora_spreadsheet_ingest_validate_namespaces($mods_xml) {
+  $simple_xml = simplexml_load_string($mods_xml);
+  $doc_namespaces = $simple_xml->getDocNamespaces();
+  return array_keys($doc_namespaces)[0] == '';
+}
+
+/**
+ * Ensures the the xmlns is listed first in the declarations.
+ *
+ * @param string $mods_xml
+ *   The MODS XML string.
+ *
+ * @return string
+ *   The updated string.
+ */
+function islandora_spreadsheet_ingest_update_namespaces($mods_xml) {
+  $matches = array();
+  $mods_opening = '<mods';
+  $regex = '/xmlns\=.*http.*mods\/v3"/';
+  $opening_position = strpos($mods_xml, $mods_opening) + 5;
+
+  preg_match($regex, $mods_xml, $matches);
+  $mods_xml = preg_replace($regex, '', $mods_xml);
+  $mods_xml = substr_replace($mods_xml, " {$matches[0]}", $opening_position, 0);
+  return $mods_xml;
+}
