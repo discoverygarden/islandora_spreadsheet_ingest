@@ -108,7 +108,7 @@ function islandora_spreadsheet_ingest_validate_namespaces($mods_xml) {
  * Ensures the the xmlns is listed first in the declarations.
  *
  * @param string $mods_xml
- *   The MODS XML string.
+ *   The MODS content as a string.
  *
  * @return string
  *   The updated string.

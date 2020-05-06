@@ -373,8 +373,8 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
     if ($dsid == 'MODS' && !islandora_spreadsheet_ingest_validate_namespaces($xml_string)) {
       $xml_string = islandora_spreadsheet_ingest_update_namespaces($xml_string);
     }
-    $dom->loadXML($xml_string);
 
+    $dom->loadXML($xml_string);
     $dom = xml_form_builder_transform_metadata_datastream($dom, $this->parameters['self_transform']);
     $ds->setContentFromString($dom->saveXML());
     if (!$ds_exists) {
