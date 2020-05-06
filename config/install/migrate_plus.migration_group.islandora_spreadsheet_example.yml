@@ -2,6 +2,17 @@ id: islandora_spreadsheet_example
 label: CSV to Islandora Repository Object nodes
 description: Mapping from CSV to I8.
 source_type: CSV
+shared_configuration:
+  source:
+    plugin: spreadsheet
+    # Worksheet nonsensical but required.
+    worksheet: nada
+    track_changes: true
+    file: 'modules/contrib/islandora_spreadsheet_ingest/fixtures/migration_example.csv'
+    header_row: 1
+    keys:
+      'ID':
+        type: integer
 dependencies:
   enforced:
     module:

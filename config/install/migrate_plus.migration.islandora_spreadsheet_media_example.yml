@@ -1,0 +1,77 @@
+id: islandora_spreadsheet_media_example
+label: Create media from rows in the csv.
+migration_group: islandora_spreadsheet_example
+source:
+  columns:
+    - 'ID'
+    - 'Title'
+    - 'Model'
+    - 'Digital_File'
+process:
+  field_digital_file_exists:
+    - plugin: skip_on_empty
+      method: row
+      source: 'Digital_File'
+      message: 'Field Digital_File is missing'
+
+  name: Title
+
+  _file_id:
+    - plugin: migration_lookup
+      migration: islandora_spreadsheet_files_example
+      source: ID
+      no_stub: true
+  _file:
+    plugin: dgi_migrate.load_entity
+    source: '@_file_id'
+    entity_type: entity:file
+  # XXX: Somewhat counter-intuitive, but it will just ignore those file field
+  # entries with which the target bundle does not deal.
+  field_media_audio_file: '@_file'
+  field_media_file: '@_file'
+  field_media_image/target_id: '@_file_id'
+  field_media_image/alt: '@name'
+  field_media_video_file: '@_file'
+
+  field_media_use:
+    - plugin: default_value
+      # XXX: Not a perfect match, but seems to be closest, without rolling our
+      # own.
+      default_value: http://pcdm.org/use#OriginalFile
+    - plugin: entity_lookup
+      bundle_key: vid
+      bundle: islandora_media_use
+      value_key: field_external_uri
+      entity_type: taxonomy_term
+      # XXX: migrate_plus's case comparison makes assumptions about the entity's
+      # "main" property... we want "uri", but it assumes "value".
+      ignore_case: true
+
+  bundle:
+    - plugin: static_map
+      source: 'Model'
+      bypass: false
+      map:
+        'Image': 'image'
+        'Digital Document': 'file'
+        'Video': 'video'
+        'Audio': 'audio'
+        'Binary': 'video'
+
+  field_media_of/target_id:
+    - plugin: migration_lookup
+      migration: islandora_spreadsheet_nodes_example
+      source: 'ID'
+      no_stub: true
+
+destination:
+  plugin: entity:media
+  default_bundle: file
+migration_dependencies:
+  required:
+    - islandora_spreadsheet_files_example
+    - islandora_spreadsheet_nodes_example
+dependencies:
+  enforced:
+    module:
+      - islandora_spreadsheet_ingest

@@ -1,0 +1,5 @@
+# Shortened islandora_spreadsheet_ingest_migration_deriver.
+id: isimd
+deriver: Drupal\islandora_spreadsheet_ingest\Plugin\Derivative\SpreadsheetDeriver
+source:
+  plugin: embedded_data
