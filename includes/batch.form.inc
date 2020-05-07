@@ -430,7 +430,6 @@ function islandora_spreadsheet_ingest_batch_form_submit(&$form, &$form_state) {
     $form_state['values']['self_transform'] = islandora_spreadsheet_ingest_get_template_default_self_transform($form_state['values']['template']);
 
     $connection = islandora_get_tuque_connection();
-
     $preprocessor = new IslandoraSpreadsheetIngestBatch($connection, $form_state['values']);
     file_usage_add($csv_file, 'islandora_batch', 'islandora_batch_set', $preprocessor->getSetId());
 
@@ -451,8 +450,13 @@ function islandora_spreadsheet_ingest_batch_form_submit(&$form, &$form_state) {
   }
   catch (Exception $exc) {
     drupal_set_message(t('An error occurred, please contact your system Administrator for more info.'), 'error');
+    watchdog('islandora_spreadsheet_ingest', 'Failed to execute submit due to an exception. Exception message: @message', array(
+      '@message' => $exc->getMessage(),
+    ), WATCHDOG_WARNING);
   }
 
-  file_usage_delete($csv_file, 'islandora_batch', 'islandora_batch_set', $preprocessor->getSetId());
+  if (file_usage_list($csv_file)) {
+    file_usage_delete($csv_file, 'islandora_batch', 'islandora_batch_set', $preprocessor->getSetId());
+  }
   file_delete($csv_file);
 }
