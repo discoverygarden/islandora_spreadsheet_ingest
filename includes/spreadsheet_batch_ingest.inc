@@ -366,7 +366,15 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
       $ds = $this[$dsid];
     }
     $dom = new DOMDocument();
-    $dom->loadXML($this->transformWithSaxon($template_uri));
+    $xml_string = $this->transformWithSaxon($template_uri);
+
+    // XXX. The saxon processor sorts the namespace declarations in
+    // similar fashion to how PHP's sort function does.
+    if ($dsid == 'MODS' && !islandora_spreadsheet_ingest_validate_namespaces($xml_string)) {
+      $xml_string = islandora_spreadsheet_ingest_update_namespaces($xml_string);
+    }
+
+    $dom->loadXML($xml_string);
     $dom = xml_form_builder_transform_metadata_datastream($dom, $this->parameters['self_transform']);
     $ds->setContentFromString($dom->saveXML());
     if (!$ds_exists) {
