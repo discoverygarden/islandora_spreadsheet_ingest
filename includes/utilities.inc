@@ -114,13 +114,16 @@ function islandora_spreadsheet_ingest_validate_namespaces($mods_xml) {
  *   The updated string.
  */
 function islandora_spreadsheet_ingest_update_namespaces($mods_xml) {
-  $matches = array();
-  $mods_opening = '<mods';
-  $regex = '/xmlns\=.*http.*mods\/v3"/';
-  $opening_position = strpos($mods_xml, $mods_opening) + 5;
+  $transform_path = drupal_get_path('module', 'islandora_spreadsheet_ingest') . "/transforms/correct_mods_declaration.xslt";
+  $mods = new DOMDocument();
+  $mods->loadXML($mods_xml);
+  $xslt = new XSLTProcessor();
 
-  preg_match($regex, $mods_xml, $matches);
-  $mods_xml = preg_replace($regex, '', $mods_xml);
-  $mods_xml = substr_replace($mods_xml, " {$matches[0]}", $opening_position, 0);
-  return $mods_xml;
+  $xsl_transform = new DOMDocument();
+  $xsl_transform->load($transform_path);
+  $xslt->importStylesheet($xsl_transform);
+
+  $updated_mods = $xslt->transformToDoc($mods);
+  $updated_mods_xml = $updated_mods->saveXML();
+  return $updated_mods_xml;
 }
