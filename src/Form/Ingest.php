@@ -112,10 +112,19 @@ class Ingest extends FormBase {
     foreach ($ingests as $ingest) {
       $ingest_file = $this->fileEntityStorage->load($ingest['fid']);
       $template_file = $this->fileEntityStorage->load($templates[$ingest['template']]['fid']);
+      if (!isset($migration_statuses[$ingest['id']])) {
+        $status = $this->t('Not ready, check logs');
+      }
+      elseif ($migration_statuses[$ingest['id']]) {
+        $status = $this->t('Complete');
+      }
+      else {
+        $status = $this->t('Incomplete');
+      }
       $options[$ingest['id']] = [
         'csv' => $ingest_file->getFilename(),
         'template' => $template_file->getFilename(),
-        'status' => $migration_statuses[$ingest['id']] ? $this->t('Complete') : $this->t('Incomplete'),
+        'status' => $status,
       ];
     }
     $form['ingests_fieldset']['ingests'] = [

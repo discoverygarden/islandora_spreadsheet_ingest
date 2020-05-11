@@ -7,6 +7,7 @@ use Drupal\Core\Archiver\ArchiverManager;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Plugin\Discovery\ContainerDeriverInterface;
 use Drupal\Core\File\FileSystem;
+use Drupal\Core\Logger\LoggerChannelFactoryInterface;
 use Drupal\Component\Plugin\Derivative\DeriverBase;
 
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -48,13 +49,21 @@ class SpreadsheetDeriver extends DeriverBase implements ContainerDeriverInterfac
   protected $fileSystem;
 
   /**
+   * Logger with channel 'islandora_spreadsheet_ingest'.
+   *
+   * @var Drupal\Core\Logger\LoggerChannelInterface
+   */
+  protected $logger;
+
+  /**
    * Constructor.
    */
-  public function __construct($base_plugin_id, EntityStorageInterface $file_entity_storage, ModuleHandlerInterface $module_handler, ArchiverManager $archiver_manager, FileSystem $fileSystem) {
+  public function __construct($base_plugin_id, EntityStorageInterface $file_entity_storage, ModuleHandlerInterface $module_handler, ArchiverManager $archiver_manager, FileSystem $file_system, LoggerChannelFactoryInterface $logger_factory) {
     $this->fileEntityStorage = $file_entity_storage;
     $this->moduleHandler = $module_handler;
     $this->archiverManager = $archiver_manager;
-    $this->fileSystem = $fileSystem;
+    $this->fileSystem = $file_system;
+    $this->logger = $logger_factory->get('islandora_spreadsheet_ingest');
   }
 
   /**
@@ -66,8 +75,27 @@ class SpreadsheetDeriver extends DeriverBase implements ContainerDeriverInterfac
       $container->get('entity_type.manager')->getStorage('file'),
       $container->get('module_handler'),
       $container->get('plugin.manager.archiver'),
-      $container->get('file_system')
+      $container->get('file_system'),
+      $container->get('logger.factory')
     );
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getYaml($content_uri) {
+    // @XXX: Yaml::parseFile didn't like my URI.
+    try {
+      $yaml = Yaml::parse(file_get_contents($content_uri));
+    }
+    catch (\Exception $e) {
+      $yaml = FALSE;
+      $this->logger->warning(
+        'Issue reading "@uri" with message: @msg',
+        ['@uri' => $content_uri, '@msg' => $e->getMessage()]
+      );
+    }
+    return $yaml;
   }
 
   /**
@@ -97,8 +125,10 @@ class SpreadsheetDeriver extends DeriverBase implements ContainerDeriverInterfac
           continue;
         }
         $content_uri = "zip://$zip_path#$raw_name";
-        // @XXX: Yaml::parseFile didn't like my URI.
-        $yaml = Yaml::parse(file_get_contents($content_uri));
+        $yaml = $this->getYaml($content_uri);
+        if (!$yaml) {
+          continue;
+        }
 
         // Get group info.
         $yaml['migration_group'] = "{$yaml['migration_group']}_{$ingest['id']}";
@@ -113,8 +143,10 @@ class SpreadsheetDeriver extends DeriverBase implements ContainerDeriverInterfac
             }
           }
           $group_uri = "zip://$zip_path#$raw_group_name";
-          // @XXX: Yaml::parseFile didn't like my URI.
-          $group_yaml = Yaml::parse(file_get_contents($group_uri));
+          $group_yaml = $this->getYaml($group_uri);
+          if (!$group_yaml) {
+            continue;
+          }
           $group_map[$yaml['migration_group']] = $group_yaml;
         }
 
