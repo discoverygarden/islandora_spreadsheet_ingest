@@ -117,7 +117,7 @@ class SpreadsheetDeriver extends DeriverBase implements ContainerDeriverInterfac
       $zip_path = $this->fileSystem->realpath($template_zip_file->getFileUri());
       foreach ($contents as $raw_name) {
         // Ignore macosx files.
-        if (substr($raw_name, 0, 8) == '__MACOSX') {
+        if (substr($raw_name, 0, 8) == '__MACOSX' || substr($raw_name, 0, 9) == '.DS_Store') {
           continue;
         }
         // Ignore group files.
