@@ -127,11 +127,25 @@ class Templates extends FormBase {
    * Validate deleting templates.
    */
   public function validateDelete(array &$form, FormStateInterface $form_state) {
-    if (!array_filter($form_state->getValue(['templates_fieldset', 'templates']))) {
+    $delete_templates = array_filter($form_state->getValue(['templates_fieldset', 'templates']));
+    if (!$delete_templates) {
       $form_state->setError(
         $form['templates_fieldset']['templates'],
         $this->t('Please indicate one or more templates.')
       );
+      return;
+    }
+    $form_state->loadInclude('islandora_spreadsheet_ingest', 'inc', 'includes/db');
+    $ingests = islandora_spreadsheet_ingest_get_ingests();
+    foreach ($delete_templates as $template) {
+      foreach ($ingests as $ingest) {
+        if ($ingest['template'] == $template) {
+          $form_state->setError(
+            $form['templates_fieldset']['templates'][$template],
+            $this->t('Please make sure templates are not in use before deleting.')
+          );
+        }
+      }
     }
   }
 
