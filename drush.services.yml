@@ -1,0 +1,6 @@
+services:
+  islandora_spreadsheet_ingest.commands:
+    class: \Drupal\islandora_spreadsheet_ingest\Commands\ToolsCommands
+    arguments: ['@entity_field.manager']
+    tags:
+      - { name: drush.command }
