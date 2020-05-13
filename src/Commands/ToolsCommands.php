@@ -51,6 +51,7 @@ class ToolsCommands extends DrushCommands {
     ];
     $filter_fields = [
       'field_member_of',
+      'field_representative_image',
       'field_description',
     ];
 
