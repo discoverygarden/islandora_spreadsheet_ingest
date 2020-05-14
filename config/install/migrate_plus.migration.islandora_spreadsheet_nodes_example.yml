@@ -79,7 +79,8 @@ destination:
   default_bundle: islandora_object
 # Translation will make it so nodes won't delete on rollback.
 #  translations: true
-  validate: true
+# Validation hides errors for debugging.
+#  validate: true
 dependencies:
   enforced:
     module:
