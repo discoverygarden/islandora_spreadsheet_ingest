@@ -74,6 +74,10 @@ class ToolsCommands extends DrushCommands {
 
     $this->output()->writeln("START DYNAMIC MIGRATION INFO\n");
     foreach ($dynamic_csv_headers as $header) {
+      $this->output()->writeln("- '$header'");
+    }
+    $this->output()->writeln("\nSEP DYNAMIC MIGRATION INFO\n");
+    foreach ($dynamic_csv_headers as $header) {
       $this->output()->writeln("$header: $header");
     }
     $this->output()->writeln("\nSTOP DYNAMIC MIGRATION INFO\n");
