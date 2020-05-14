@@ -10,7 +10,7 @@ source:
     - 'Date_created'
     - 'Description'
 process:
-  field_digital_file_exists:
+  field_model_exists:
     plugin: skip_on_empty
     method: row
     source: 'Model'
