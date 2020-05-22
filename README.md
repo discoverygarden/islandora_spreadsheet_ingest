@@ -21,6 +21,9 @@ A tag `isimd` is added to all derived migrations so they can be operated on
 with a single command.
 Automatic scheduling of ingests is recommended:
 `sudo -u www-data drush migrate:batch-import -u 1 -v --uri=http://localhost --execute-dependencies --tag=isimd`
+A helper command for generating CSV headers and partial migration yaml for a
+given bundle is provided.
+`islandora_spreadsheet_ingest:generate-bundle-info`
 
 ## Installation
 
