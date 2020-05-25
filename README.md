@@ -3,6 +3,10 @@
 ## Introduction
 
 A module to facilitate the ingest of data using a spreadsheet.
+It makes csv migrations re-usable by allowing the upload of migrations to be
+used as templates to be associated with source CSVs.
+It is based on Drupal's migrate framework and is compatible with its
+tooling.
 
 ## Requirements
 
@@ -15,12 +19,20 @@ This module requires the following modules/libraries:
 
 ## Usage
 
-An example migration that can be used as a starting point is provided.
+Migrate templates can be uploaded at `admin/structure/migrate_templates`.
+Migrate source CSVs can be uploaded and associated with templates at
+`admin/structure/islandora_spreadsheet_ingest`.
+
+An example migration that can be used as a starting point is part of this
+module's config.
+
 Use short migraiton names as generated names over 63 bytes will be truncated.
 A tag `isimd` is added to all derived migrations so they can be operated on
 with a single command.
+
 Automatic scheduling of ingests is recommended:
 `sudo -u www-data drush migrate:batch-import -u 1 -v --uri=http://localhost --execute-dependencies --tag=isimd`
+
 A helper command for generating CSV headers and partial migration yaml for a
 given bundle is provided.
 `islandora_spreadsheet_ingest:generate-bundle-info`
