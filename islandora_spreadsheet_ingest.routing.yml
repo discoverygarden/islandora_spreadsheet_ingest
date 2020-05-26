@@ -12,3 +12,10 @@ islandora_spreadsheet_ingest.ingest:
     _form: '\Drupal\islandora_spreadsheet_ingest\Form\Ingest'
   requirements:
     _permission: 'ingest with islandora spreadsheet ingest'
+islandora_spreadsheet_ingest.admin:
+  path: '/admin/config/islandora_spreadsheet_ingest'
+  defaults:
+    _title: 'Islandora Spreadsheet Ingest'
+    _form: '\Drupal\islandora_spreadsheet_ingest\Form\Admin'
+  requirements:
+    _permission: 'administer site configuration'

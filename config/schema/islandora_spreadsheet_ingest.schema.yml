@@ -1,0 +1,9 @@
+---
+islandora_spreadsheet_ingest.settings:
+  type: config_object
+  mapping:
+    binary_directory_whitelist:
+      type: sequence
+      label: 'List of allowed source directories.'
+      sequence:
+        type: string

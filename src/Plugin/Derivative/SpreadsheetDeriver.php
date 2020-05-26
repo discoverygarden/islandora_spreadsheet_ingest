@@ -9,6 +9,7 @@ use Drupal\Core\Plugin\Discovery\ContainerDeriverInterface;
 use Drupal\Core\File\FileSystem;
 use Drupal\Core\Logger\LoggerChannelFactoryInterface;
 use Drupal\Component\Plugin\Derivative\DeriverBase;
+use Drupal\Core\Config\ConfigFactory;
 
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\Yaml\Yaml;
@@ -56,14 +57,22 @@ class SpreadsheetDeriver extends DeriverBase implements ContainerDeriverInterfac
   protected $logger;
 
   /**
+   * Config factory.
+   *
+   * @var Drupal\Core\Config\ConfigFactory
+   */
+  protected $configFactory;
+
+  /**
    * Constructor.
    */
-  public function __construct($base_plugin_id, EntityStorageInterface $file_entity_storage, ModuleHandlerInterface $module_handler, ArchiverManager $archiver_manager, FileSystem $file_system, LoggerChannelFactoryInterface $logger_factory) {
+  public function __construct($base_plugin_id, EntityStorageInterface $file_entity_storage, ModuleHandlerInterface $module_handler, ArchiverManager $archiver_manager, FileSystem $file_system, LoggerChannelFactoryInterface $logger_factory, ConfigFactory $config_factory) {
     $this->fileEntityStorage = $file_entity_storage;
     $this->moduleHandler = $module_handler;
     $this->archiverManager = $archiver_manager;
     $this->fileSystem = $file_system;
     $this->logger = $logger_factory->get('islandora_spreadsheet_ingest');
+    $this->configFactory = $config_factory;
   }
 
   /**
@@ -76,7 +85,8 @@ class SpreadsheetDeriver extends DeriverBase implements ContainerDeriverInterfac
       $container->get('module_handler'),
       $container->get('plugin.manager.archiver'),
       $container->get('file_system'),
-      $container->get('logger.factory')
+      $container->get('logger.factory'),
+      $container->get('config.factory')
     );
   }
 
@@ -197,6 +207,29 @@ class SpreadsheetDeriver extends DeriverBase implements ContainerDeriverInterfac
         // Add our tag for easy migrations.
         if (!isset($yaml['migration_tags']) || !in_array('isimd', $yaml['migration_tags'])) {
           $yaml['migration_tags'][] = 'isimd';
+        }
+
+        // Do not derive migrations with illegal binary locations.
+        $destination_plugin = $yaml['destination']['plugin'];
+        if ($destination_plugin == 'entity:file') {
+          if (isset($yaml['source']['constants']['SOURCE_BINARY_DIRECTORY'])) {
+            $binary_dir = $yaml['source']['constants']['SOURCE_BINARY_DIRECTORY'];
+          }
+          else {
+            $this->logger->warning(
+              'Not deriving ingest with SOURCE_BINARY_DIRECTORY not set.',
+              ['@dir' => $binary_dir]
+            );
+            continue;
+          }
+          $allowed_source_dirs = $this->configFactory->get('islandora_spreadsheet_ingest.settings')->get('binary_directory_whitelist');
+          if (!in_array($binary_dir, $allowed_source_dirs)) {
+            $this->logger->warning(
+              'Not deriving ingest with SOURCE_BINARY_DIRECTORY: `@dir` check configuration.',
+              ['@dir' => $binary_dir]
+            );
+            continue;
+          }
         }
         $this->derivatives[$yaml['id']] = $yaml;
       }

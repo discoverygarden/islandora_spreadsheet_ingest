@@ -42,6 +42,7 @@ given bundle is provided.
 Install as usual, see
 [this](https://drupal.org/documentation/install/modules-themes/modules-8) for
 further information.
+Configure allowed binary paths at `/admin/config/islandora_spreadsheet_ingest`.
 
 ## Troubleshooting/Issues
 
