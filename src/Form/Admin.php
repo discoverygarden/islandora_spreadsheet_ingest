@@ -23,10 +23,11 @@ class Admin extends ConfigFormBase {
   public function buildForm(array $form, FormStateInterface $form_state) {
     $form = [];
     $config = $this->config('islandora_spreadsheet_ingest.settings');
+    $current_whitelist = $config->get('binary_directory_whitelist');
     $form['paths'] = [
       '#type' => 'textarea',
       '#title' => $this->t('Binary path whitelist'),
-      '#default_value' => implode(',', $config->get('binary_directory_whitelist')),
+      '#default_value' => $current_whitelist ? implode(',', $current_whitelist) : '',
       '#description' => $this->t('A comma seperated list of locations from which spreadsheet ingests can use binaries. Please include the trailing slash.'),
     ];
     $form['submit'] = [
