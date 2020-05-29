@@ -125,6 +125,7 @@ class SpreadsheetDeriver extends DeriverBase implements ContainerDeriverInterfac
       $contents = $archive->listContents();
 
       $zip_path = $this->fileSystem->realpath($template_zip_file->getFileUri());
+      $new_migrations = [];
       foreach ($contents as $raw_name) {
         // Ignore macosx files.
         if (substr($raw_name, 0, 8) == '__MACOSX' || substr($raw_name, 0, 9) == '.DS_Store') {
@@ -209,7 +210,8 @@ class SpreadsheetDeriver extends DeriverBase implements ContainerDeriverInterfac
           $yaml['migration_tags'][] = 'isimd';
         }
 
-        // Do not derive migrations with illegal binary locations.
+        // Do not derive migrations or related migrations with illegal binary
+        // locations.
         $destination_plugin = $yaml['destination']['plugin'];
         if ($destination_plugin == 'entity:file') {
           if (isset($yaml['source']['constants']['SOURCE_BINARY_DIRECTORY'])) {
@@ -220,7 +222,8 @@ class SpreadsheetDeriver extends DeriverBase implements ContainerDeriverInterfac
               'Not deriving ingest with SOURCE_BINARY_DIRECTORY not set.',
               ['@dir' => $binary_dir]
             );
-            continue;
+            $new_migrations = [];
+            break;
           }
           $allowed_source_dirs = $this->configFactory->get('islandora_spreadsheet_ingest.settings')->get('binary_directory_whitelist');
           if (!in_array($binary_dir, $allowed_source_dirs)) {
@@ -228,10 +231,14 @@ class SpreadsheetDeriver extends DeriverBase implements ContainerDeriverInterfac
               'Not deriving ingest with SOURCE_BINARY_DIRECTORY: `@dir` check configuration.',
               ['@dir' => $binary_dir]
             );
-            continue;
+            $new_migrations = [];
+            break;
           }
         }
-        $this->derivatives[$yaml['id']] = $yaml;
+        $new_migrations[$yaml['id']] = $yaml;
+      }
+      if ($new_migrations) {
+        $this->derivatives = array_merge($this->derivatives, $new_migrations);
       }
     }
 
