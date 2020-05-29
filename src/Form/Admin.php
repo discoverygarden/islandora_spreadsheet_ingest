@@ -28,7 +28,7 @@ class Admin extends ConfigFormBase {
       '#type' => 'textarea',
       '#title' => $this->t('Binary path whitelist'),
       '#default_value' => $current_whitelist ? implode(',', $current_whitelist) : '',
-      '#description' => $this->t('A comma seperated list of locations from which spreadsheet ingests can use binaries. Please include the trailing slash.'),
+      '#description' => $this->t('A comma separated list of locations from which spreadsheet ingests can use binaries. Please include the trailing slash.'),
     ];
     $form['submit'] = [
       '#type' => 'submit',
