@@ -108,21 +108,21 @@ class SubDelimitedExplode extends ProcessPluginBase {
     $limit = isset($this->configuration['limit']) ? $this->configuration['limit'] : PHP_INT_MAX;
     $sublimit = isset($this->configuration['sublimit']) ? $this->configuration['sublimit'] : PHP_INT_MAX;
     $keys = isset($this->configuration['keys']) ? $this->configuration['keys'] : [];
+    $subdelimiter = $this->configuration['subdelimiter'];
 
     // Build and return the array. Resultant array should use keys from config;
     // if those run out, use the native index of each item.
-    $out = [];
-    foreach (explode($this->configuration['delimiter'], $value, $limit) as $top_level) {
-      $sub_pieces = explode($this->configuration['subdelimiter'], $top_level, $sublimit);
-      foreach ($sub_pieces as $idx => $piece) {
+    $out = explode($this->configuration['delimiter'], $value, $limit);
+    array_walk($out, function (&$top_level) use ($sublimit, $subdelimiter, $keys) {
+      $top_level = explode($subdelimiter, $top_level, $sublimit);
+      foreach ($top_level as $idx => $piece) {
         $key = isset($keys[$idx]) ? $keys[$idx] : $idx;
-        $sub_pieces[$key] = $piece;
+        $top_level[$key] = $piece;
         if ($key !== $idx) {
-          unset($sub_pieces[$idx]);
+          unset($top_level[$idx]);
         }
       }
-      $out[] = $sub_pieces;
-    }
+    });
     return $out;
   }
 
