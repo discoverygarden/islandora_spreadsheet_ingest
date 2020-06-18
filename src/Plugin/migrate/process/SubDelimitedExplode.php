@@ -10,13 +10,13 @@ use Drupal\migrate\Row;
 /**
  * Splits a string into an array of associative arrays, using two delimiters.
  *
- * Intended to be used with multi-valued fields with multiple properties. Since
- * we may be placing multiple values into multiple field properties, we need a
- * way to build a multi-valued array out of a single cell, including keys. It
- * is possible to do this with a complicated pipeline structure using existing
- * process plugins; the intent here is to provide a much more user friendly way
- * of tying cell contents to complex multi-valued fields, both on the side of
- * the CSV and the side of the yaml configuration.
+ * Intended to be used with multi-valued fields with multiple properties. We
+ * need a way to represent these kinds of structures in a single cell, including
+ * keys. While it is technically possible to do this with a complicated pipeline
+ * structure using existing process plugins, the intent here is to provide a
+ * much more user-friendly way of tying cell contents to complex multi-valued
+ * fields, both on the side of the CSV and the side of the yaml configuration,
+ * that expands on how CSV already works.
  *
  * Available configuration keys:
  * - source: The source string.
@@ -32,12 +32,14 @@ use Drupal\migrate\Row;
  * - keys: (optional) An array of the names of keys to apply to subsets, in the
  *   order they should be applied to each item in each subset. Use this to tie
  *   the structure of the subset to the keys needed by the destination field. If
- *   not used, the resultant subset arrays will be indexed from 0.
+ *   not used, the resultant subset arrays will be indexed from 0. If a subset
+ *   array has more values than keys given, additional keys will be provided at
+ *   the same native index in the subset.
  *
  * For example, given the following cell contents:
  *
  * @code
- * first_property|second_property|third_property; first_new_property|second_new_property
+ * first_property|second_property|third_property; first_new_property|second_new_property; another_property|another_other_property|more_properties|extra_property
  * @endcode
  *
  * Placed through the following .yaml:
@@ -72,6 +74,13 @@ use Drupal\migrate\Row;
  *         (
  *           [first_key] => "first_new_property"
  *           [second_key] => "second_new_property"
+ *         )
+ *       [2] => Array
+ *         (
+ *           [first_key] => "another_property"
+ *           [second_key] => "another_other_property"
+ *           [third_key] => "more_properties"
+ *           [3] => "extra_property"
  *         )
  *     )
  * )
