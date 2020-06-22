@@ -19,7 +19,7 @@ This module requires the following modules/libraries:
 
 ## Usage
 
-Migrate templates can be uploaded at `admin/structure/migrate_templates`.
+Migration templates can be uploaded at `admin/structure/migrate_templates`.
 Migrate source CSVs can be uploaded and associated with templates at
 `admin/structure/islandora_spreadsheet_ingest`.
 
@@ -36,6 +36,16 @@ Automatic scheduling of ingests is recommended:
 A helper command for generating CSV headers and partial migration template yaml
 for a given bundle is provided.
 `islandora_spreadsheet_ingest:generate-bundle-info`
+
+### Building migration templates
+
+Templates are expected to be built by developers, as they can get rather complex when taking advantage of the many customizations made available throughout the Drupal Migrate infrastructure.
+
+#### Useful Resources
+* [List of core Migrate process plugins](
+https://www.drupal.org/docs/8/api/migrate-api/migrate-process-plugins/list-of-core-migrate-process-plugins)
+* [List of process plugins provided by Migrate Plus](
+https://www.drupal.org/docs/8/api/migrate-api/migrate-process-plugins/list-of-process-plugins-provided-by-migrate-plus)
 
 ## Installation
 
