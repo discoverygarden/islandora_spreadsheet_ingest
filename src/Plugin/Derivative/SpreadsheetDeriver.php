@@ -225,7 +225,8 @@ class SpreadsheetDeriver extends DeriverBase implements ContainerDeriverInterfac
             $new_migrations = [];
             break;
           }
-          $allowed_source_dirs = $this->configFactory->get('islandora_spreadsheet_ingest.settings')->get('binary_directory_whitelist');
+          $allowed_source_dirs = [];
+          $allowed_source_dirs += $this->configFactory->get('islandora_spreadsheet_ingest.settings')->get('binary_directory_whitelist');
           if (!in_array($binary_dir, $allowed_source_dirs)) {
             $this->logger->warning(
               'Not deriving ingest with SOURCE_BINARY_DIRECTORY: `@dir` check configuration.',

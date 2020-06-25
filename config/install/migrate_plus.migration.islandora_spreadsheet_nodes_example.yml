@@ -7,6 +7,7 @@ source:
     - 'Title'
     - 'Model'
     - 'Member_of'
+    - 'Member_of_existing_entity'
     - 'Date_created'
     - 'Description'
 process:
@@ -66,12 +67,41 @@ process:
       # XXX: migrate_plus's case comparison makes assumptions about the entity's
       # "main" property... we want "uri", but it assumes "value".
       ignore_case: true
-  field_member_of:
+
+  # The following facilitates assigning objects as either members of other
+  # objects from this migration, or as members of previously ingested objects.
+  # The example ingest for this module cannot take full advantage of this
+  # functionality, but this provides a good reference for future templates.
+  # TODO: Allow for parsing multiple values from 'Member_of' and
+  # 'Member_of_existing_entity'.
+  _member_of_csv_id:
     - plugin: skip_on_empty
       method: process
       source: 'Member_of'
     - plugin: migration_lookup
       migration: islandora_spreadsheet_nodes_example
+
+  _member_of_existing_entity:
+    - plugin: skip_on_empty
+      method: process
+      source: 'Member_of_existing_entity'
+    - plugin: entity_lookup
+      bundle_key: type
+      bundle: islandora_object
+      value_key: title
+      entity_type: node
+
+  _member_of_total:
+    - plugin: get
+      source:
+        - '@_member_of_csv_id'
+        - '@_member_of_existing_entity'
+
+  field_member_of:
+    - plugin: skip_on_empty
+      method: process
+      source: '@_member_of_total'
+    - plugin: get
 
 destination:
   plugin: entity:node
