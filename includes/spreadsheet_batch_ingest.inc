@@ -491,7 +491,7 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
       else {
         $obj = $this['OBJ'];
       }
-      $obj->setContentFromFile($object_location, false);
+      $obj->setContentFromFile($object_location, FALSE);
       $obj->mimetype = file_get_mimetype($object_location);
       if (!$exists) {
         $this->ingestDatastream($obj);
@@ -523,7 +523,7 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
       else {
         $ds = $this[$file->name];
       }
-      $ds->setContentFromFile($file->uri, false);
+      $ds->setContentFromFile($file->uri, FALSE);
       $ds->mimetype = file_get_mimetype($file->uri);
       $ds->label = "{$file->name} Datastream";
       if (!isset($this[$file->name])) {
