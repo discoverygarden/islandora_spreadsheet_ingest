@@ -133,6 +133,27 @@ class SubDelimitedExplode extends ProcessPluginBase implements ContainerFactoryP
     if (!empty($this->configuration['keys_and_transform_info']) && !is_array($this->configuration['keys_and_transform_info'])) {
       throw new MigrateException("The list for 'keys_and_transform_info' provided should be an array.");
     }
+    else {
+      $is_valid = TRUE;
+      $keys_to_verify = [
+        'entity_type',
+        'accessCheck',
+        'value_key',
+        'bundle_key',
+        'bundle',
+      ];
+      foreach ($this->configuration['keys_and_transform_info'] as $key => $info) {
+        foreach ($keys_to_verify as $verify_key) {
+          if (!isset($info[$verify_key])) {
+            $invalid_config = "$key => $verify_key";
+            $is_valid = FALSE;
+          }
+        }
+      }
+      if (!$is_valid) {
+        throw new MigrateException("The config $invalid_config is not set properly in 'keys_and_transform_info'.");
+      }
+    }
 
     if ($value === '') {
       return [];
