@@ -180,6 +180,8 @@ class SubDelimitedExplode extends ProcessPluginBase implements ContainerFactoryP
       }
     });
 
+    // Similar to the process involed in entity_lookup plugin, let's transform
+    // values passed created in the new subdelimited array.
     if (!empty($keys_and_transform_info)) {
       foreach ($keys_and_transform_info as $key => $query_info) {
         foreach ($out as &$field_array) {
