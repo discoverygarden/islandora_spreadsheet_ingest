@@ -6,6 +6,8 @@ use Drupal\migrate\ProcessPluginBase;
 use Drupal\migrate\MigrateException;
 use Drupal\migrate\MigrateExecutableInterface;
 use Drupal\migrate\Row;
+use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Splits a string into an array of associative arrays, using two delimiters.
@@ -92,7 +94,27 @@ use Drupal\migrate\Row;
  *   id = "subdelimited_explode"
  * )
  */
-class SubDelimitedExplode extends ProcessPluginBase {
+class SubDelimitedExplode extends ProcessPluginBase implements ContainerFactoryPluginInterface {
+
+  /**
+   * The entity type manager.
+   *
+   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
+   */
+  protected $entityTypeManager;
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container, array $configuration, $pluginId, $pluginDefinition) {
+    $instance = new static(
+      $configuration,
+      $pluginId,
+      $pluginDefinition
+    );
+    $instance->entityTypeManager = $container->get('entity_type.manager');
+    return $instance;
+  }
 
   /**
    * {@inheritdoc}
@@ -108,6 +130,9 @@ class SubDelimitedExplode extends ProcessPluginBase {
     if (!empty($this->configuration['keys']) && !is_array($this->configuration['keys'])) {
       throw new MigrateException("The list of 'keys' provided should be an array.");
     }
+    if (!empty($this->configuration['keys_and_transform_info']) && !is_array($this->configuration['keys_and_transform_info'])) {
+      throw new MigrateException("The list for 'keys_and_transform_info' provided should be an array.");
+    }
 
     if ($value === '') {
       return [];
@@ -118,6 +143,7 @@ class SubDelimitedExplode extends ProcessPluginBase {
     $sublimit = isset($this->configuration['sublimit']) ? $this->configuration['sublimit'] : PHP_INT_MAX;
     $keys = isset($this->configuration['keys']) ? $this->configuration['keys'] : [];
     $subdelimiter = $this->configuration['subdelimiter'];
+    $keys_and_transform_info = isset($this->configuration['keys_and_transform_info']) ? $this->configuration['keys_and_transform_info'] : [];
 
     // Build and return the array. Resultant array should use keys from config;
     // if those run out, use the native index of each item.
@@ -132,6 +158,25 @@ class SubDelimitedExplode extends ProcessPluginBase {
         }
       }
     });
+
+    if (!empty($keys_and_transform_info)) {
+      foreach ($keys_and_transform_info as $key => $query_info) {
+        foreach ($out as &$field_array) {
+          if (array_key_exists($key, $field_array)) {
+            $results = $this->entityTypeManager->getStorage($query_info['entity_type'])
+              ->getQuery()
+              ->accessCheck($query_info['accessCheck'])
+              ->condition($query_info['value_key'], $field_array[$key])
+              ->condition($query_info['bundle_key'], $query_info['bundle'])
+              ->range(0, 1)
+              ->latestRevision()
+              ->execute();
+            $result = reset($results);
+            $field_array[$key] = $result;
+          }
+        }
+      }
+    }
     return $out;
   }
 
