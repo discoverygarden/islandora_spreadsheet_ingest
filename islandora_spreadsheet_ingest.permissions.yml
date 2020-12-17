@@ -1,6 +1,0 @@
-'administer islandora spreadsheet ingest templates':
-  title: 'Administer Islandora Spreadsheet Ingest Templates'
-  description: 'Create and delete Islandora Spreadsheet Ingest templates.'
-'ingest with islandora spreadsheet ingest':
-  title: 'Ingest Using Islandora Spreadsheet Ingest'
-  description: 'Use Islandora Spreadsheet Ingest to add to the repository.'

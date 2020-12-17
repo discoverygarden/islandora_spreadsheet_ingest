@@ -6,8 +6,10 @@ use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Cache\CacheTagsInvalidatorInterface;
+use Drupal\Core\Url;
 
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 
 use Drupal\migrate\Plugin\MigrationPluginManager;
 
@@ -64,187 +66,145 @@ class Ingest extends FormBase {
     return 'islandora_spreadsheet_ingest_ingest_form';
   }
 
+  protected function getSpreadsheetOptions(FormStateInterface $form_state) {
+    $target_file = $form_state->getValue('target_file');
+    if ($target_file) {
+      $loaded = $this->fileEntityStorage->load(reset($target_file));
+      $reader = IOFactory::createReaderForFile($loaded->uri->first()->getString());
+      $lister = [$reader, 'listWorksheetNames'];
+      return is_callable($lister) ?
+        call_user_func($lister, $target_file) :
+        // XXX: Need to provide _some_ name for things like CSVs.
+        [$this->t('Irrelevant/single-sheet format')];
+    }
+    return [];
+  }
+
   /**
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
-    $form_state->loadInclude('islandora_spreadsheet_ingest', 'inc', 'includes/db');
-    $templates = islandora_spreadsheet_ingest_get_templates();
-    $ingests = islandora_spreadsheet_ingest_get_ingests();
 
-    $form['#tree'] = TRUE;
-    // List.
-    $form['ingests_fieldset'] = [
+    $form['flow'] = [
+      '#type' => 'vertical_tabs',
+    ];
+
+    $target_file = $form_state->getValue('target_file');
+    $sheet_options = $this->getSpreadsheetOptions($form_state);
+    $form['spreadsheet'] = [
       '#type' => 'details',
-      '#title' => $this->t('Queued Ingests'),
-      '#open' => TRUE,
+      '#group' => 'flow',
+      '#title' => $this->t('Spreadsheet selection'),
+      'target_file' => [
+        '#type' => 'managed_file',
+        '#title' => $this->t('Target file'),
+        '#upload_validators' => [
+          'file_validate_extensions' => ['xlsx xlsm xltx xltm xls xlt ods ots slk xml gnumeric htm html csv'],
+        ],
+        'sheet' => [
+          '#type' => 'select',
+          '#title' => $this->t('Sheet'),
+          '#required' => TRUE,
+          '#empty_value' => '-\\_/- select -/_\\-',
+          '#options' => $sheet_options,
+          '#default_value' => count($sheet_options) === 1 ? key($sheet_options) : NULL,
+          '#states' => [
+            'visible' => [
+              ':input[name="target_file[fids]"]' => [
+                'filled' => TRUE,
+              ],
+            ],
+          ],
+        ],
+      ],
     ];
-
-    $header = [
-      'csv' => $this
-        ->t('CSV'),
-      'template' => $this
-        ->t('Template'),
-      'status' => $this
-        ->t('Status'),
-    ];
-    // Get statuses.
-    $migrations = $this->migrationPluginManager->createInstances([]);
-    $migration_statuses = [];
-    foreach ($migrations as $migration_id => $migration) {
-      if (strpos($migration_id, 'isimd:') !== 0) {
-        continue;
-      }
-      $id_parts = explode('_', $migration_id);
-      $migration_id = array_pop($id_parts);
-      $migration_status = $migration->allRowsProcessed();
-      if (!$migration_status ||
-        (isset($migration_statuses[$migration_id]) && !$migration_statuses[$migration_id])
-        ) {
-        $migration_statuses[$migration_id] = FALSE;
-      }
-      else {
-        $migration_statuses[$migration_id] = TRUE;
-      }
-    }
-    // Populate table.
-    $options = [];
-    foreach ($ingests as $ingest) {
-      $ingest_file = $this->fileEntityStorage->load($ingest['fid']);
-      $template_file = $this->fileEntityStorage->load($templates[$ingest['template']]['fid']);
-      if (!isset($migration_statuses[$ingest['id']])) {
-        $status = $this->t('Not ready, check logs');
-      }
-      elseif ($migration_statuses[$ingest['id']]) {
-        $status = $this->t('Complete');
-      }
-      else {
-        $status = $this->t('Incomplete');
-      }
-      $options[$ingest['id']] = [
-        'csv' => $ingest_file->getFilename(),
-        'template' => $template_file->getFilename(),
-        'status' => $status,
-      ];
-    }
-    $form['ingests_fieldset']['ingests'] = [
-      '#type' => 'tableselect',
-      '#header' => $header,
-      '#options' => $options,
-      '#empty' => $this
-        ->t('No queued ingests.'),
-    ];
-
-    // Delete.
-    $form['ingests_fieldset']['delete'] = [
-      '#type' => 'submit',
-      '#name' => 'delete_ingest',
-      '#value' => $this->t('Delete'),
-      '#submit' => [[$this, 'delete']],
-      '#validate' => [[$this, 'validateDelete']],
-    ];
-
-    // Add.
-    $form['new_ingest_fieldset'] = [
+    $form['spreadsheet']['target_file']['mappings'] = [
       '#type' => 'details',
-      '#title' => $this->t('Queue a CSV ingest'),
-      '#open' => TRUE,
+      '#group' => 'flow',
+      '#title' => $this->t('Mappings'),
+      'table' => [
+        '#type' => 'table',
+        '#header' => [
+          $this->t('Source'),
+          $this->t('Destination'),
+          ['data' => $this->t('Weight'), 'class' => ['tabledrag-hide']],
+        ],
+        '#tableselect' => TRUE,
+        '#empty' => $this->t('It be empty, yo.'),
+        '#tabledrag' => [
+          [
+            'action' => 'order',
+            'relationship' => 'sibling',
+            'group' => 'group-weight',
+          ],
+        ],
+        // TODO: Generate table entries from storage.
+        1 => [
+          '#attributes' => ['class' => ['draggable']],
+          'source' => ['#markup' => $this->t('what')],
+          'destination' => ['#markup' => $this->t('there')],
+          'weight' => [
+             '#type' => 'weight',
+             '#default_value' => 1,
+             '#wrapper_attributes' => [
+               'class' => ['tabledrag-hide'],
+             ],
+           ],
+        ],
+        2 => [
+          '#attributes' => ['class' => ['draggable']],
+          'source' => ['#markup' => $this->t('what')],
+          'destination' => ['#markup' => $this->t('there')],
+          'weight' => [
+            '#type' => 'weight',
+            '#default_value' => 2,
+            '#wrapper_attributes' => [
+              'class' => ['tabledrag-hide'],
+            ],
+          ],
+        ],
+      ],
+      // TODO: Add a button for the deletion of selected entries.
+      // TODO: Allow the addition/creation of new entries.
     ];
-    $form['new_ingest_fieldset']['new_ingest'] = [
-      '#type' => 'managed_file',
-      '#title' => $this->t('Source CSV'),
-      '#upload_validators' => ['file_validate_extensions' => ['csv']],
-      '#description' => $this->t('Please provide a .csv file.'),
-      '#upload_location' => 'private://',
+
+    $form['timing'] = [
+      '#type' => 'details',
+      '#group' => 'flow',
+      '#title' => $this->t('Timing'),
+      'enqueue' => [
+        '#type' => 'radios',
+        '#title' => $this->t('Processing'),
+        '#options' => [
+          'defer' => $this->t('Deferred'),
+          'immediate' => $this->t('Immediate'),
+        ],
+        '#default_value' => 'defer',
+      ],
     ];
-    $template_options = [];
-    foreach ($templates as $template) {
-      $file = $this->fileEntityStorage->load($template['fid']);
-      $template_options[$template['id']] = $file->getFilename();
-    }
-    $form['new_ingest_fieldset']['template'] = [
-      '#type' => 'select',
-      '#title' => $this->t('Template'),
-      '#options' => $template_options,
+
+    $form['actions'] = [
+      '#type' => 'actions',
+      'submit' => [
+        '#type' => 'submit',
+        '#value' => $this->t('Submit'),
+      ],
+      'cancel' => [
+        '#type' => 'link',
+        '#title' => $this->t('Cancel'),
+        '#url' => Url::fromRoute('<front>'),
+      ],
     ];
-    $form['new_ingest_fieldset']['add'] = [
-      '#type' => 'submit',
-      '#name' => 'add_ingest',
-      '#value' => $this->t('Queue Ingest'),
-      '#submit' => [[$this, 'add']],
-      '#validate' => [[$this, 'validateAdd']],
-    ];
+
     return $form;
   }
 
-  /**
-   * Validating deleting templates.
-   */
-  public function validateDelete(array &$form, FormStateInterface $form_state) {
-    if (!array_filter($form_state->getValue(['ingests_fieldset', 'ingests']))) {
-      $form_state->setError(
-        $form['ingests_fieldset']['ingests'],
-        $this->t('Please indicate one or more ingests.')
-      );
-    }
-  }
-
-  /**
-   * Validate adding a template.
-   */
-  public function validateAdd(array &$form, FormStateInterface $form_state) {
-    if (empty($form_state->getValue(['new_ingest_fieldset', 'new_ingest']))) {
-      $form_state->setError(
-        $form['new_ingest_fieldset']['new_ingest'],
-        $this->t('Please provide a source CSV.')
-      );
-    }
-  }
-
-  /**
-   * Delete ingests.
-   */
-  public function delete(array &$form, FormStateInterface $form_state) {
-    $form_state->loadInclude('islandora_spreadsheet_ingest', 'inc', 'includes/db');
-
-    $ingests = islandora_spreadsheet_ingest_get_ingests();
-    $delete_ingests = array_filter($form_state->getValue(['ingests_fieldset', 'ingests']));
-    if ($delete_ingests) {
-      foreach ($delete_ingests as $ingest) {
-        $file = $this->fileEntityStorage->load($ingests[$ingest]['fid']);
-        $file_name = $file->getFilename();
-        $file->delete();
-        drupal_set_message($this->t('The ingest @filename has been deleted.', [
-          '@filename' => $file_name,
-        ]));
-      }
-      islandora_spreadsheet_ingest_delete_ingests($delete_ingests);
-    }
-    // @see: https://www.drupal.org/project/drupal/issues/3001284
-    $this->cacheInvalidator->invalidateTags(['migration_plugins']);
-  }
-
-  /**
-   * Add an ingest.
-   */
-  public function add(array &$form, FormStateInterface $form_state) {
-    $form_state->loadInclude('islandora_spreadsheet_ingest', 'inc', 'includes/db');
-
-    if (!empty($form_state->getValue(['new_ingest_fieldset', 'new_ingest']))) {
-      $template = $form_state->getValue(['new_ingest_fieldset', 'template']);
-      $file = $this->fileEntityStorage->load(reset($form_state->getValue(['new_ingest_fieldset', 'new_ingest'])));
-      $file->setPermanent();
-      $file->save();
-      islandora_spreadsheet_ingest_add_ingest($file->id(), $template);
-    }
-    // @see: https://www.drupal.org/project/drupal/issues/3001284
-    $this->cacheInvalidator->invalidateTags(['migration_plugins']);
-  }
 
   /**
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
+    throw new Exception('Not implemented');
   }
 
 }

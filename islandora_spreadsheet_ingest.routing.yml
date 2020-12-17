@@ -1,19 +1,12 @@
-islandora_spreadsheet_ingest.templates:
-  path: 'admin/structure/migrate_templates'
-  defaults:
-    _title: 'Migrate Templates'
-    _form: '\Drupal\islandora_spreadsheet_ingest\Form\Templates'
-  requirements:
-    _permission: 'administer islandora spreadsheet ingest templates'
 islandora_spreadsheet_ingest.ingest:
-  path: 'admin/structure/islandora_spreadsheet_ingest'
+  path: 'admin/content/islandora_spreadsheet_ingest'
   defaults:
-    _title: 'CSV Ingests'
+    _title: 'Add Content From Spreadsheet'
     _form: '\Drupal\islandora_spreadsheet_ingest\Form\Ingest'
   requirements:
-    _permission: 'ingest with islandora spreadsheet ingest'
+    _permission: 'access content overview'
 islandora_spreadsheet_ingest.admin:
-  path: '/admin/config/islandora_spreadsheet_ingest'
+  path: '/admin/config/content/islandora_spreadsheet_ingest'
   defaults:
     _title: 'Islandora Spreadsheet Ingest'
     _form: '\Drupal\islandora_spreadsheet_ingest\Form\Admin'
