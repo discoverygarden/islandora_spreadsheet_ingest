@@ -12,6 +12,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
 use Drupal\migrate\Plugin\MigrationPluginManager;
+use Drupal\islandora_spreadsheet_ingest\Spreadsheet\ChunkReadFilter;
 
 /**
  * Form for setting up ingests.
@@ -66,11 +67,29 @@ class Ingest extends FormBase {
     return 'islandora_spreadsheet_ingest_ingest_form';
   }
 
+  protected function getTargetFile(FormStateInterface $form_state) {
+    $target_file = $form_state->getValue('target_file');
+    if ($target_file) {
+      return $this->fileEntityStorage->load(reset($target_file));
+    }
+    throw new \Exception('No target file selected.');
+
+  }
+  protected function getSpreadsheetReader(FormStateInterface $form_state) {
+    $target_file = $form_state->getValue('target_file');
+    if ($target_file) {
+      $reader = IOFactory::createReaderForFile($this->getTargetFile($form_state)->uri->first()->getString());
+      // XXX: Not really dealing with writing here... might as well inform 
+      $reader->setReadDataOnly(TRUE);
+      return $reader;
+    }
+    throw new \Exception('No target file from which to create a reader.');
+  }
+
   protected function getSpreadsheetOptions(FormStateInterface $form_state) {
     $target_file = $form_state->getValue('target_file');
     if ($target_file) {
-      $loaded = $this->fileEntityStorage->load(reset($target_file));
-      $reader = IOFactory::createReaderForFile($loaded->uri->first()->getString());
+      $reader = $this->getSpreadsheetReader($form_state);;
       $lister = [$reader, 'listWorksheetNames'];
       return is_callable($lister) ?
         call_user_func($lister, $target_file) :
@@ -78,6 +97,39 @@ class Ingest extends FormBase {
         [$this->t('Irrelevant/single-sheet format')];
     }
     return [];
+  }
+
+  protected function getHeader(FormStateInterface $form_state) {
+    try {
+      $reader = $this->getSpreadsheetReader($form_state);
+    }
+    catch (\Exception $e) {
+      return [];
+    }
+    $constrain = [$reader, 'setLoadSheetsOnly'];
+    if (is_callable($constrain)) {
+      call_user_func($constrain, $form_state->getValue('sheet'));
+    }
+    $filter = new ChunkReadFilter(0, 1);
+    $reader->setReadFilter($filter);
+
+    $target = $this->getTargetFile($form_state);
+
+    $loaded = $reader->load($target->uri->first()->getString());
+
+    $header = [];
+
+    foreach ($loaded->getActiveSheet()->getRowIterator() as $row) {
+      $cell_iterator = $row->getCellIterator();
+      $cell_iterator->setIterateOnlyExistingCells(FALSE);
+
+      foreach ($cell_iterator as $cell) {
+        $header[] = $cell->getValue();
+      }
+    }
+
+    dsm($header, 'asdf');
+    return $header;
   }
 
   /**
@@ -104,7 +156,6 @@ class Ingest extends FormBase {
         'sheet' => [
           '#type' => 'select',
           '#title' => $this->t('Sheet'),
-          '#required' => TRUE,
           '#empty_value' => '-\\_/- select -/_\\-',
           '#options' => $sheet_options,
           '#default_value' => count($sheet_options) === 1 ? key($sheet_options) : NULL,
@@ -164,6 +215,23 @@ class Ingest extends FormBase {
           ],
         ],
       ],
+      'add_mapping' => [
+        'source_column' => [
+          '#type' => 'select',
+          '#title' => $this->t('Source Columns'),
+          '#options' => $this->getHeader($form_state),
+        ],
+        'destination' => [
+          '#type' => 'select',
+          '#title' => $this->t('Destination'),
+          '#options' => [],
+        ],
+        'add_new_mapping' => [
+          '#type' => 'submit',
+          '#value' => $this->t('Add mapping'),
+          '#submit' => ['::submitAddMapping']
+        ],
+      ],
       // TODO: Add a button for the deletion of selected entries.
       // TODO: Allow the addition/creation of new entries.
     ];
@@ -204,6 +272,10 @@ class Ingest extends FormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
+    throw new Exception('Not implemented');
+  }
+
+  public function submitAddMapping(array &$form, FormStateInterface $form_state) {
     throw new Exception('Not implemented');
   }
 
