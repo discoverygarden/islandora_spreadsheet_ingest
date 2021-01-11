@@ -1,0 +1,3 @@
+---
+islandora_spreadsheet_ingest.spreadsheet_service:
+  class: Drupal\islandora_spreadsheet_ingest\Spreadsheet\SpreadsheetService
