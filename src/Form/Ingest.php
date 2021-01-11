@@ -4,13 +4,16 @@ namespace Drupal\islandora_spreadsheet_ingest\Form;
 
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\Entity\EntityStorageInterface;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\TypedData\TypedDataManagerInterface;
 use Drupal\Core\Cache\CacheTagsInvalidatorInterface;
 use Drupal\Core\Url;
 
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
+use Drupal\migrate\Row;
+use Drupal\migrate\Plugin\migrate\destination\Entity;
 use Drupal\migrate\Plugin\MigrationPluginManager;
 use Drupal\islandora_spreadsheet_ingest\Spreadsheet\ChunkReadFilter;
 
@@ -18,6 +21,10 @@ use Drupal\islandora_spreadsheet_ingest\Spreadsheet\ChunkReadFilter;
  * Form for setting up ingests.
  */
 class Ingest extends FormBase {
+
+  const MG = 'islandora_spreadsheet_example';
+
+  protected $entityTypeManager;
 
   /**
    * Used to make sure new migrations are registered.
@@ -40,13 +47,19 @@ class Ingest extends FormBase {
    */
   protected $fileEntityStorage;
 
+  protected $typedDataManager;
+
   /**
    * Constructor.
    */
-  public function __construct(CacheTagsInvalidatorInterface $cache_invalidator, MigrationPluginManager $migration_plugin_manager, EntityStorageInterface $file_entity_storage) {
+  public function __construct(CacheTagsInvalidatorInterface $cache_invalidator, MigrationPluginManager $migration_plugin_manager, EntityTypeManagerInterface $entity_type_manager, TypedDataManagerInterface $typed_data_manager) {
+    $this->entityTypeManager = $entity_type_manager;
     $this->cacheInvalidator = $cache_invalidator;
     $this->migrationPluginManager = $migration_plugin_manager;
-    $this->fileEntityStorage = $file_entity_storage;
+    $this->typedDataManager = $typed_data_manager;
+
+    $this->fileEntityStorage = $this->entityTypeManager->getStorage('file');
+    $this->migrationStorage = $this->entityTypeManager->getStorage('migration');
   }
 
   /**
@@ -56,7 +69,8 @@ class Ingest extends FormBase {
     return new static(
       $container->get('cache_tags.invalidator'),
       $container->get('plugin.manager.migration'),
-      $container->get('entity_type.manager')->getStorage('file')
+      $container->get('entity_type.manager'),
+      $container->get('typed_data_manager')
     );
   }
 
@@ -67,6 +81,72 @@ class Ingest extends FormBase {
     return 'islandora_spreadsheet_ingest_ingest_form';
   }
 
+  protected $migrations;
+
+  /**
+   * Get the migrations upon which we're to operate.
+   *
+   * @return \Drupal\migrate\Migration[]
+   *   The migrations, ordered according to their dependencies.
+   */
+  protected function getMigrations() {
+    if ($this->migrations === NULL) {
+      $names = $this->migrationStorage->getQuery()
+        ->condition('migration_group', static::MG)
+        ->execute();
+
+      $migration_plus_migrations = $this->migrationStorage->loadMultiple($names);
+      $this->migrations = $this->migrationPluginManager->createInstances($names, array_map(function ($a) { return $a->toArray(); }, $migration_plus_migrations));
+    }
+
+    return $this->migrations;
+  }
+
+  /**
+   * Get the properties associated with destinations of the migrations.
+   */
+  protected function getDestinationProperties() {
+    $props = [];
+
+    foreach ($this->getMigrations() as $name => $migration) {
+      $migration_options = [];
+
+      $row_probe = new Row();
+      $dp = $migration->getDestinationPlugin();
+      if ($dp instanceof Entity) {
+        $key = $dp->getPluginId();
+        $bundle = $dp->getBundle($row_probe);
+        $def = $this->typedDataManager->createDataDefinition($bundle ? "$key:$bundle" : $key);
+        foreach ($def->getPropertyDefinitions() as $prop) {
+          $migration_options["{$migration->id()}:{$prop->getName()}"] = $prop;
+        }
+      }
+      else {
+        throw new Exception('What are you trying to map to!?');
+      }
+
+      $props["{$this->t(':label (:id)', [':label' => $migration->label(), ':id' => $migration->id()])}"] = $migration_options;
+    }
+
+    return $props;
+  }
+  protected function getDestinationOptions() {
+    return array_map(function ($sec) {
+      return array_map(function ($prop) {
+        return $this->t(':ind:label (:name)', [
+          ':label' => $prop->getLabel(),
+          ':name' => $prop->getName(),
+          ':ind' => $prop->isRequired() ? '*' : '',
+        ]);
+      }, $sec);
+    }, $this->getDestinationProperties());
+  }
+
+  protected function getSourceOptions(FormStateInterface $form_state) {
+    $header = $this->getHeader($form_state);
+    return array_combine($header, $header);
+  }
+
   protected function getTargetFile(FormStateInterface $form_state) {
     $target_file = $form_state->getValue('target_file');
     if ($target_file) {
@@ -75,6 +155,7 @@ class Ingest extends FormBase {
     throw new \Exception('No target file selected.');
 
   }
+
   protected function getSpreadsheetReader(FormStateInterface $form_state) {
     $target_file = $form_state->getValue('target_file');
     if ($target_file) {
@@ -219,12 +300,12 @@ class Ingest extends FormBase {
         'source_column' => [
           '#type' => 'select',
           '#title' => $this->t('Source Columns'),
-          '#options' => $this->getHeader($form_state),
+          '#options' => $this->getSourceOptions($form_state),
         ],
         'destination' => [
           '#type' => 'select',
           '#title' => $this->t('Destination'),
-          '#options' => [],
+          '#options' => $this->getDestinationOptions(),
         ],
         'add_new_mapping' => [
           '#type' => 'submit',

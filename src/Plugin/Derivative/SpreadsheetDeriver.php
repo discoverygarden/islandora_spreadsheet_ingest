@@ -112,136 +112,136 @@ class SpreadsheetDeriver extends DeriverBase implements ContainerDeriverInterfac
    * {@inheritdoc}
    */
   public function getDerivativeDefinitions($base_plugin_definition) {
-    $this->moduleHandler->loadInclude('islandora_spreadsheet_ingest', 'inc', 'includes/db');
+    #$this->moduleHandler->loadInclude('islandora_spreadsheet_ingest', 'inc', 'includes/db');
 
-    $templates = islandora_spreadsheet_ingest_get_templates();
-    $ingests = islandora_spreadsheet_ingest_get_ingests();
+    #$templates = islandora_spreadsheet_ingest_get_templates();
+    #$ingests = islandora_spreadsheet_ingest_get_ingests();
 
-    $group_map = [];
-    foreach ($ingests as $ingest) {
-      $ingest_file = $this->fileEntityStorage->load($ingest['fid']);
-      $template_zip_file = $this->fileEntityStorage->load($templates[$ingest['template']]['fid']);
-      $archive = $this->archiverManager->getInstance(['filepath' => $template_zip_file->getFileUri()]);
-      $contents = $archive->listContents();
+    #$group_map = [];
+    #foreach ($ingests as $ingest) {
+    #  $ingest_file = $this->fileEntityStorage->load($ingest['fid']);
+    #  $template_zip_file = $this->fileEntityStorage->load($templates[$ingest['template']]['fid']);
+    #  $archive = $this->archiverManager->getInstance(['filepath' => $template_zip_file->getFileUri()]);
+    #  $contents = $archive->listContents();
 
-      $zip_path = $this->fileSystem->realpath($template_zip_file->getFileUri());
-      $new_migrations = [];
-      foreach ($contents as $raw_name) {
-        // Ignore macosx files.
-        if (substr($raw_name, 0, 8) == '__MACOSX' || substr($raw_name, 0, 9) == '.DS_Store') {
-          continue;
-        }
-        // Ignore group files.
-        if (strpos($raw_name, '.migration_group.')) {
-          continue;
-        }
-        $content_uri = "zip://$zip_path#$raw_name";
-        $yaml = $this->getYaml($content_uri);
-        if (!$yaml) {
-          continue;
-        }
+    #  $zip_path = $this->fileSystem->realpath($template_zip_file->getFileUri());
+    #  $new_migrations = [];
+    #  foreach ($contents as $raw_name) {
+    #    // Ignore macosx files.
+    #    if (substr($raw_name, 0, 8) == '__MACOSX' || substr($raw_name, 0, 9) == '.DS_Store') {
+    #      continue;
+    #    }
+    #    // Ignore group files.
+    #    if (strpos($raw_name, '.migration_group.')) {
+    #      continue;
+    #    }
+    #    $content_uri = "zip://$zip_path#$raw_name";
+    #    $yaml = $this->getYaml($content_uri);
+    #    if (!$yaml) {
+    #      continue;
+    #    }
 
-        // Get group info.
-        $yaml['migration_group'] = "{$yaml['migration_group']}_{$ingest['id']}";
-        if (isset($group_map[$yaml['migration_group']])) {
-          $group_yaml = $group_map[$yaml['migration_group']];
-        }
-        else {
-          foreach ($contents as $group_candidate_name) {
-            if (strpos($group_candidate_name, '.migration_group.')) {
-              $raw_group_name = $group_candidate_name;
-              break;
-            }
-          }
-          $group_uri = "zip://$zip_path#$raw_group_name";
-          $group_yaml = $this->getYaml($group_uri);
-          if (!$group_yaml) {
-            continue;
-          }
-          $group_map[$yaml['migration_group']] = $group_yaml;
-        }
+    #    // Get group info.
+    #    $yaml['migration_group'] = "{$yaml['migration_group']}_{$ingest['id']}";
+    #    if (isset($group_map[$yaml['migration_group']])) {
+    #      $group_yaml = $group_map[$yaml['migration_group']];
+    #    }
+    #    else {
+    #      foreach ($contents as $group_candidate_name) {
+    #        if (strpos($group_candidate_name, '.migration_group.')) {
+    #          $raw_group_name = $group_candidate_name;
+    #          break;
+    #        }
+    #      }
+    #      $group_uri = "zip://$zip_path#$raw_group_name";
+    #      $group_yaml = $this->getYaml($group_uri);
+    #      if (!$group_yaml) {
+    #        continue;
+    #      }
+    #      $group_map[$yaml['migration_group']] = $group_yaml;
+    #    }
 
-        // Merge in group info.
-        // @see: migrate_plus_migration_plugins_alter.
-        foreach ($group_yaml['shared_configuration'] as $key => $group_value) {
-          $migration_value = $yaml[$key];
-          // Where both the migration and the group provide arrays, replace
-          // recursively (so each key collision is resolved in favor of the
-          // migration).
-          if (is_array($migration_value) && is_array($group_value)) {
-            $merged_values = array_replace_recursive($group_value, $migration_value);
-            $yaml[$key] = $merged_values;
-          }
-          // Where the group provides a value the migration doesn't, use the
-          // group value.
-          elseif (is_null($migration_value)) {
-            $yaml[$key] = $group_value;
-          }
-          // Otherwise, the existing migration value overrides the group value.
-        }
+    #    // Merge in group info.
+    #    // @see: migrate_plus_migration_plugins_alter.
+    #    foreach ($group_yaml['shared_configuration'] as $key => $group_value) {
+    #      $migration_value = $yaml[$key];
+    #      // Where both the migration and the group provide arrays, replace
+    #      // recursively (so each key collision is resolved in favor of the
+    #      // migration).
+    #      if (is_array($migration_value) && is_array($group_value)) {
+    #        $merged_values = array_replace_recursive($group_value, $migration_value);
+    #        $yaml[$key] = $merged_values;
+    #      }
+    #      // Where the group provides a value the migration doesn't, use the
+    #      // group value.
+    #      elseif (is_null($migration_value)) {
+    #        $yaml[$key] = $group_value;
+    #      }
+    #      // Otherwise, the existing migration value overrides the group value.
+    #    }
 
-        // Make them their own migrations!
-        $yaml['source']['file'] = $this->fileSystem->realpath($ingest_file->getFileUri());
-        $yaml['id'] = "{$yaml['id']}_{$ingest['id']}";
-        if (isset($yaml['migration_dependencies']['required'])) {
-          foreach ($yaml['migration_dependencies']['required'] as &$required_dependency) {
-            // @XXX: Deps getting 'isimd:' prepended somewhere in the pipes.
-            $required_dependency = "isimd:{$required_dependency}_{$ingest['id']}";
-          }
-        }
-        // Handle migration lookups.
-        foreach ($yaml['process'] as &$process) {
-          // Processes can be singular or an array.
-          if (isset($process['plugin'])) {
-            if ($process['plugin'] == 'migration_lookup') {
-              $process['migration'] = "isimd:{$process['migration']}_{$ingest['id']}";
-            }
-          }
-          elseif (is_array($process)) {
-            foreach ($process as &$stepped_process) {
-              if ($stepped_process['plugin'] == 'migration_lookup') {
-                $stepped_process['migration'] = "isimd:{$stepped_process['migration']}_{$ingest['id']}";
-              }
-            }
-          }
-        }
-        // Add our tag for easy migrations.
-        if (!isset($yaml['migration_tags']) || !in_array('isimd', $yaml['migration_tags'])) {
-          $yaml['migration_tags'][] = 'isimd';
-        }
+    #    // Make them their own migrations!
+    #    $yaml['source']['file'] = $this->fileSystem->realpath($ingest_file->getFileUri());
+    #    $yaml['id'] = "{$yaml['id']}_{$ingest['id']}";
+    #    if (isset($yaml['migration_dependencies']['required'])) {
+    #      foreach ($yaml['migration_dependencies']['required'] as &$required_dependency) {
+    #        // @XXX: Deps getting 'isimd:' prepended somewhere in the pipes.
+    #        $required_dependency = "isimd:{$required_dependency}_{$ingest['id']}";
+    #      }
+    #    }
+    #    // Handle migration lookups.
+    #    foreach ($yaml['process'] as &$process) {
+    #      // Processes can be singular or an array.
+    #      if (isset($process['plugin'])) {
+    #        if ($process['plugin'] == 'migration_lookup') {
+    #          $process['migration'] = "isimd:{$process['migration']}_{$ingest['id']}";
+    #        }
+    #      }
+    #      elseif (is_array($process)) {
+    #        foreach ($process as &$stepped_process) {
+    #          if ($stepped_process['plugin'] == 'migration_lookup') {
+    #            $stepped_process['migration'] = "isimd:{$stepped_process['migration']}_{$ingest['id']}";
+    #          }
+    #        }
+    #      }
+    #    }
+    #    // Add our tag for easy migrations.
+    #    if (!isset($yaml['migration_tags']) || !in_array('isimd', $yaml['migration_tags'])) {
+    #      $yaml['migration_tags'][] = 'isimd';
+    #    }
 
-        // Do not derive migrations or related migrations with illegal binary
-        // locations.
-        $destination_plugin = $yaml['destination']['plugin'];
-        if ($destination_plugin == 'entity:file') {
-          if (isset($yaml['source']['constants']['SOURCE_BINARY_DIRECTORY'])) {
-            $binary_dir = $yaml['source']['constants']['SOURCE_BINARY_DIRECTORY'];
-          }
-          else {
-            $this->logger->warning(
-              'Not deriving ingest with SOURCE_BINARY_DIRECTORY not set.',
-              ['@dir' => $binary_dir]
-            );
-            $new_migrations = [];
-            break;
-          }
-          $allowed_source_dirs = [];
-          $allowed_source_dirs += $this->configFactory->get('islandora_spreadsheet_ingest.settings')->get('binary_directory_whitelist');
-          if (!in_array($binary_dir, $allowed_source_dirs)) {
-            $this->logger->warning(
-              'Not deriving ingest with SOURCE_BINARY_DIRECTORY: `@dir` check configuration.',
-              ['@dir' => $binary_dir]
-            );
-            $new_migrations = [];
-            break;
-          }
-        }
-        $new_migrations[$yaml['id']] = $yaml;
-      }
-      if ($new_migrations) {
-        $this->derivatives = array_merge($this->derivatives, $new_migrations);
-      }
-    }
+    #    // Do not derive migrations or related migrations with illegal binary
+    #    // locations.
+    #    $destination_plugin = $yaml['destination']['plugin'];
+    #    if ($destination_plugin == 'entity:file') {
+    #      if (isset($yaml['source']['constants']['SOURCE_BINARY_DIRECTORY'])) {
+    #        $binary_dir = $yaml['source']['constants']['SOURCE_BINARY_DIRECTORY'];
+    #      }
+    #      else {
+    #        $this->logger->warning(
+    #          'Not deriving ingest with SOURCE_BINARY_DIRECTORY not set.',
+    #          ['@dir' => $binary_dir]
+    #        );
+    #        $new_migrations = [];
+    #        break;
+    #      }
+    #      $allowed_source_dirs = [];
+    #      $allowed_source_dirs += $this->configFactory->get('islandora_spreadsheet_ingest.settings')->get('binary_directory_whitelist');
+    #      if (!in_array($binary_dir, $allowed_source_dirs)) {
+    #        $this->logger->warning(
+    #          'Not deriving ingest with SOURCE_BINARY_DIRECTORY: `@dir` check configuration.',
+    #          ['@dir' => $binary_dir]
+    #        );
+    #        $new_migrations = [];
+    #        break;
+    #      }
+    #    }
+    #    $new_migrations[$yaml['id']] = $yaml;
+    #  }
+    #  if ($new_migrations) {
+    #    $this->derivatives = array_merge($this->derivatives, $new_migrations);
+    #  }
+    #}
 
     return $this->derivatives;
   }

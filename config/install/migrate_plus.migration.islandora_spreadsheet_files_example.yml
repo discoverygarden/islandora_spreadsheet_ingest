@@ -10,25 +10,25 @@ source:
     - 'Digital_File'
     - 'Mime'
 process:
-  field_digital_file_exists:
+  _file_exists:
     plugin: skip_on_empty
     method: row
     source: 'Digital_File'
     message: 'Field Digital_File is missing'
-  destination_filename:
+  _destination_filename:
     - plugin: callback
       callable: basename
       source: 'Digital_File'
-  destination_full_path:
+  _destination_full_path:
     - plugin: concat
       source:
         - constants/DRUPAL_FILE_DIRECTORY
-        - '@destination_filename'
+        - '@_destination_filename'
     - plugin: urlencode
     - plugin: dgi_migrate.process.log
       template: 'Destination Full Path: :value'
       level: 4
-  source_image_path:
+  _source_image_path:
     - plugin: concat
       source:
         - constants/SOURCE_BINARY_DIRECTORY
@@ -36,13 +36,13 @@ process:
   uri:
     - plugin: file_copy
       source:
-        - '@source_image_path'
-        - '@destination_full_path'
+        - '@_source_image_path'
+        - '@_destination_full_path'
       file_exists: 'rename'
       # Should probably be a move in non-examples.
       move: FALSE
   filemime: Mime
-  filename: '@destination_filename'
+  filename: '@_destination_filename'
   status:
     - plugin: default_value
       default_value: 1
