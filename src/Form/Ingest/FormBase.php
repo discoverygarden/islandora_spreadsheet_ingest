@@ -1,9 +1,11 @@
 <?php
 
-namespace Drupal\islandora_spreadsheet_ingest\Form;
+namespace Drupal\islandora_spreadsheet_ingest\Form\Ingest;
 
 use Drupal\Core\Form\FormBase as DrupalFormBase;
 use Drupal\Core\TempStore\PrivateTempStoreFactory;
+use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\Core\Form\FormStateInterface;
 
 abstract class FormBase extends DrupalFormBase {
   const MG = 'islandora_spreadsheet_example';
@@ -11,9 +13,9 @@ abstract class FormBase extends DrupalFormBase {
 
   protected $store;
 
-  protected function __construct(PrivateTempStoreFactory $private_temp_store_factory)
+  protected function __construct(PrivateTempStoreFactory $private_temp_store_factory) {
     $this->store = $private_temp_store_factory->get(static::TEMP_STORE_NAME);
-  )
+  }
 
   public static function create(ContainerInterface $container) {
     return new static(

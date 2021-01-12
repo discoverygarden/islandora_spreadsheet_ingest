@@ -59,6 +59,20 @@ class Review extends FormBase {
 
     $form += parent::buildForm($form, $form_state);
 
+    $form['timing'] = [
+      '#type' => 'details',
+      '#title' => $this->t('Timing'),
+      'enqueue' => [
+        '#type' => 'radios',
+        '#title' => $this->t('Processing'),
+        '#options' => [
+          'defer' => $this->t('Deferred'),
+          'immediate' => $this->t('Immediate'),
+        ],
+        '#default_value' => 'defer',
+      ],
+    ];
+
     $form['actions'] += [
       'submit' => [
         '#type' => 'submit',

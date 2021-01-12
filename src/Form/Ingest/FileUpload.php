@@ -38,7 +38,7 @@ class FileUpload extends FormBase {
     $instance = parent::create($container);
 
     $instance->entityTypeManager = $container->get('entity_type.manager');
-    $instance->fileEntityStorage = $this->entityTypeManager->getStorage('file');
+    $instance->fileEntityStorage = $instance->entityTypeManager->getStorage('file');
 
     return $instance;
   }
@@ -90,34 +90,24 @@ class FileUpload extends FormBase {
 
     $form += parent::buildForm($form, $form_state);
 
-    $form['flow'] = [
-      '#type' => 'vertical_tabs',
-    ];
-
     $target_file = $form_state->getValue('target_file');
     $sheet_options = $this->getSpreadsheetOptions($form_state);
-    $form['spreadsheet'] = [
-      '#type' => 'details',
-      '#group' => 'flow',
-      '#title' => $this->t('Spreadsheet selection'),
-      '#description' => $this->t('Select a file and spreadsheet to '),
-      'target_file' => [
-        '#type' => 'managed_file',
-        '#title' => $this->t('Target file'),
-        '#upload_validators' => [
-          'file_validate_extensions' => ['xlsx xlsm xltx xltm xls xlt ods ots slk xml gnumeric htm html csv'],
-        ],
-        'sheet' => [
-          '#type' => 'select',
-          '#title' => $this->t('Sheet'),
-          '#empty_value' => '-\\_/- select -/_\\-',
-          '#options' => $sheet_options,
-          '#default_value' => count($sheet_options) === 1 ? key($sheet_options) : NULL,
-          '#states' => [
-            'visible' => [
-              ':input[name="target_file[fids]"]' => [
-                'filled' => TRUE,
-              ],
+    $form['target_file'] = [
+      '#type' => 'managed_file',
+      '#title' => $this->t('Target file'),
+      '#upload_validators' => [
+        'file_validate_extensions' => ['xlsx xlsm xltx xltm xls xlt ods ots slk xml gnumeric htm html csv'],
+      ],
+      'sheet' => [
+        '#type' => 'select',
+        '#title' => $this->t('Sheet'),
+        '#empty_value' => '-\\_/- select -/_\\-',
+        '#options' => $sheet_options,
+        '#default_value' => count($sheet_options) === 1 ? key($sheet_options) : NULL,
+        '#states' => [
+          'visible' => [
+            ':input[name="target_file[fids]"]' => [
+              'filled' => TRUE,
             ],
           ],
         ],

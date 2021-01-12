@@ -3,8 +3,12 @@
 namespace Drupal\islandora_spreadsheet_ingest\Spreadsheet;
 
 use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Cell\Cell;
 use Drupal\file\FileInterface;
 
+/**
+ * Spreadsheet service.
+ */
 class SpreadsheetService implements SpreadsheetServiceInterface {
 
   /**
@@ -39,19 +43,27 @@ class SpreadsheetService implements SpreadsheetServiceInterface {
     $filter = new ChunkReadFilter($row, $row + 1);
     $loaded = $reader->load($file->getFileUri());
 
-    $header = [];
-
     foreach ($loaded->getActiveSheet()->getRowIterator() as $row) {
       $cell_iterator = $row->getCellIterator();
       $cell_iterator->setIterateOnlyExistingCells(FALSE);
 
-      foreach ($cell_iterator as $cell) {
-        $header[] = $cell->getValue();
-      }
+      return array_map([static::class, 'mapCellToValue'], iterator_to_array($cell_iterator));
     }
 
-    return $header;
+    throw new Exception('Failed to read header.');
+  }
 
+  /**
+   * Get the value of a cell.
+   *
+   * @param \PhpOffice\PhpSpreadsheet\Cell\Cell $cell
+   *   The cell of which to get the value.
+   *
+   * @return mixed
+   *   The value of the cell.
+   */
+  protected static function mapCellToValue(Cell $cell) {
+    return $cell->getValue();
   }
 
   /**
