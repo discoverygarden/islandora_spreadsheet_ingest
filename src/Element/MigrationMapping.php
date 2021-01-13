@@ -10,6 +10,10 @@ use Drupal\migrate\Row;
 use Drupal\file\FileInterface;
 use Drupal\migrate\Plugin\migrate\destination\Entity;
 use Drupal\migrate\Plugin\MigrationInterface;
+use Drupal\islandora_spreadsheet_ingest\Model\RowSource;
+use Drupal\islandora_spreadsheet_ingest\Model\Pipeline;
+use Drupal\islandora_spreadsheet_ingest\Model\ProcessPluginWrapper;
+use Drupal\islandora_spreadsheet_ingest\Model\ProcessSourcePluginWrapper;
 
 /**
  * Migration mapping element.
@@ -27,6 +31,7 @@ class MigrationMapping extends FormElement {
       '#source' => [],
       '#migration' => NULL,
       '#process' => [
+        [static::class, 'prepopulateEntries'],
         [static::class, 'processMapping'],
         [static::class, 'processEntries'],
       ],
@@ -52,18 +57,21 @@ class MigrationMapping extends FormElement {
     }
   }
 
-  protected static function getDestinationOptions(MigrationInterface $migration) {
-    return array_map(function ($prop) {
-      return t(':ind:label (:name)', [
-        ':label' => $prop->getLabel(),
-        ':name' => $prop->getName(),
-        ':ind' => $prop->isRequired() ? '*' : '',
-      ]);
-    }, static::getDestinationProperties($migration));
+  protected static function getDestinationOptions(MigrationInterface $migration, FormStateInterface $form_state) {
+    return array_map(
+      function ($prop) {
+        return t(':ind:label (:name)', [
+          ':label' => $prop->getLabel(),
+          ':name' => $prop->getName(),
+          ':ind' => $prop->isRequired() ? '*' : '',
+        ]);
+      },
+      static::getUnusedDestinationProperties($migration, $form_state)
+    );
   }
 
-  protected static function getSourceOptions(FileInterface $file, $sheet) {
-    $header = \Drupal::service('islandora_spreadsheet_ingest.spreadsheet_service')->getHeader($file, $sheet);
+  protected static function getSourceOptions(array $source) {
+    $header = \Drupal::service('islandora_spreadsheet_ingest.spreadsheet_service')->getHeader($source['file'], $source['sheet']);
     return array_combine($header, $header);
   }
 
@@ -98,12 +106,12 @@ class MigrationMapping extends FormElement {
       'source_column' => [
         '#type' => 'select',
         '#title' => t('Source Columns'),
-        '#options' => static::getSourceOptions($element['#source']['file'], $element['#source']['sheet']),
+        '#options' => static::getSourceOptions($element['#source']),
       ],
       'destination' => [
         '#type' => 'select',
         '#title' => t('Destination'),
-        '#options' => static::getDestinationOptions($element['#migration']),
+        '#options' => static::getDestinationOptions($element['#migration'], $form_state),
       ],
       'add_new_mapping' => [
         '#type' => 'submit',
@@ -117,38 +125,87 @@ class MigrationMapping extends FormElement {
     return $element;
   }
 
-  public static function processEntries(array &$element, FormStateInterface $form_state) {
-    if (!$element['#entries_prepopulated']) {
-      // TODO: Prepopulate the entries... to form state storage?
-      $element['#entries_prepopulated'] = TRUE;
+  protected static function getEntries(MigrationInterface $migration, FormStateInterface $form_state) {
+    return $form_state->getStorage()[$migration->id()]['entries'] ?: [];
+  }
+  protected static function setEntries(MigrationInterface $migration, FormStateInterface $form_state, $entries) {
+    $storage =& $form_state->getStorage();
+    $storage[$migration->id()]['entries'] = $entries;
+  }
+
+  protected static function getUnusedDestinationProperties(MigrationInterface $migration, FormStateInterface $form_state) {
+
+    return array_diff_key(
+      static::getDestinationProperties($migration),
+      static::getEntries($migration, $form_state)
+    );
+
+  }
+
+  protected static function mapMigrationProcessToPipelines(MigrationInterface $migration) {
+    $entries = [];
+
+    $map_to_source = function ($config) use (&$entries) {
+      if (isset($config['source']) && ($source = $config['source']) && is_string($source)) {
+        return isset($entries[$source]) ? $entries[$source] : new RowSource($source);
+      }
+      else {
+        return new ProcessSourcePluginWrapper($config);
+      }
+    };
+
+    foreach ($migration->getProcess() as $prop_name => $configs) {
+      $entry = new Pipeline(
+        $map_to_source($configs[0]),
+        $prop_name
+      );
+      foreach (array_slice($configs, 1) as $config) {
+        $entry->addStep(new ProcessPluginWrapper($config));
+      }
+      $entries[$prop_name] = $entry;
     }
-    // TODO: Generate table entries from storage.
-    $element['table'] += [
-      1 => [
-        '#attributes' => ['class' => ['draggable']],
-        'source' => ['#markup' => t('what')],
-        'destination' => ['#markup' => t('there')],
-        'weight' => [
-           '#type' => 'weight',
-           '#default_value' => 1,
-           '#wrapper_attributes' => [
-             'class' => ['tabledrag-hide'],
-           ],
-         ],
-      ],
-      2 => [
-        '#attributes' => ['class' => ['draggable']],
-        'source' => ['#markup' => t('what')],
-        'destination' => ['#markup' => t('there')],
-        'weight' => [
-          '#type' => 'weight',
-          '#default_value' => 2,
-          '#wrapper_attributes' => [
-            'class' => ['tabledrag-hide'],
-          ],
-        ],
-      ],
-    ];
+
+    return $entries;
+  }
+
+  public static function prepopulateEntries(array &$element, FormStateInterface $form_state) {
+    //if (!$element['#entries_prepopulated']) {
+      dsm('reloading...');
+      // Load up the entries from the migration.
+      $entries = static::mapMigrationProcessToPipelines($element['#migration']);
+      static::setEntries($element['#migration'], $form_state, $entries);
+
+      $unused_props_in_source = array_intersect_key(
+        static::getUnusedDestinationProperties($element['#migration'], $form_state),
+        static::getSourceOptions($element['#source'])
+      );
+
+      foreach ($unused_props_in_source as $name => $unused) {
+        $entries[$name] = new Pipeline(
+          new RowSource($name),
+          $name
+        );
+      }
+      static::setEntries($element['#migration'], $form_state, $entries);
+      $element['#entries_prepopulated'] = TRUE;
+    //}
+
+    return $element;
+  }
+
+  public static function processEntries(array &$element, FormStateInterface $form_state) {
+
+    // Generate table entries from storage.
+    $element['table'] += array_map(
+      function ($entry) {
+        return [
+          '#type' => 'islandora_spreadsheet_ingest_migration_mapping_entry',
+          '#entry' => $entry,
+        ];
+      },
+      static::getEntries($element['#migration'], $form_state)
+    );
+
     return $element;
   }
 
