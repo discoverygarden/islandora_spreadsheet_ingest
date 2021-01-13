@@ -38,6 +38,15 @@ class MigrationMappingEntry extends FormElement {
   public static function processEntry(array &$element, FormStateInterface $form_state) {
     assert($element['#entry'] !== NULL);
 
+    $element['select'] = [
+      '#type' => 'checkbox',
+      '#return_value' => 1,
+      '#wrapper_attributes' => [
+        'class' => [
+          'table-select',
+        ],
+      ],
+    ];
     $element['source'] = [
       '#markup' => $element['#entry']->getSource()->getName(),
     ];

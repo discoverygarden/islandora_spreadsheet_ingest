@@ -5,6 +5,7 @@ namespace Drupal\islandora_spreadsheet_ingest\Element;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Element\FormElement;
 use Drupal\Component\Utility\Html as HtmlUtility;
+use Drupal\Component\Utility\NestedArray;
 
 use Drupal\migrate\Row;
 use Drupal\file\FileInterface;
@@ -98,6 +99,9 @@ class MigrationMapping extends FormElement {
       '#type' => 'submit',
       '#value' => t('Remove selected'),
       '#name' => "remove_{$element['#migration']->id()}",
+      '#validate' => [
+        [static::class, 'validateRemoveMapping'],
+      ],
       '#submit' => [
         [static::class, 'submitRemoveMapping'],
       ],
@@ -125,8 +129,14 @@ class MigrationMapping extends FormElement {
     return $element;
   }
 
+  protected static function getMigrationStorage(MigrationInterface $migration, FormStateInterface $form_state) {
+    return $form_state->getStorage()[$migration->id()] ?: [
+      'autopopulated' => FALSE,
+      'entries' => [],
+    ];
+  }
   protected static function getEntries(MigrationInterface $migration, FormStateInterface $form_state) {
-    return $form_state->getStorage()[$migration->id()]['entries'] ?: [];
+    return $form_state->getStorage()[$migration->id()]['entries'];
   }
   protected static function setEntries(MigrationInterface $migration, FormStateInterface $form_state, $entries) {
     $storage =& $form_state->getStorage();
@@ -169,7 +179,11 @@ class MigrationMapping extends FormElement {
   }
 
   public static function prepopulateEntries(array &$element, FormStateInterface $form_state) {
-    //if (!$element['#entries_prepopulated']) {
+    $autopop_target = [
+      $element['#migration']->id(),
+      'autopopulated',
+    ];
+    if (!NestedArray::getValue($form_state->getStorage(), $autopop_target)) {
       dsm('reloading...');
       // Load up the entries from the migration.
       $entries = static::mapMigrationProcessToPipelines($element['#migration']);
@@ -187,8 +201,8 @@ class MigrationMapping extends FormElement {
         );
       }
       static::setEntries($element['#migration'], $form_state, $entries);
-      $element['#entries_prepopulated'] = TRUE;
-    //}
+      NestedArray::setValue($form_state->getStorage(), $autopop_target, TRUE);
+    }
 
     return $element;
   }
@@ -212,12 +226,44 @@ class MigrationMapping extends FormElement {
   public static function submitAddMapping(array $form, FormStateInterface $form_state) {
     // TODO: Add the new entry to the form state and rebuild.
     $form_state->setRebuild();
-    throw new Exception("Not implemented");
+    throw new \Exception("Not implemented");
+  }
+  public static function validateRemoveMapping(array $form, FormStateInterface $form_state) {
+    // Remove the selected entries from the form state and rebuild.
+    $trigger = $form_state->getTriggeringElement();
+    $element_target = array_slice($trigger['#array_parents'], 0, -1);
+    $migration_element = NestedArray::getValue($form, $element_target);
+    $target = array_merge($element_target, ['table']);
+
+    $table = $form_state->getValue($target);
+
+    $selected = array_filter($table, function ($row) {
+      return $row['select'];
+    });
+
+    if ($selected) {
+      $form_state->setTemporaryValue('selected', $selected);
+    }
+    else {
+      $form_state->setError($table, t('Nothing selected!'));
+    }
+
   }
   public static function submitRemoveMapping(array $form, FormStateInterface $form_state) {
-    // TODO: Remove the selected entries from the form state and rebuild.
+    // Remove the selected entries from the form state and rebuild.
+    $trigger = $form_state->getTriggeringElement();
+    $element_target = array_merge(
+      array_slice($trigger['#array_parents'], 0, -1),
+      ['#migration']
+    );
+    $migration = NestedArray::getValue($form, $element_target);
+
+    static::setEntries($migration, $form_state, array_diff_key(
+      static::getEntries($migration, $form_state),
+      $form_state->getTemporaryValue('selected')
+    ));
+
     $form_state->setRebuild();
-    throw new Exception('Not implemented');
   }
 
 }
