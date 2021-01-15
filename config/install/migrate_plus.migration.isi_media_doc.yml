@@ -1,0 +1,69 @@
+id: isi_media_doc
+label: Create document media from rows in the csv.
+migration_group: isi
+source:
+  columns:
+    - 'ID'
+    - 'Title'
+    - 'Model'
+    - 'Digital_File'
+process:
+  _file_exists:
+    - plugin: get
+      source: 'Digital_File'
+    - plugin: skip_on_empty
+      method: row
+      message: 'Field Digital_File is missing'
+  bundle:
+    - plugin: get
+      source: 'Model'
+    - plugin: static_map
+      bypass: false
+      map:
+        'Digital Document': 'document'
+
+  name: Title
+
+  field_media_document:
+    - plugin: get
+      source: ID
+    - plugin: migration_lookup
+      migration: isi_file
+      no_stub: true
+    - plugin: dgi_migrate.load_entity
+      entity_type: entity:file
+
+  field_media_use:
+    - plugin: default_value
+      # XXX: Not a perfect match, but seems to be closest, without rolling our
+      # own.
+      default_value: http://pcdm.org/use#OriginalFile
+    - plugin: entity_lookup
+      bundle_key: vid
+      bundle: islandora_media_use
+      value_key: field_external_uri
+      entity_type: taxonomy_term
+      # XXX: migrate_plus's case comparison makes assumptions about the entity's
+      # "main" property... we want "uri", but it assumes "value".
+      ignore_case: true
+
+  field_media_of:
+    - plugin: get
+      source: 'ID'
+    - plugin: migration_lookup
+      migration: isi_node
+      no_stub: true
+    - plugin: dgi_migrate.load_entity
+      entity_type: entity:node
+
+destination:
+  plugin: entity:media
+  default_bundle: document
+migration_dependencies:
+  required:
+    - isi_file
+    - isi_node
+dependencies:
+  enforced:
+    module:
+      - islandora_spreadsheet_ingest
