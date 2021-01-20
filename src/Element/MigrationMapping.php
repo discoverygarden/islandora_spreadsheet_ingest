@@ -39,6 +39,7 @@ class MigrationMapping extends FormElement {
         [static::class, 'processEntries'],
       ],
       '#entries_prepopulated' => FALSE,
+      '#input' => FALSE,
     ];
   }
 
@@ -255,7 +256,7 @@ class MigrationMapping extends FormElement {
     return $element;
   }
 
-  public static function validateAddMapping(array $form, FormStateInterface $form_state) {
+  public static function validateAddMapping(array &$form, FormStateInterface $form_state) {
     $trigger = $form_state->getTriggeringElement();
     $element_target = array_merge(
       array_slice($trigger['#array_parents'], 0, -2),
@@ -277,14 +278,15 @@ class MigrationMapping extends FormElement {
     }
   }
 
-  public static function submitAddMapping(array $form, FormStateInterface $form_state) {
+  public static function submitAddMapping(array &$form, FormStateInterface $form_state) {
     // Add the entry to form state and rebuild.
     $trigger = $form_state->getTriggeringElement();
-    $element_target = array_merge(
-      array_slice($trigger['#array_parents'], 0, -2),
+    $element_target = array_slice($trigger['#array_parents'], 0, -2);
+    $migration_target = array_merge(
+      $element_target,
       ['#migration']
     );
-    $migration = NestedArray::getValue($form, $element_target);
+    $migration = NestedArray::getValue($form, $migration_target);
 
     $new = $form_state->getTemporaryValue('new');
     static::setEntries($migration, $form_state, array_merge(
@@ -294,6 +296,11 @@ class MigrationMapping extends FormElement {
       ]
     ));
 
+
+    dsm($form_state, 'fs');
+    NestedArray::unsetValue($form, ['mapping']);
+    NestedArray::unsetValue($form_state->getCompleteForm(), ['mapping']);
+    $form_state->setProcessInput(FALSE);
     $form_state->setRebuild();
   }
 

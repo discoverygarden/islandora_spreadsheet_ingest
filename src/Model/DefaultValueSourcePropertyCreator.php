@@ -5,9 +5,12 @@ namespace Drupal\islandora_spreadsheet_ingest\Model;
 use Drupal\Core\Form\FormStateInterface;
 
 class DefaultValueSourcePropertyCreator implements ConfiguredSourceInterface {
+
+  use ConfiguredSourceTrait;
+
   const NAME = 'default_value';
 
-  protected $name;
+  protected $name = NULL;
 
   public function __construct($name = NULL) {
     $this->name = $name;
@@ -18,7 +21,7 @@ class DefaultValueSourcePropertyCreator implements ConfiguredSourceInterface {
   }
 
   public function getName() {
-    return $this->name ? t('Default value: :value', [':value' => $this->name]) : t('New default value');
+    return ($this->name !== NULL) ? t('Default value: ":value"', [':value' => $this->name]) : t('New default value');
   }
 
   public function getForm(FormStateInterface $form_state) {
@@ -32,11 +35,8 @@ class DefaultValueSourcePropertyCreator implements ConfiguredSourceInterface {
     ];
   }
 
-  public function submitForm($element, FormStateInterface $form_state) {
-    $this->name = $form_state->getValue(array_merge(
-      $element['#parents'],
-      'default_value'
-    ));
+  public function submitFormValues(array $values) {
+    $this->name = $values['default_value'];
   }
 
   public function toProcessArray() {

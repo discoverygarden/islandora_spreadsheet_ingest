@@ -111,7 +111,7 @@ class MappingSource extends FormElement {
       try {
         list($name, $prop) = static::getSelectedProperty($element, $form_state);
         if ($prop instanceof ConfiguredSourceInterface) {
-          $prop->submitForm($element['config'][$name], $form_state);
+          $prop->submitFormValues($form_state->getValue(array_merge($element['#parents'], ['config', $name])));
         }
         $form_state->setValueForElement($element, $prop);
         return $prop;
