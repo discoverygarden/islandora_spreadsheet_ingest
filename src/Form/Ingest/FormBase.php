@@ -8,7 +8,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Form\FormStateInterface;
 
 abstract class FormBase extends DrupalFormBase {
-  const MG = 'islandora_spreadsheet_example';
+  const MG = 'isi';
   const TEMP_STORE_NAME = 'islandora_spreadsheet_ingest.csv_ingest';
 
   protected $store;

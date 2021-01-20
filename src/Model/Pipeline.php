@@ -26,6 +26,10 @@ class Pipeline implements PipelineInterface {
     return "@{$this->destinationName}";
   }
 
+  public function getSourceName() {
+    return t('Processed value');
+  }
+
   public function addStep(PipelineStepInterface $step) {
     if ($step->toProcessArray() == $this->source->toProcessArray()) {
       return;

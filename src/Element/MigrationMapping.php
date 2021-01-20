@@ -12,9 +12,11 @@ use Drupal\file\FileInterface;
 use Drupal\migrate\Plugin\migrate\destination\Entity;
 use Drupal\migrate\Plugin\MigrationInterface;
 use Drupal\islandora_spreadsheet_ingest\Model\RowSource;
+use Drupal\islandora_spreadsheet_ingest\Model\SourceInterface;
 use Drupal\islandora_spreadsheet_ingest\Model\Pipeline;
 use Drupal\islandora_spreadsheet_ingest\Model\ProcessPluginWrapper;
 use Drupal\islandora_spreadsheet_ingest\Model\ProcessSourcePluginWrapper;
+use Drupal\islandora_spreadsheet_ingest\Model\DefaultValueSourcePropertyCreator;
 
 /**
  * Migration mapping element.
@@ -71,9 +73,29 @@ class MigrationMapping extends FormElement {
     );
   }
 
-  protected static function getSourceOptions(array $source) {
+  protected static function getSourceProperties(array $element, FormStateInterface $form_state) {
+    $source = $element['#source'];
     $header = \Drupal::service('islandora_spreadsheet_ingest.spreadsheet_service')->getHeader($source['file'], $source['sheet']);
-    return array_combine($header, $header);
+
+    return array_merge(
+      array_combine($header, array_map(function ($col) {
+        return new RowSource($col, t('Selected spreadsheet'));
+      }, $header)),
+      static::getEntries($element['#migration'], $form_state),
+      [
+        DefaultValueSourcePropertyCreator::NAME => new DefaultValueSourcePropertyCreator(),
+      ]
+    );
+  }
+
+  public static function tableSelection(array &$element, $input, FormStateInterface $form_state) {
+    if ($input) {
+      $keys = array_keys(array_filter($input, function ($row) {
+        return isset($row['select']) ? $row['select'] : FALSE;
+      }));
+      return array_combine($keys, $keys);
+
+    }
   }
 
   public static function processMapping(array &$element, FormStateInterface $form_state) {
@@ -86,7 +108,7 @@ class MigrationMapping extends FormElement {
         ['data' => t('Weight'), 'class' => ['tabledrag-hide']],
       ],
       '#tableselect' => TRUE,
-      '#empty' => t('It be empty, yo.'),
+      '#empty' => t('There are no fields mapped.'),
       '#tabledrag' => [
         [
           'action' => 'order',
@@ -94,11 +116,15 @@ class MigrationMapping extends FormElement {
           'group' => 'group-weight',
         ],
       ],
+      '#value_callback' => [static::class, 'tableSelection'],
     ];
     $element['remove_selected'] = [
       '#type' => 'submit',
       '#value' => t('Remove selected'),
       '#name' => "remove_{$element['#migration']->id()}",
+      '#limit_validation_errors' => [
+        array_merge($element['#parents'], ['table']),
+      ],
       '#validate' => [
         [static::class, 'validateRemoveMapping'],
       ],
@@ -108,9 +134,8 @@ class MigrationMapping extends FormElement {
     ];
     $element['add_mapping'] = [
       'source_column' => [
-        '#type' => 'select',
-        '#title' => t('Source Columns'),
-        '#options' => static::getSourceOptions($element['#source']),
+        '#type' => 'islandora_spreadsheet_ingest_migration_mapping_source',
+        '#properties' => static::getSourceProperties($element, $form_state),
       ],
       'destination' => [
         '#type' => 'select',
@@ -121,9 +146,17 @@ class MigrationMapping extends FormElement {
         '#type' => 'submit',
         '#value' => t('Add mapping'),
         '#name' => "add_{$element['#migration']->id()}",
+        '#limit_validation_errors' => [
+          array_merge($element['#parents'], ['add_mapping']),
+          array_merge($element['#parents'], ['add_mapping', 'source_column']),
+          array_merge($element['#parents'], ['add_mapping', 'destination']),
+        ],
+        '#validate' => [
+          [static::class, 'validateAddMapping'],
+        ],
         '#submit' => [
           [static::class, 'submitAddMapping'],
-        ]
+        ],
       ],
     ];
     return $element;
@@ -157,7 +190,7 @@ class MigrationMapping extends FormElement {
 
     $map_to_source = function ($config) use (&$entries) {
       if (isset($config['source']) && ($source = $config['source']) && is_string($source)) {
-        return isset($entries[$source]) ? $entries[$source] : new RowSource($source);
+        return isset($entries[$source]) ? $entries[$source] : new RowSource($source, t('Unknown'));
       }
       else {
         return new ProcessSourcePluginWrapper($config);
@@ -184,19 +217,18 @@ class MigrationMapping extends FormElement {
       'autopopulated',
     ];
     if (!NestedArray::getValue($form_state->getStorage(), $autopop_target)) {
-      dsm('reloading...');
       // Load up the entries from the migration.
       $entries = static::mapMigrationProcessToPipelines($element['#migration']);
       static::setEntries($element['#migration'], $form_state, $entries);
 
       $unused_props_in_source = array_intersect_key(
-        static::getUnusedDestinationProperties($element['#migration'], $form_state),
-        static::getSourceOptions($element['#source'])
+        static::getSourceProperties($element, $form_state),
+        static::getUnusedDestinationProperties($element['#migration'], $form_state)
       );
 
       foreach ($unused_props_in_source as $name => $unused) {
         $entries[$name] = new Pipeline(
-          new RowSource($name),
+          $unused,
           $name
         );
       }
@@ -223,17 +255,54 @@ class MigrationMapping extends FormElement {
     return $element;
   }
 
-  public static function submitAddMapping(array $form, FormStateInterface $form_state) {
-    // TODO: Add the new entry to the form state and rebuild.
-    $form_state->setRebuild();
-    throw new \Exception("Not implemented");
+  public static function validateAddMapping(array $form, FormStateInterface $form_state) {
+    $trigger = $form_state->getTriggeringElement();
+    $element_target = array_merge(
+      array_slice($trigger['#array_parents'], 0, -2),
+      ['#migration']
+    );
+    $migration = NestedArray::getValue($form, $element_target);
+
+    $adder = array_slice($trigger['#array_parents'], 0, -1);
+    $source_target = array_merge($adder, ['source_column']);
+    $source_el = NestedArray::getValue($form, $source_target);
+    $source = $form_state->getValue($source_target);
+    $destination = $form_state->getValue(array_merge($adder, ['destination']));
+
+    if ($source instanceof SourceInterface) {
+      $form_state->setTemporaryValue('new', new Pipeline(
+        $source,
+        $destination
+      ));
+    }
   }
+
+  public static function submitAddMapping(array $form, FormStateInterface $form_state) {
+    // Add the entry to form state and rebuild.
+    $trigger = $form_state->getTriggeringElement();
+    $element_target = array_merge(
+      array_slice($trigger['#array_parents'], 0, -2),
+      ['#migration']
+    );
+    $migration = NestedArray::getValue($form, $element_target);
+
+    $new = $form_state->getTemporaryValue('new');
+    static::setEntries($migration, $form_state, array_merge(
+      static::getEntries($migration, $form_state),
+      [
+        $new->getName() => $new,
+      ]
+    ));
+
+    $form_state->setRebuild();
+  }
+
   public static function validateRemoveMapping(array $form, FormStateInterface $form_state) {
     // Remove the selected entries from the form state and rebuild.
     $trigger = $form_state->getTriggeringElement();
     $element_target = array_slice($trigger['#array_parents'], 0, -1);
-    $migration_element = NestedArray::getValue($form, $element_target);
     $target = array_merge($element_target, ['table']);
+    $table_element = NestedArray::getValue($form, $target);
 
     $table = $form_state->getValue($target);
 
@@ -245,7 +314,7 @@ class MigrationMapping extends FormElement {
       $form_state->setTemporaryValue('selected', $selected);
     }
     else {
-      $form_state->setError($table, t('Nothing selected!'));
+      $form_state->setError($table_element, t('Nothing selected!'));
     }
 
   }

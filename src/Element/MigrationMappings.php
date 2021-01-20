@@ -44,6 +44,7 @@ class MigrationMappings extends FormElement {
         $migration_plus_migrations
       )
     );
+
     return $element;
   }
 

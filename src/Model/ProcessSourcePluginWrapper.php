@@ -8,4 +8,8 @@ class ProcessSourcePluginWrapper extends ProcessPluginWrapper implements SourceI
   public function getName() {
     return var_export($this->configuration, TRUE);
   }
+
+  public function getSourceName() {
+    return t('Wrapped');
+  }
 }
