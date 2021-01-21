@@ -11,7 +11,35 @@ islandora_spreadsheet_ingest.settings:
 #islandora_spreadsheet_ingest.request_structure:
 #  type: config_entity
 #  mapping:
-#    csv:
-#      type: entity:file
-#      label: The CSV file to process.
-#    
+#    id:
+#      type: string
+#      label: ID
+#    label:
+#      type: label
+#      label: Label
+#    source:
+#      type: mapping
+#      mapping:
+#        file:
+#          type: entity:file
+#          label: The spreadsheet file to process.
+#        sheet:
+#          type: string
+#          label: The worksheet of the file to process.
+#    mappings:
+#      type: sequence
+#      sequence:
+#        migration:
+#          type: mapping
+#          mapping:
+#            id:
+#              type: string
+#              label: ID
+#            mappings:
+#              type: sequence
+#              sequence:
+#                pipeline:
+#                  type: sequence
+#                  sequence:
+#                    step:
+#                      type: ignore

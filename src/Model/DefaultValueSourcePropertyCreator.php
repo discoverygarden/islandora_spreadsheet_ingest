@@ -21,7 +21,9 @@ class DefaultValueSourcePropertyCreator implements ConfiguredSourceInterface {
   }
 
   public function getName() {
-    return ($this->name !== NULL) ? t('Default value: ":value"', [':value' => $this->name]) : t('New default value');
+    return ($this->name !== NULL) ?
+      t('Default value: ":value"', [':value' => $this->name]) :
+      t('New default value');
   }
 
   public function getForm(FormStateInterface $form_state) {
@@ -48,5 +50,9 @@ class DefaultValueSourcePropertyCreator implements ConfiguredSourceInterface {
       'plugin' => static::NAME,
       'default_value' => $this->name,
     ];
+  }
+
+  public static function createFromConfig($config) {
+    return new static($config['default_value']);
   }
 }

@@ -45,6 +45,9 @@ class MigrationMappings extends FormElement {
       )
     );
 
+    // XXX: Debug.....
+    $element['#migrations'] = array_slice($element['#migrations'], 0, 1);
+
     return $element;
   }
 

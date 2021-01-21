@@ -26,4 +26,18 @@ class RowSource implements SourceInterface {
       'source' => $this->getName(),
     ];
   }
+
+  public static function createFromConfig($config, $source_name, array $entries) {
+    $name = $config['source'];
+    foreach (['@@@', '@'] as $prefix) {
+      if (strpos($name, $prefix) === 0) {
+        $_name = substr($name, strlen($prefix));
+        if (isset($entries[$_name])) {
+          return $entries[$_name];
+        }
+      }
+    }
+
+    return new static($name, $source_name);
+  }
 }

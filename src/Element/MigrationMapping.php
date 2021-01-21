@@ -14,6 +14,7 @@ use Drupal\migrate\Plugin\MigrationInterface;
 use Drupal\islandora_spreadsheet_ingest\Model\RowSource;
 use Drupal\islandora_spreadsheet_ingest\Model\SourceInterface;
 use Drupal\islandora_spreadsheet_ingest\Model\Pipeline;
+use Drupal\islandora_spreadsheet_ingest\Model\PipelineInterface;
 use Drupal\islandora_spreadsheet_ingest\Model\ProcessPluginWrapper;
 use Drupal\islandora_spreadsheet_ingest\Model\ProcessSourcePluginWrapper;
 use Drupal\islandora_spreadsheet_ingest\Model\DefaultValueSourcePropertyCreator;
@@ -142,6 +143,7 @@ class MigrationMapping extends FormElement {
         '#type' => 'select',
         '#title' => t('Destination'),
         '#options' => static::getDestinationOptions($element['#migration'], $form_state),
+        '#cache' => FALSE,
       ],
       'add_new_mapping' => [
         '#type' => 'submit',
@@ -160,6 +162,9 @@ class MigrationMapping extends FormElement {
         ],
       ],
     ];
+    #dsm($element['add_mapping'], 'asdf');
+    #dsm(static::getDestinationProperties($element['#migration'], $form_state));
+    #dsm(static::getEntries($element['#migration'], $form_state));
     return $element;
   }
 
@@ -189,9 +194,20 @@ class MigrationMapping extends FormElement {
   protected static function mapMigrationProcessToPipelines(MigrationInterface $migration) {
     $entries = [];
 
-    $map_to_source = function ($config) use (&$entries) {
-      if (isset($config['source']) && ($source = $config['source']) && is_string($source)) {
-        return isset($entries[$source]) ? $entries[$source] : new RowSource($source, t('Unknown'));
+    $map = [
+      'get' => RowSource::class,
+      'default_value' => DefaultValueSourcePropertyCreator::class,
+    ];
+
+    $map_to_source = function ($config) use (&$entries, $map) {
+      if (!isset($config['plugin'])) {
+        throw new \Exception('Unknown plugin.');
+      }
+      elseif (isset($map[$config['plugin']])) {
+        return call_user_func([
+          $map[$config['plugin']],
+          'createFromConfig',
+        ], $config, t('Target migration'), $entries);
       }
       else {
         return new ProcessSourcePluginWrapper($config);
@@ -253,6 +269,7 @@ class MigrationMapping extends FormElement {
       static::getEntries($element['#migration'], $form_state)
     );
 
+
     return $element;
   }
 
@@ -292,15 +309,11 @@ class MigrationMapping extends FormElement {
     static::setEntries($migration, $form_state, array_merge(
       static::getEntries($migration, $form_state),
       [
-        $new->getName() => $new,
+        $new->getDestinationName() => $new,
       ]
     ));
 
-
-    dsm($form_state, 'fs');
-    NestedArray::unsetValue($form, ['mapping']);
-    NestedArray::unsetValue($form_state->getCompleteForm(), ['mapping']);
-    $form_state->setProcessInput(FALSE);
+    $form_state->setUserInput([]);
     $form_state->setRebuild();
   }
 
@@ -322,8 +335,25 @@ class MigrationMapping extends FormElement {
     }
     else {
       $form_state->setError($table_element, t('Nothing selected!'));
+      return;
     }
 
+    $migration = NestedArray::getValue($form, array_merge($element_target, ['#migration']));
+
+    $current = static::getEntries($migration, $form_state);
+
+    $to_remain = array_diff_key($current, $selected);
+    $form_state->setTemporaryValue('to_remain', $to_remain);
+    foreach ($to_remain as $name => $check) {
+      $source = $check->getSource();
+    
+      if ($source instanceof PipelineInterface && !isset($to_remain[$source->getDestinationName()])) {
+        $form_state->setError($table_element, t('%alpha depends on %bravo, so you cannot remove %bravo without removing %alpha', [
+          '%alpha' => $check->getDestinationName(),
+          '%bravo' => $check->getSource()->getName(),
+        ]));
+      }
+    }
   }
   public static function submitRemoveMapping(array $form, FormStateInterface $form_state) {
     // Remove the selected entries from the form state and rebuild.
@@ -334,10 +364,7 @@ class MigrationMapping extends FormElement {
     );
     $migration = NestedArray::getValue($form, $element_target);
 
-    static::setEntries($migration, $form_state, array_diff_key(
-      static::getEntries($migration, $form_state),
-      $form_state->getTemporaryValue('selected')
-    ));
+    static::setEntries($migration, $form_state, $form_state->getTemporaryValue('to_remain'));
 
     $form_state->setRebuild();
   }
