@@ -22,7 +22,7 @@ process:
       callable: basename
   uri:
     - plugin: default_value
-      default_value: 'Y-m/d'
+      default_value: 'Y-m'
     - plugin: callback
       callable: date
     - plugin: concat
