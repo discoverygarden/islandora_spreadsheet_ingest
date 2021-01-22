@@ -20,20 +20,25 @@ process:
       source: '@_file_defined'
     - plugin: callback
       callable: basename
-  _destination_full_path:
+  uri:
+    - plugin: default_value
+      default_value: 'Y-m/d'
+    - plugin: callback
+      callable: date
     - plugin: concat
       source:
-        - constants/DRUPAL_FILE_DIRECTORY
+        - 'repo-bin:/'
+        - ''
         - '@_destination_filename'
+      delimiter: '/'
     - plugin: urlencode
     - plugin: dgi_migrate.process.log
       template: 'Destination Full Path: :value'
       level: 4
-  uri:
     - plugin: file_copy
       source:
-        - '@_source_image_path'
-        - '@_destination_full_path'
+        - Digital_File
+        - ''
       file_exists: 'rename'
       # Should probably be a move in non-examples.
       move: FALSE
