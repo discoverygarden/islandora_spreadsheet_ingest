@@ -2,3 +2,6 @@
 services:
   islandora_spreadsheet_ingest.spreadsheet_service:
     class: Drupal\islandora_spreadsheet_ingest\Spreadsheet\SpreadsheetService
+  plugin.manager.isi_pipeline_source:
+    class: Drupal\islandora_spreadsheet_ingest\Plugin\PipelineSourcePluginManager
+    parent: default_plugin_manager

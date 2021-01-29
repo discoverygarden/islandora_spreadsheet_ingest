@@ -1,15 +1,20 @@
-islandora_spreadsheet_ingest.file_upload:
+islandora_spreadsheet_ingest.request.collection:
   path: 'admin/content/islandora_spreadsheet_ingest'
   defaults:
+    _entity_list: isi_request
+    _title: Islandora SpreadSheet Ingest
+islandora_spreadsheet_ingest.request.add:
+  path: 'admin/content/islandora_spreadsheet_ingest/add'
+  defaults:
     _title: 'Add Content From Spreadsheet - Upload'
-    _form: '\Drupal\islandora_spreadsheet_ingest\Form\Ingest\FileUpload'
+    _entity_form: 'isi_request.add'
   requirements:
     _permission: 'access content overview'
-islandora_spreadsheet_ingest.mapping:
-  path: 'admin/content/islandora_spreadsheet_ingest/mapping'
+islandora_spreadsheet_ingest.request.edit:
+  path: 'admin/content/islandora_spreadsheet_ingest/{isi_request}/mapping'
   defaults:
-    _title: 'Add Content From Spreadsheet - Mapping'
-    _form: '\Drupal\islandora_spreadsheet_ingest\Form\Ingest\Mapping'
+    _title: 'Mapping'
+    _entity_form: 'isi_request.edit'
   requirements:
     _permission: 'access content overview'
 islandora_spreadsheet_ingest.review:

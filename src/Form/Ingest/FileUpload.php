@@ -2,6 +2,9 @@
 
 namespace Drupal\islandora_spreadsheet_ingest\Form\Ingest;
 
+use Drupal\Core\Entity\EntityForm;
+use Drupal\Core\Config\Entity\ConfigEntityStorageInterface;
+use Drupal\Core\Config\Entity\ConfigEntityInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\TypedData\TypedDataManagerInterface;
@@ -20,7 +23,7 @@ use Drupal\islandora_spreadsheet_ingest\Spreadsheet\ChunkReadFilter;
 /**
  * Form for setting up ingests.
  */
-class FileUpload extends FormBase {
+class FileUpload extends EntityForm {
 
   protected $entityTypeManager;
 
@@ -31,6 +34,10 @@ class FileUpload extends FormBase {
    */
   protected $fileEntityStorage;
 
+  protected $spreadsheetService;
+
+  protected $migrationPluginManager;
+
   /**
    * {@inheritdoc}
    */
@@ -39,15 +46,10 @@ class FileUpload extends FormBase {
 
     $instance->entityTypeManager = $container->get('entity_type.manager');
     $instance->fileEntityStorage = $instance->entityTypeManager->getStorage('file');
+    $instance->spreadsheetService = $container->get('islandora_spreadsheet_ingest.spreadsheet_service');
+    $instance->migrationPluginManager = $container->get('plugin.manager.migration');
 
     return $instance;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function getFormId() {
-    return 'islandora_spreadsheet_ingest_file_upload_form';
   }
 
   protected function getTargetFile(FormStateInterface $form_state) {
@@ -78,7 +80,7 @@ class FileUpload extends FormBase {
       return is_callable($lister) ?
         call_user_func($lister, $target_file) :
         // XXX: Need to provide _some_ name for things like CSVs.
-        [$this->t('Irrelevant/single-sheet format')];
+        [$this->t('Single-sheet format')];
     }
     return [];
   }
@@ -86,53 +88,154 @@ class FileUpload extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, FormStateInterface $form_state) {
+  public function form(array $form, FormStateInterface $form_state) {
+    $form = parent::form($form, $form_state);
 
-    $form += parent::buildForm($form, $form_state);
+    $entity = $this->entity;
 
     $target_file = $form_state->getValue('target_file');
-    $sheet_options = $this->getSpreadsheetOptions($form_state);
-    $form['target_file'] = [
-      '#type' => 'managed_file',
-      '#title' => $this->t('Target file'),
-      '#upload_validators' => [
-        'file_validate_extensions' => ['xlsx xlsm xltx xltm xls xlt ods ots slk xml gnumeric htm html csv'],
+    $sheets = $this->getSpreadsheetOptions($form_state);
+    $sheet_options = array_combine($sheets, $sheets);
+    $form['#tree'] = TRUE;
+    $form['label'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Label'),
+      '#maxlength' => 255,
+      '#default_value' => $entity->label(),
+      '#description' => $this->t("Label for the Example."),
+      '#required' => TRUE,
+    ];
+    $form['id'] = [
+      '#type' => 'machine_name',
+      '#default_value' => $entity->id(),
+      '#machine_name' => [
+        'exists' => [$this, 'exist'],
+      ],
+    ];
+    $form['sheet'] = [
+      'file' => [
+        '#type' => 'managed_file',
+        '#title' => $this->t('Target file'),
+        '#default_value' => $entity->getSheet()['file'],
+        '#upload_validators' => [
+          'file_validate_extensions' => ['xlsx xlsm xltx xltm xls xlt ods ots slk xml gnumeric htm html csv'],
+        ],
       ],
       'sheet' => [
-        '#type' => 'select',
+        '#type' => 'textfield',
         '#title' => $this->t('Sheet'),
-        '#empty_value' => '-\\_/- select -/_\\-',
-        '#options' => $sheet_options,
-        '#default_value' => count($sheet_options) === 1 ? key($sheet_options) : NULL,
+        '#description' => $this->t('The name of the worksheet. Leave empty for single-sheet formats such as CSV.'),
         '#states' => [
           'visible' => [
-            ':input[name="target_file[fids]"]' => [
+            ':input[name="sheet[file][fids]"]' => [
               'filled' => TRUE,
             ],
           ],
         ],
       ],
     ];
-
-    $form['actions'] += [
-      'submit' => [
-        '#type' => 'submit',
-        '#value' => $this->t('Next'),
+    $map_to_labels = function (EntityTypeManagerInterface $etm, $type) {
+      foreach ($etm->getStorage($type)->loadMultiple() as $id => $entity) {
+        yield "$type:$id" => $entity->label();
+      }
+    };
+    $form['originalMapping'] = [
+      '#type' => 'select',
+      '#title' => $this->t('Base mapping'),
+      '#description' => $this->t('The mapping upon which this ingest will be based.'),
+      '#default_value' => $this->entity->getOriginalMapping(),
+      '#options' => [
+        "{$this->t('Migration Group')}" => iterator_to_array($map_to_labels($this->entityTypeManager, 'migration_group')),
+        "{$this->t('Ingest Requests')}" => iterator_to_array($map_to_labels($this->entityTypeManager, 'isi_request')),
       ],
     ];
 
     return $form;
   }
 
+  protected function mapMappings($mapping) {
+    dsm($mapping);
+    list($type, $id) = explode(':', $mapping);
+
+    $map = [
+      'isi_request' => 'getMappingFromRequest',
+      'migration_group' => 'mapMappingFromMigrationGroup',
+    ];
+
+    return call_user_func([$this, $map[$type]], $id);
+  }
+
+  protected function mapMappingFromMigrationGroup($id) {
+    $map_migrations = function ($etm, $mpm) use ($id) {
+      $storage = $etm->getStorage('migration');
+      $names = $storage->getQuery()->condition('migration_group', $id)->execute();
+      $m_plus_m = $storage->loadMultiple($names);
+
+      $migrations = $mpm->createinstances(
+        $names,
+        array_map(
+          function ($a) { return $a->toArray(); },
+          $storage->loadMultiple($names)
+        )
+      );
+
+      $start = 0;
+      $map_migration = function ($migration) use (&$start) {
+        foreach ($migration->getProcess() as $prop => $configs) {
+          yield $prop => [
+            'weight' => $start++,
+            'pipeline' => $configs,
+          ];
+        }
+      };
+
+      foreach ($migrations as $mid => $migration) {
+        yield $mid => [
+          'original_migration_id' => $mid,
+          'mappings' => iterator_to_array($map_migration($migration))
+        ];
+      }
+    };
+
+    return iterator_to_array($map_migrations(
+      $this->entityTypeManager,
+      $this->migrationPluginManager
+    ));
+  }
+
+  protected function getMappingFromRequest($id) {
+    return $this->entityTypeManager->getStorage('isi_request')->load($id)->getMappings();
+  }
 
   /**
    * {@inheritdoc}
    */
-  public function submitForm(array &$form, FormStateInterface $form_state) {
-    $this->store->set('target_file', $form_state->getValue('target_file'));
-    $this->store->set('spreadsheet', $form_state->getValue('sheet'));
+  public function save(array $form, FormStateInterface $form_state) {
+    $request = $this->entity;
 
-    $form_state->setRedirect('islandora_spreadsheet_ingest.mapping');
+    // TODO: Copy/transform the info from the target.
+    $mapped = $this->mapMappings($request->getOriginalMapping());
+    dsm($mapped);
+    if (!$mapped) { return ;}
+    $request->set('mappings', $mapped);
+
+    try {
+      $request->save();
+
+      $form_state->setRedirect('islandora_spreadsheet_ingest.request.edit', [
+        'isi_request' => $request->id(),
+      ]);
+    }
+    catch (\Exception $e) {
+      dsm('a');
+    }
+  }
+
+  public function exist($id) {
+    $entity = $this->entityTypeManager->getStorage('isi_request')->getQuery()
+      ->condition('id', $id)
+      ->execute();
+    return (bool) $entity;
   }
 
 }

@@ -35,6 +35,7 @@ class MigrationMapping extends FormElement {
       '#source' => [],
       '#migration' => NULL,
       '#process' => [
+        [static::class, 'mapMigration'],
         [static::class, 'prepopulateEntries'],
         [static::class, 'processMapping'],
         [static::class, 'processEntries'],
@@ -42,6 +43,19 @@ class MigrationMapping extends FormElement {
       '#entries_prepopulated' => FALSE,
       '#input' => FALSE,
     ];
+  }
+
+  public static function mapMigration(array &$element, FormStateInterface $form_state) {
+    $element['#migration'] = \Drupal::service('plugin.manager.migration')
+      ->createInstance(
+        $element['#original_migration'],
+        \Drupal::service('entity_type.manager')
+          ->getStorage('migration')
+          ->load($element['#original_migration'])
+          ->toArray()
+      );
+
+    return $element;
   }
 
   protected static function getDestinationProperties(MigrationInterface $migration) {
@@ -76,16 +90,25 @@ class MigrationMapping extends FormElement {
   }
 
   protected static function getSourceProperties(array $element, FormStateInterface $form_state) {
-    $source = $element['#source'];
-    $header = \Drupal::service('islandora_spreadsheet_ingest.spreadsheet_service')->getHeader($source['file'], $source['sheet']);
+    $source = $element['#request']->getSheet();
+    $header = \Drupal::service('islandora_spreadsheet_ingest.spreadsheet_service')
+      ->getHeader(
+        \Drupal::service('entity_type.manager')->getStorage('file')->load(reset($source['file'])),
+        $source['sheet']
+      );
+
+    $isi_manager = \Drupal::service('plugin.manager.isi_pipeline_source');
 
     return array_merge(
-      array_combine($header, array_map(function ($col) {
-        return new RowSource($col, t('Selected spreadsheet'));
+      array_combine($header, array_map(function ($col) use ($isi_manager) {
+        return $isi_manager->createInstance('get', [
+          'source' => $col,
+          'source_name' => t('Selected spreadsheet')
+        ]);
       }, $header)),
       static::getEntries($element['#migration'], $form_state),
       [
-        DefaultValueSourcePropertyCreator::NAME => new DefaultValueSourcePropertyCreator(),
+        'default_value' => $isi_manager->createInstance('default_value', []),
       ]
     );
   }
@@ -168,18 +191,24 @@ class MigrationMapping extends FormElement {
     return $element;
   }
 
-  protected static function getMigrationStorage(MigrationInterface $migration, FormStateInterface $form_state) {
-    return $form_state->getStorage()[$migration->id()] ?: [
+  protected static function getMigrationStorage($migration, FormStateInterface $form_state) {
+    return $form_state->getStorage()[$migration_id] ?: [
       'autopopulated' => FALSE,
       'entries' => [],
     ];
   }
-  protected static function getEntries(MigrationInterface $migration, FormStateInterface $form_state) {
-    return $form_state->getStorage()[$migration->id()]['entries'];
+  protected static function getEntries($migration, FormStateInterface $form_state) {
+    $migration_id = $migration instanceof MigrationInterface ?
+      $migration->id() :
+      $migration;
+    return $form_state->getStorage()[$migration_id]['entries'];
   }
-  protected static function setEntries(MigrationInterface $migration, FormStateInterface $form_state, $entries) {
+  protected static function setEntries($migration, FormStateInterface $form_state, $entries) {
     $storage =& $form_state->getStorage();
-    $storage[$migration->id()]['entries'] = $entries;
+    $migration_id = $migration instanceof MigrationInterface ?
+      $migration->id() :
+      $migration;
+    $storage[$migration_id]['entries'] = $entries;
   }
 
   protected static function getUnusedDestinationProperties(MigrationInterface $migration, FormStateInterface $form_state) {
@@ -191,30 +220,21 @@ class MigrationMapping extends FormElement {
 
   }
 
-  protected static function mapMigrationProcessToPipelines(MigrationInterface $migration) {
+  protected static function mapMigrationProcessToPipelines($migration_reference) {
     $entries = [];
 
-    $map = [
-      'get' => RowSource::class,
-      'default_value' => DefaultValueSourcePropertyCreator::class,
-    ];
+    $plugin_manager = \Drupal::service('plugin.manager.isi_pipeline_source');
 
-    $map_to_source = function ($config) use (&$entries, $map) {
+    $map_to_source = function ($config) use (&$entries, $plugin_manager) {
       if (!isset($config['plugin'])) {
         throw new \Exception('Unknown plugin.');
       }
-      elseif (isset($map[$config['plugin']])) {
-        return call_user_func([
-          $map[$config['plugin']],
-          'createFromConfig',
-        ], $config, t('Target migration'), $entries);
-      }
-      else {
-        return new ProcessSourcePluginWrapper($config);
-      }
+
+      return $plugin_manager->createInstance($config['plugin'], $config);
     };
 
-    foreach ($migration->getProcess() as $prop_name => $configs) {
+    foreach ($migration_reference['mappings'] as $prop_name => $info) {
+      $configs = $info['pipeline'];
       $entry = new Pipeline(
         $map_to_source($configs[0]),
         $prop_name
@@ -230,13 +250,13 @@ class MigrationMapping extends FormElement {
 
   public static function prepopulateEntries(array &$element, FormStateInterface $form_state) {
     $autopop_target = [
-      $element['#migration']->id(),
+      $element['#original_migration'],
       'autopopulated',
     ];
     if (!NestedArray::getValue($form_state->getStorage(), $autopop_target)) {
       // Load up the entries from the migration.
-      $entries = static::mapMigrationProcessToPipelines($element['#migration']);
-      static::setEntries($element['#migration'], $form_state, $entries);
+      $entries = static::mapMigrationProcessToPipelines($element['#request']->getMappings()[$element['#original_migration']]);
+      static::setEntries($element['#original_migration'], $form_state, $entries);
 
       $unused_props_in_source = array_intersect_key(
         static::getSourceProperties($element, $form_state),
@@ -249,7 +269,7 @@ class MigrationMapping extends FormElement {
           $name
         );
       }
-      static::setEntries($element['#migration'], $form_state, $entries);
+      static::setEntries($element['#original_migration'], $form_state, $entries);
       NestedArray::setValue($form_state->getStorage(), $autopop_target, TRUE);
     }
 
@@ -346,7 +366,7 @@ class MigrationMapping extends FormElement {
     $form_state->setTemporaryValue('to_remain', $to_remain);
     foreach ($to_remain as $name => $check) {
       $source = $check->getSource();
-    
+
       if ($source instanceof PipelineInterface && !isset($to_remain[$source->getDestinationName()])) {
         $form_state->setError($table_element, t('%alpha depends on %bravo, so you cannot remove %bravo without removing %alpha', [
           '%alpha' => $check->getDestinationName(),

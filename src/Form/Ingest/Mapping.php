@@ -2,6 +2,7 @@
 
 namespace Drupal\islandora_spreadsheet_ingest\Form\Ingest;
 
+use Drupal\Core\Entity\EntityForm;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\TypedData\TypedDataManagerInterface;
@@ -19,7 +20,7 @@ use Drupal\islandora_spreadsheet_ingest\Spreadsheet\ChunkReadFilter;
 /**
  * Form for setting up ingests.
  */
-class Mapping extends FormBase {
+class Mapping extends EntityForm {
 
   protected $entityTypeManager;
 
@@ -67,15 +68,8 @@ class Mapping extends FormBase {
     return $instance;
   }
 
-  /**
-   * {@inheritdoc}
-   */
-  public function getFormId() {
-    return 'islandora_spreadsheet_ingest_mapping_form';
-  }
-
   protected function getTargetFile() {
-    $target_file = $this->store->get('target_file');
+    $target_file = $this->entity->getSheet()['file'];
     if ($target_file) {
       return $this->fileEntityStorage->load(reset($target_file));
     }
@@ -86,21 +80,17 @@ class Mapping extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, FormStateInterface $form_state) {
+  public function form(array $form, FormStateInterface $form_state) {
 
-    $form += parent::buildForm($form, $form_state);
+    $form = parent::form($form, $form_state);
 
     $form['mappings'] = [
       '#type' => 'islandora_spreadsheet_ingest_migration_mappings',
-      '#migration_group' => static::MG,
-      '#source' => [
-        'file' => $this->getTargetFile(),
-        'sheet' => $this->store->get('sheet'),
-      ],
+      '#request' => $this->entity,
     ];
 
 
-    $form['actions'] += [
+    $form['actions'] = [
       'submit' => [
         '#type' => 'submit',
         '#value' => $this->t('Next'),

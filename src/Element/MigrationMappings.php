@@ -21,45 +21,27 @@ class MigrationMappings extends FormElement {
   public function getInfo() {
     return [
       '#tree' => TRUE,
-      '#source' => [],
-      '#migration_group' => '',
+      '#request' => NULL,
       '#process' => [
-        [static::class, 'processMigrationGroup'],
         [static::class, 'processMigrations'],
       ],
     ];
   }
 
-  public static function processMigrationGroup(array &$element, FormStateInterface $form_state) {
-    $migration_storage = \Drupal::entityTypeManager()->getStorage('migration');
-    $migration_plugin_manager = \Drupal::service('plugin.manager.migration');
-
-    $names = $migration_storage->getQuery()->condition('migration_group', $element['#migration_group'])->execute();
-    $migration_plus_migrations = $migration_storage->loadMultiple($names);
-
-    $element['#migrations'] = $migration_plugin_manager->createInstances(
-      $names,
-      array_map(
-        function ($a) { return $a->toArray(); },
-        $migration_plus_migrations
-      )
-    );
-
-    // XXX: Debug.....
-    $element['#migrations'] = array_slice($element['#migrations'], 0, 1);
-
-    return $element;
+  protected static function processMapping($request) {
+    foreach ($request->getMappings() as $name => $configs) {
+      yield $name => [
+        '#type' => 'islandora_spreadsheet_ingest_migration_mapping',
+        '#request' => $request,
+        '#original_migration' => $name,
+      ];
+      // XXX: Debug, only throw in the one for now.
+      break;
+    }
   }
 
   public static function processMigrations(array &$element, FormStateInterface $form_state) {
-    foreach ($element['#migrations'] as $name => $migration) {
-      $element[$name] = [
-        '#type' => 'islandora_spreadsheet_ingest_migration_mapping',
-        '#source' => $element['#source'],
-        '#migration' => $migration,
-      ];
-    }
-    return $element;
+    return $element + iterator_to_array(call_user_func([static::class, 'processMapping'], $element['#request']));
   }
 
 }

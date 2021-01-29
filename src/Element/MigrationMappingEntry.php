@@ -47,8 +47,11 @@ class MigrationMappingEntry extends FormElement {
         ],
       ],
     ];
+    $source_name = $element['#entry']->getSource()->getName();
     $element['source'] = [
-      '#markup' => $element['#entry']->getSource()->getName(),
+      '#markup' => is_array($source_name) ?
+        ('[' . implode(', ', $source_name) . ']') :
+        $source_name,
     ];
     $element['destination'] = [
       '#markup' => $element['#entry']->getDestinationName(),
