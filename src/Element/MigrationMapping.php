@@ -230,7 +230,14 @@ class MigrationMapping extends FormElement {
         throw new \Exception('Unknown plugin.');
       }
 
-      return $plugin_manager->createInstance($config['plugin'], $config);
+      $candidate = $plugin_manager->createInstance($config['plugin'], $config);
+      // XXX: Expects that there are no property names that actually start with
+      // an "@" symbol, which would get into funky escaping business.
+      $candidate_name = ltrim("{$candidate->getName()}", '@');
+
+      return ($candidate_name && isset($entries[$candidate_name])) ?
+        $entries[$candidate_name] :
+        $candidate;
     };
 
     foreach ($migration_reference['mappings'] as $prop_name => $info) {

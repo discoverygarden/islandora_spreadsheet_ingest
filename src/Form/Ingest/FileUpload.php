@@ -38,6 +38,8 @@ class FileUpload extends EntityForm {
 
   protected $migrationPluginManager;
 
+  protected $fileUsage;
+
   /**
    * {@inheritdoc}
    */
@@ -48,12 +50,13 @@ class FileUpload extends EntityForm {
     $instance->fileEntityStorage = $instance->entityTypeManager->getStorage('file');
     $instance->spreadsheetService = $container->get('islandora_spreadsheet_ingest.spreadsheet_service');
     $instance->migrationPluginManager = $container->get('plugin.manager.migration');
+    $instance->fileUsage = $container->get('file.usage');
 
     return $instance;
   }
 
   protected function getTargetFile(FormStateInterface $form_state) {
-    $target_file = $form_state->getValue('target_file');
+    $target_file = $form_state->getValue(['sheet', 'file']);
     if ($target_file) {
       return $this->fileEntityStorage->load(reset($target_file));
     }
@@ -61,28 +64,12 @@ class FileUpload extends EntityForm {
 
   }
 
-  protected function getSpreadsheetReader(FormStateInterface $form_state) {
-    $target_file = $form_state->getValue('target_file');
-    if ($target_file) {
-      $reader = IOFactory::createReaderForFile($this->getTargetFile($form_state)->uri->first()->getString());
-      // XXX: Not really dealing with writing here... might as well inform 
-      $reader->setReadDataOnly(TRUE);
-      return $reader;
-    }
-    throw new \Exception('No target file from which to create a reader.');
-  }
-
   protected function getSpreadsheetOptions(FormStateInterface $form_state) {
-    $target_file = $form_state->getValue('target_file');
-    if ($target_file) {
-      $reader = $this->getSpreadsheetReader($form_state);;
-      $lister = [$reader, 'listWorksheetNames'];
-      return is_callable($lister) ?
-        call_user_func($lister, $target_file) :
-        // XXX: Need to provide _some_ name for things like CSVs.
-        [$this->t('Single-sheet format')];
-    }
-    return [];
+    $list = $this->spreadsheetService->listWorksheets($this->getTargetFile($form_state));
+    return $list ?
+      $list :
+      // XXX: Need to provide _some_ name for things like CSVs.
+      [$this->t('Single-sheet format')];
   }
 
   /**
@@ -93,9 +80,12 @@ class FileUpload extends EntityForm {
 
     $entity = $this->entity;
 
-    $target_file = $form_state->getValue('target_file');
-    $sheets = $this->getSpreadsheetOptions($form_state);
-    $sheet_options = array_combine($sheets, $sheets);
+    try {
+      $sheets = $this->getSpreadsheetOptions($form_state);
+    }
+    catch (\Exception $e) {
+      $sheets = [];
+    }
     $form['#tree'] = TRUE;
     $form['label'] = [
       '#type' => 'textfield',
@@ -119,6 +109,12 @@ class FileUpload extends EntityForm {
         '#default_value' => $entity->getSheet()['file'],
         '#upload_validators' => [
           'file_validate_extensions' => ['xlsx xlsm xltx xltm xls xlt ods ots slk xml gnumeric htm html csv'],
+        ],
+        'sheets' => [
+          '#type' => 'item_list',
+          '#title' => $this->t('Sheets contained'),
+          '#access' => !empty($sheets),
+          '#items' => $sheets,
         ],
       ],
       'sheet' => [
@@ -222,12 +218,19 @@ class FileUpload extends EntityForm {
     try {
       $request->save();
 
+      $this->fileUsage->add(
+        $this->getTargetFile($form_state),
+        'islandora_spreadsheet_ingest',
+        $request->getEntityTypeId(),
+        $request->id()
+      );
+
       $form_state->setRedirect('islandora_spreadsheet_ingest.request.edit', [
         'isi_request' => $request->id(),
       ]);
     }
     catch (\Exception $e) {
-      dsm('a');
+      dsm($e);
     }
   }
 
