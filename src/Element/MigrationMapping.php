@@ -11,6 +11,7 @@ use Drupal\migrate\Row;
 use Drupal\file\FileInterface;
 use Drupal\migrate\Plugin\migrate\destination\Entity;
 use Drupal\migrate\Plugin\MigrationInterface;
+use Drupal\islandora_spreadsheet_ingest\Form\Ingest\MigrationTrait;
 use Drupal\islandora_spreadsheet_ingest\Model\RowSource;
 use Drupal\islandora_spreadsheet_ingest\Model\SourceInterface;
 use Drupal\islandora_spreadsheet_ingest\Model\Pipeline;
@@ -25,6 +26,8 @@ use Drupal\islandora_spreadsheet_ingest\Model\DefaultValueSourcePropertyCreator;
  * @FormElement("islandora_spreadsheet_ingest_migration_mapping")
  */
 class MigrationMapping extends FormElement {
+
+  use MigrationTrait;
 
   /**
    * {@inheritdoc}
@@ -185,30 +188,8 @@ class MigrationMapping extends FormElement {
         ],
       ],
     ];
-    #dsm($element['add_mapping'], 'asdf');
-    #dsm(static::getDestinationProperties($element['#migration'], $form_state));
-    #dsm(static::getEntries($element['#migration'], $form_state));
-    return $element;
-  }
 
-  protected static function getMigrationStorage($migration, FormStateInterface $form_state) {
-    return $form_state->getStorage()[$migration_id] ?: [
-      'autopopulated' => FALSE,
-      'entries' => [],
-    ];
-  }
-  protected static function getEntries($migration, FormStateInterface $form_state) {
-    $migration_id = $migration instanceof MigrationInterface ?
-      $migration->id() :
-      $migration;
-    return $form_state->getStorage()[$migration_id]['entries'];
-  }
-  protected static function setEntries($migration, FormStateInterface $form_state, $entries) {
-    $storage =& $form_state->getStorage();
-    $migration_id = $migration instanceof MigrationInterface ?
-      $migration->id() :
-      $migration;
-    $storage[$migration_id]['entries'] = $entries;
+    return $element;
   }
 
   protected static function getUnusedDestinationProperties(MigrationInterface $migration, FormStateInterface $form_state) {
@@ -257,6 +238,7 @@ class MigrationMapping extends FormElement {
 
   public static function prepopulateEntries(array &$element, FormStateInterface $form_state) {
     $autopop_target = [
+      'migration',
       $element['#original_migration'],
       'autopopulated',
     ];
@@ -284,13 +266,15 @@ class MigrationMapping extends FormElement {
   }
 
   public static function processEntries(array &$element, FormStateInterface $form_state) {
+    $weight = 0;
 
     // Generate table entries from storage.
     $element['table'] += array_map(
-      function ($entry) {
+      function ($entry) use (&$weight) {
         return [
           '#type' => 'islandora_spreadsheet_ingest_migration_mapping_entry',
           '#entry' => $entry,
+          '#weight' => $weight++,
         ];
       },
       static::getEntries($element['#migration'], $form_state)

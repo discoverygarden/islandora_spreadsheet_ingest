@@ -44,8 +44,6 @@ islandora_spreadsheet_ingest.migration_structure:
         mapping:
           type: mapping
           mapping:
-            weight:
-              type: integer
             pipeline:
               type: sequence
               sequence:

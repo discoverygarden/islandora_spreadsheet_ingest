@@ -22,6 +22,8 @@ use Drupal\islandora_spreadsheet_ingest\Spreadsheet\ChunkReadFilter;
  */
 class Mapping extends EntityForm {
 
+  use MigrationTrait;
+
   protected $entityTypeManager;
 
   /**
@@ -84,28 +86,60 @@ class Mapping extends EntityForm {
 
     $form = parent::form($form, $form_state);
 
+    $form['#entity_builders'] = [
+      '::mapMappings',
+    ];
+
     $form['mappings'] = [
       '#type' => 'islandora_spreadsheet_ingest_migration_mappings',
       '#request' => $this->entity,
-    ];
-
-
-    $form['actions'] = [
-      'submit' => [
-        '#type' => 'submit',
-        '#value' => $this->t('Next'),
-      ],
+      '#input' => FALSE,
     ];
 
     return $form;
+  }
+
+  protected function mapMappings($entity_type, $entity, &$form, FormStateInterface &$form_state) {
+    dsm($entity->getMappings(), 'qwer');
+
+    $map_mapping = function ($info) use ($form_state) {
+      foreach ($info['entries'] as $key => $process) {
+        yield $key => [
+          'pipeline' => $process->toPipelineArray(),
+        ];
+      }
+    };
+
+    $map_migrations = function () use ($form_state, $map_mapping) {
+      foreach ($form_state->get('migration') as $name => $info) {
+        $mappings = iterator_to_array($map_mapping($info));
+        $table = $form_state->getValue('mappings')[$name]['table'];
+        uksort($mappings, function ($a, $b) use ($table) {
+          return $table[$a]['weight'] - $table[$b]['weight'];
+        });
+        yield $name => [
+          'original_migration_id' => $name,
+          'mappings' => $mappings,
+        ];
+      }
+    };
+
+    $entity->set('mappings', iterator_to_array($map_migrations()));
   }
 
 
   /**
    * {@inheritdoc}
    */
-  public function submitForm(array &$form, FormStateInterface $form_state) {
-    throw new Exception('Not implemented');
+  public function save(array $form, FormStateInterface $form_state) {
+    $result = parent::save($form, $form_state);
+    dsm($this->entity);
+
+    $form_state->setRedirect('islandora_spreadsheet_ingest.request.review', [
+      'isi_request' => $this->entity->id(),
+    ]);
+
+    return $result;
   }
 
 }

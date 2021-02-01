@@ -32,6 +32,7 @@ class MigrationMappingEntry extends FormElement {
         [static::class, 'processEntry'],
       ],
       '#entry' => NULL,
+      '#weight' => 0,
     ];
   }
 
@@ -58,6 +59,7 @@ class MigrationMappingEntry extends FormElement {
     ];
     $element['weight'] = [
       '#type' => 'weight',
+      '#default_value' => $element['#weight'],
       '#wrapper_attributes' => [
         'class' => [
           'tabledrag-hide',

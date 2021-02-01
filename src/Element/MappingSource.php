@@ -63,6 +63,11 @@ class MappingSource extends FormElement {
   }
 
   public static function validateSelectedForm(array &$element, FormStateInterface $form_state, array $form) {
+    if (array_slice($element['#parents'], 0, -1) !== array_slice($form_state->getTriggeringElement()['#parents'], 0, -1)) {
+      // XXX: To avoid polluting having to push out "#limit_validation_error"
+      // stuff to other parts of the form... just check things here.
+      return;
+    }
     try {
       list($name, $prop) = static::getSelectedProperty($element, $form_state);
       $form_state->setValueForElement($element, $prop);
