@@ -36,7 +36,7 @@ class MigrationMappings extends FormElement {
         '#original_migration' => $name,
       ];
       // XXX: Debug, only throw in the one for now.
-      break;
+      //break;
     }
   }
 

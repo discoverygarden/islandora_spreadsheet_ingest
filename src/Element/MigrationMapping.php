@@ -119,7 +119,7 @@ class MigrationMapping extends FormElement {
   public static function tableSelection(array &$element, $input, FormStateInterface $form_state) {
     if ($input) {
       $keys = array_keys(array_filter($input, function ($row) {
-        return isset($row['select']) ? $row['select'] : FALSE;
+        return $row['select'] ?? FALSE;
       }));
       return array_combine($keys, $keys);
 
@@ -214,11 +214,15 @@ class MigrationMapping extends FormElement {
       $candidate = $plugin_manager->createInstance($config['plugin'], $config);
       // XXX: Expects that there are no property names that actually start with
       // an "@" symbol, which would get into funky escaping business.
-      $candidate_name = ltrim("{$candidate->getName()}", '@');
+      $c_name = $candidate->getName();
+      if (is_string($c_name)) {
+        $candidate_name = ltrim("{$c_name}", '@');
 
-      return ($candidate_name && isset($entries[$candidate_name])) ?
-        $entries[$candidate_name] :
-        $candidate;
+        return ($candidate_name && isset($entries[$candidate_name])) ?
+          $entries[$candidate_name] :
+          $candidate;
+      }
+      return $candidate;
     };
 
     foreach ($migration_reference['mappings'] as $prop_name => $info) {

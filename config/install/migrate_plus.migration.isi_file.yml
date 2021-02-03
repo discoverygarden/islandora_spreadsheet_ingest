@@ -2,9 +2,6 @@ id: isi_file
 label: Create files from rows in the csv.
 migration_group: isi
 source:
-  constants:
-    DRUPAL_FILE_DIRECTORY: 'public://islandora_spreadsheet_ingest_example/'
-    SOURCE_BINARY_DIRECTORY: '/opt/www/drupal/modules/contrib/islandora_spreadsheet_ingest/fixtures/'
   columns:
     - 'ID'
     - 'Digital_File'
@@ -20,6 +17,9 @@ process:
       source: '@_file_defined'
     - plugin: callback
       callable: basename
+  _dest_dir:
+    - plugin: default_value
+      default_value: 'repo-bin:/'
   uri:
     - plugin: default_value
       default_value: 'Y-m'
@@ -27,7 +27,7 @@ process:
       callable: date
     - plugin: concat
       source:
-        - 'repo-bin:/'
+        - '@_dest_dir'
         - ''
         - '@_destination_filename'
       delimiter: '/'

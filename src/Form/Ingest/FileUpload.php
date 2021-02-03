@@ -225,7 +225,7 @@ class FileUpload extends EntityForm {
         $request->id()
       );
 
-      $form_state->setRedirect('islandora_spreadsheet_ingest.request.edit', [
+      $form_state->setRedirect('entity.isi_request.edit_form', [
         'isi_request' => $request->id(),
       ]);
     }

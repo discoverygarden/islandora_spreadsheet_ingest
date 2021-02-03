@@ -1,7 +1,16 @@
 ---
 services:
+  logger.channel.isi_mg_deriver:
+    parent: logger.channel_base
+    arguments: [isi_mg_deriver]
   islandora_spreadsheet_ingest.spreadsheet_service:
     class: Drupal\islandora_spreadsheet_ingest\Spreadsheet\SpreadsheetService
   plugin.manager.isi_pipeline_source:
     class: Drupal\islandora_spreadsheet_ingest\Plugin\PipelineSourcePluginManager
     parent: default_plugin_manager
+  islandora_spreadsheet_ingest.migration_group_deriver:
+    class: Drupal\islandora_spreadsheet_ingest\MigrationGroupDeriver
+    arguments:
+      - '@logger.channel.isi_mg_deriver'
+      - '@entity_type.manager'
+      - '@cache_tags.invalidator'

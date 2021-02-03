@@ -1,27 +1,36 @@
-islandora_spreadsheet_ingest.request.collection:
-  path: 'admin/content/islandora_spreadsheet_ingest'
+entity.isi_request.list:
+  path: '/admin/content/islandora_spreadsheet_ingest'
   defaults:
     _entity_list: isi_request
-    _title: Islandora SpreadSheet Ingest
-islandora_spreadsheet_ingest.request.add:
-  path: 'admin/content/islandora_spreadsheet_ingest/add'
+    _title: Islandora Spreadsheet Ingest
+  requirements:
+    _permission: 'access content overview'
+entity.isi_request.add_form:
+  path: '/admin/content/islandora_spreadsheet_ingest/add'
   defaults:
     _title: 'Add Content From Spreadsheet - Upload'
     _entity_form: 'isi_request.add'
   requirements:
     _permission: 'access content overview'
-islandora_spreadsheet_ingest.request.edit:
-  path: 'admin/content/islandora_spreadsheet_ingest/{isi_request}/mapping'
+entity.isi_request.edit_form:
+  path: '/admin/content/islandora_spreadsheet_ingest/{isi_request}/mapping'
   defaults:
     _title: 'Mapping'
     _entity_form: 'isi_request.edit'
   requirements:
     _permission: 'access content overview'
-islandora_spreadsheet_ingest.review:
-  path: 'admin/content/islandora_spreadsheet_ingest/review'
+entity.isi_request.delete_form:
+  path: '/admin/content/islandora_spreadsheet_ingest/{isi_request}/delete'
   defaults:
-    _title: 'Add Content From Spreadsheet - Mapping'
-    _form: '\Drupal\islandora_spreadsheet_ingest\Form\Ingest\Mapping'
+    _title: 'Delete'
+    _entity_form: 'isi_request.delete'
+  requirements:
+    _permission: 'access content overview'
+entity.isi_request.view:
+  path: '/admin/content/islandora_spreadsheet_ingest/{isi_request}'
+  defaults:
+    _title: 'Add Content From Spreadsheet - Review'
+    _entity_form: 'isi_request.view'
   requirements:
     _permission: 'access content overview'
 islandora_spreadsheet_ingest.admin:

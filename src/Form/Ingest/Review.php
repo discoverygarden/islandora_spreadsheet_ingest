@@ -2,8 +2,9 @@
 
 namespace Drupal\islandora_spreadsheet_ingest\Form\Ingest;
 
-use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Entity\EntityForm;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\TypedData\TypedDataManagerInterface;
 use Drupal\Core\Cache\CacheTagsInvalidatorInterface;
 use Drupal\Core\Url;
@@ -20,7 +21,7 @@ use Drupal\islandora_spreadsheet_ingest\Spreadsheet\ChunkReadFilter;
 /**
  * Form for setting up ingests.
  */
-class Review extends FormBase {
+class Review extends EntityForm {
 
   protected $entityTypeManager;
 
@@ -55,40 +56,61 @@ class Review extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, FormStateInterface $form_state) {
+  public function form(array $form, FormStateInterface $form_state) {
 
-    $form += parent::buildForm($form, $form_state);
+    $form = parent::form($form, $form_state);
 
-    $form['timing'] = [
-      '#type' => 'details',
-      '#title' => $this->t('Timing'),
-      'enqueue' => [
-        '#type' => 'radios',
-        '#title' => $this->t('Processing'),
-        '#options' => [
-          'defer' => $this->t('Deferred'),
-          'immediate' => $this->t('Immediate'),
-        ],
-        '#default_value' => 'defer',
-      ],
+    $form['active'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Activate'),
+      '#description' => $this->t('Activate, and derive processable migrations for this request.'),
+      '#default_value' => $this->entity->getActive(),
     ];
-
-    $form['actions'] += [
-      'submit' => [
-        '#type' => 'submit',
-        '#value' => $this->t('Submit'),
+    $form['enqueue'] = [
+      '#type' => 'radios',
+      '#title' => $this->t('Processing'),
+      '#options' => [
+        'defer' => $this->t('Deferred'),
+        'immediate' => $this->t('Immediate'),
+      ],
+      '#default_value' => 'defer',
+      '#states' => [
+        'visible' => [
+          ':input[name="active"' => [
+            'checked' => TRUE,
+          ],
+        ],
       ],
     ];
 
     return $form;
   }
 
+  protected function actions(array $form, FormStateInterface $form_state) {
+    $actions = parent::actions($form, $form_state);
+
+    unset($actions['submit']);
+
+    $actions['submit'] = [
+      '#type' => 'submit',
+      '#value' => $this->t('Submit'),
+      '#submit' => [
+        '::submitActivation',
+        '::submitProcessing',
+      ],
+    ];
+
+    return $actions;
+  }
+
 
   /**
    * {@inheritdoc}
    */
-  public function submitForm(array &$form, FormStateInterface $form_state) {
-    throw new Exception('Not implemented!');
+  public function submitActivation(array &$form, FormStateInterface $form_state) {
+    $this->entity
+      ->set('active', $form_state->getValue('active'))
+      ->save();
   }
 
 }

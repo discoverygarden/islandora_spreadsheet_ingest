@@ -11,4 +11,6 @@ interface RequestInterface extends ConfigEntityInterface {
   public function getSheet();
 
   public function getMappings();
+
+  public function getActive();
 }

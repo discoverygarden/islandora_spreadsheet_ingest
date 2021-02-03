@@ -17,8 +17,10 @@ use Drupal\islandora_spreadsheet_ingest\SheetInterface;
  *   handlers = {
  *     "list_builder" = "Drupal\islandora_spreadsheet_ingest\Controller\RequestListBuilder",
  *     "form" = {
+ *       "view" = "Drupal\islandora_spreadsheet_ingest\Form\Ingest\Review",
  *       "add" = "Drupal\islandora_spreadsheet_ingest\Form\Ingest\FileUpload",
  *       "edit" = "Drupal\islandora_spreadsheet_ingest\Form\Ingest\Mapping",
+ *       "delete" = "Drupal\islandora_spreadsheet_ingest\Form\RequestDeleteForm",
  *     }
  *   },
  *   config_prefix = "request",
@@ -32,6 +34,12 @@ use Drupal\islandora_spreadsheet_ingest\SheetInterface;
  *     "label",
  *     "sheet",
  *     "mappings",
+ *     "active",
+ *   },
+ *   links = {
+ *     "canonical" = "/admin/content/islandora_spreadsheet_ingest/{isi_request}",
+ *     "edit-form" = "/admin/content/islandora_spreadsheet_ingest/{isi_request}/mapping",
+ *     "delete-form" = "/admin/content/islandora_spreadsheet_ingest/{isi_request}/delete",
  *   }
  * )
  */
@@ -43,9 +51,14 @@ class Request extends ConfigEntityBase implements RequestInterface {
   protected $sheet;
   protected $originalMapping = 'migration_group:isi';
   protected $mappings = NULL;
+  protected $active = FALSE;
 
   public function getOriginalMapping() {
     return $this->originalMapping;
+  }
+
+  public function getActive() {
+    return $this->active;
   }
 
   public function getSheet() {

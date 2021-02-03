@@ -17,6 +17,10 @@ islandora_spreadsheet_ingest.request.*:
     label:
       type: label
       label: Label
+    active:
+      type: boolean
+      label: Active
+      description: If this request should have migrations derived for it.
     sheet:
       type: mapping
       mapping:

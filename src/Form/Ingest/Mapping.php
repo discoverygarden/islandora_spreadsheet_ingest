@@ -127,19 +127,41 @@ class Mapping extends EntityForm {
     $entity->set('mappings', iterator_to_array($map_migrations()));
   }
 
+  protected function actions(array $form, FormStateInterface $form_state) {
+    $actions = parent::actions($form, $form_state);
 
-  /**
-   * {@inheritdoc}
-   */
-  public function save(array $form, FormStateInterface $form_state) {
-    $result = parent::save($form, $form_state);
-    dsm($this->entity);
+    // TODO: Add "save and review" button or whatever.
+    $actions['save_and_review'] = [
+      '#type' => 'submit',
+      '#value' => $this->t('Save and review'),
+      '#submit' => array_merge(
+        $actions['submit']['#submit'],
+        [
+          '::redirectToReview',
+        ]
+      )
+    ];
 
-    $form_state->setRedirect('islandora_spreadsheet_ingest.request.review', [
-      'isi_request' => $this->entity->id(),
-    ]);
+    return $actions;
+  }
 
-    return $result;
+ public function redirectToReview(array $form, FormStateInterface $form_state) {
+    $options = [
+      'query' => [],
+    ];
+
+    if ($this->getRequest()->query->has('destination')) {
+      $options['query'] += $this->getDestinationArray();
+      $this->getRequest()->query->remove('destination');
+    }
+
+    $form_state->setRedirect(
+      'entity.isi_request.view',
+      [
+        'isi_request' => $this->entity->id(),
+      ],
+      $options
+    );
   }
 
 }
