@@ -42,7 +42,7 @@ class MigrationGroupDeriver implements MigrationGroupDeriverInterface {
     $mg = $this->migrationGroupStorage->load($name);
 
     if (!$mg) {
-      list(, $original) = explode(':', $reqeust->getOriginalMapping());
+      list(, $original) = explode(':', $request->getOriginalMapping());
       $original_mg = $this->migrationGroupStorage->load($original);
       if ($original_mg) {
         $mg = $original_mg->createDuplicate()
@@ -86,20 +86,21 @@ class MigrationGroupDeriver implements MigrationGroupDeriverInterface {
   public function delete(RequestInterface $request) {
     $this->logger->debug('Deleting migration group for {id}', ['id' => $request->id()]);
     try {
+      $name = static::deriveName($request);
       $mg = $this->migrationGroupStorage->load($name);
       if ($mg) {
         $this->migrationGroupStorage->delete([$mg]);
         $this->logger->info('Deleted migration group for {id}.'. ['id' => $request->id()]);
       }
       else {
-        $this->logger->debug
+        $this->logger->debug('Migration group {id] does not exist, to be deleted.', ['id' => $request->id()]);
       }
     }
     catch (EntityStorageException $e) {
       $this->logger->error('Failed to delete {id}, with exception: {exception}', [
         'id' => $request->id(),
         'exception' => $e,
-      );
+      ]);
     }
     finally {
       $this->invalidateTags();

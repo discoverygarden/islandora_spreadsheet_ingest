@@ -53,15 +53,26 @@ class SpreadsheetDeriver extends DeriverBase implements ContainerDeriverInterfac
   }
 
   protected function getUsedColumns(array $mappings) {
+    $mapping = [
+      'get' => function ($step) { yield from (array) ($step['source'] ?? []); },
+      'migration_lookup' => function ($step) {
+        if (isset($step['source'])) {
+          yield from (array) ($step['source'] ?? []);
+        }
+        if (isset($step['source_ids'])) {
+          foreach ($step['source_ids'] as $ids) {
+            yield from $ids;
+          }
+        }
+      },
+    ];
+
     foreach ($mappings as $field => $info) {
       foreach ($info['pipeline'] as $process_step) {
-        if (!isset($process_step['source'])) {
-          continue;
-        }
+        $plugin = $process_step['plugin'] ?? 'get';
+        $mapper = $mapping[$plugin] ?? $mapping['get'];
 
-        $sources = (array) $process_step['source'];
-
-        foreach ($sources as $source) {
+        foreach ($mapper($process_step) as $source) {
           if (strpos($source, '@') !== 0) {
             yield $source;
           }
@@ -80,7 +91,7 @@ class SpreadsheetDeriver extends DeriverBase implements ContainerDeriverInterfac
       foreach ($mig_deps as $mig_dep) {
         $target = $this->migrationStorage->load($mig_dep);
         if ($target->get('migration_group') === $migration->get('migration_group')) {
-          $_deps[] = "{$new_mg}:{$mig_dep}";
+          $_deps[] = $this->deriveMigrationName($new_mg, $mig_dep);
         }
       }
 
@@ -90,16 +101,48 @@ class SpreadsheetDeriver extends DeriverBase implements ContainerDeriverInterfac
     return $deps;
   }
 
-  protected function mapStepMigrations($step) {
-    $plugin = $step['plugin'] ?? 'get';
-    if ($plugin == 'migration_lookup') {
-      // TODO: Do the mapping.
+  protected function deriveMigrationName($mg_name, $target) {
+    return "{$mg_name}:{$target}";
+  }
+
+  protected function sameMigrationGroup($mig, $target) {
+    $loaded_target = $this->migrationStorage->load($target);
+    $mg = $loaded_target->get('migration_group');
+    return $mg && $mg == $mig->get('migration_group');
+  }
+
+  protected function mapStepMigrations($steps, $mig, $mg_name) {
+    foreach ($steps as $step) {
+      $plugin = $step['plugin'] ?? 'get';
+      if ($plugin == 'migration_lookup') {
+        // Do the mapping.
+        if (is_array($step['migration'])) {
+          // Map the listed migrations, and any similar references under
+          // "source_ids".
+          foreach ($step['migration'] as &$mig_step) {
+            if ($this->sameMigrationGroup($mig, $mig_step)) {
+              $old_name = $mig_step;
+              $mig_step = $this->deriveMigrationName($mg_name, $mig_step);
+              $step['source_ids'][$mig_step] = $step['source_ids'][$old_name];
+              unset($step['source_ids'][$old_name]);
+            }
+          }
+          unset($mig_step);
+        }
+        elseif (is_string($step['migration'])) {
+          // Just map the single migration.
+          if ($this->sameMigrationGroup($mig, $step['migration'])) {
+            $step['migration'] = $this->deriveMigrationName($mg_name, $step['migration']);
+          }
+        }
+      }
+      yield $step;
     }
   }
 
-  protected function mapPipelineMigrations($pipelines, $) {
-    foreach ($pipelines as $name => $steps) {
-      yield $name => array_map([$this, 'mapStepMigrations'], $steps);
+  protected function mapPipelineMigrations($processes, $mig, $mg_name) {
+    foreach ($processes as $name => $info) {
+      yield $name => iterator_to_array($this->mapStepMigrations($info['pipeline'], $mig, $mg_name));
     }
   }
 
@@ -118,17 +161,23 @@ class SpreadsheetDeriver extends DeriverBase implements ContainerDeriverInterfac
 
       assert($this->entityTypeManager->getStorage('migration_group')->load($mg_name));
 
-      foreach ($this->request->getMappings() as $name => $info) {
+      foreach ($request->getMappings() as $name => $info) {
         $original_migration = $this->migrationStorage->load($info['original_migration_id']);
-        $derived_name = "{$mg_name}:{$name}";
+        $derived_name = $this->deriveMigrationName($mg_name, $name);
         $this->derivatives[$derived_name] = [
           'id' => $derived_name,
           'label' => $name,
           'migration_group' => $mg_name,
           'source' => [
-            'columns' => iterator_to_array($this->getUsedColumns($info['mappings'])),
+            'columns' => array_unique(iterator_to_array($this->getUsedColumns($info['mappings']))),
           ],
-          'process' => array_column($info['mappings'], 'pipeline'),
+          'process' => iterator_to_array(
+            $this->mapPipelineMigrations(
+              $info['mappings'],
+              $original_migration,
+              $mg_name
+            )
+          ),
           'destination' => $original_migration->get('destination'),
           'dependencies' => array_merge_recursive(
             $original_migration->get('dependencies'),
@@ -138,13 +187,15 @@ class SpreadsheetDeriver extends DeriverBase implements ContainerDeriverInterfac
                   $request->getConfigDependencyName(),
                 ],
               ],
-            ],
+            ]
           ),
           'migration_dependencies' => $this->mapDependencies($original_migration, $mg_name),
         ];
       }
 
     }
+
+    dsm($this->derivatives, 'asdf');
 
     return $this->derivatives;
   }

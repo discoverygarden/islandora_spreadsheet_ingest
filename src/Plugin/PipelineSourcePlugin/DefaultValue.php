@@ -25,7 +25,7 @@ class DefaultValue extends PluginBase implements PipelineSourcePluginInterface, 
   }
 
   public function getValue() {
-    return $this->configuration['default_value']) ?? NULL;
+    return $this->configuration['default_value'] ?? NULL;
   }
 
   public function setValue($value) {
