@@ -4,8 +4,3 @@ islandora_spreadsheet_ingest.request.list:
   parent: system.admin_content
   title: 'Add from Spreadsheet'
   description: 'Permits ingest of content described in spreadsheets.'
-islandora_spreadsheet_ingest.admin:
-  parent: system.admin_config
-  route_name: islandora_spreadsheet_ingest.admin
-  title: 'Islandora Spreadsheet Ingest'
-  description: 'Configure Islandora Spreadsheet Ingest.'

@@ -1,55 +1,32 @@
 <?php
 
-namespace Drupal\islandora_spreadsheet_ingest\Plugin\Derivative;
+namespace Drupal\islandora_spreadsheet_ingest;
 
-use Drupal\Core\Entity\EntityStorageInterface;
+use Drupal\Core\Entity\EntityStorageException;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
-use Drupal\Core\Archiver\ArchiverManager;
-use Drupal\Core\Extension\ModuleHandlerInterface;
-use Drupal\Core\Plugin\Discovery\ContainerDeriverInterface;
-use Drupal\Core\File\FileSystem;
-use Drupal\Core\Logger\LoggerChannelFactoryInterface;
-use Drupal\Component\Plugin\Derivative\DeriverBase;
-use Drupal\Core\Config\ConfigFactory;
+use Drupal\Core\Cache\CacheTagsInvalidatorInterface;
+use Psr\Log\LoggerInterface;
 
-use Symfony\Component\DependencyInjection\ContainerInterface;
-use Symfony\Component\Yaml\Yaml;
-
-use Drupal\islandora_spreadsheet_ingest\MigrationGroupDeriverInterface;
-
-/**
- * Expose spreadsheet migrations as derivative plugins.
- */
-class SpreadsheetDeriver extends DeriverBase implements ContainerDeriverInterface {
-
+class MigrationDeriver implements MigrationDeriverInterface {
+  protected $logger;
   protected $entityTypeManager;
   protected $migrationGroupDeriver;
   protected $requestStorage;
   protected $migrationStorage;
+  protected $cacheInvalidator;
 
-  /**
-   * Constructor.
-   */
   public function __construct(
-    $base_plugin_id,
+    LoggerInterface $logger,
     EntityTypeManagerInterface $entity_type_manager,
+    CacheTagsInvalidatorInterface $invalidator,
     MigrationGroupDeriverInterface $migration_group_deriver
   ) {
+    $this->logger = $logger;
     $this->entityTypeManager = $entity_type_manager;
     $this->migrationGroupDeriver = $migration_group_deriver;
     $this->requestStorage = $this->entityTypeManager->getStorage('isi_request');
     $this->migrationStorage = $this->entityTypeManager->getStorage('migration');
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public static function create(ContainerInterface $container, $base_plugin_id) {
-    return new static(
-      $base_plugin_id,
-      $container->get('entity_type.manager'),
-      $container->get('islandora_spreadsheet_ingest.migration_group_deriver')
-    );
+    $this->cacheInvalidator = $invalidator;
   }
 
   protected function getUsedColumns(array $mappings) {
@@ -102,7 +79,7 @@ class SpreadsheetDeriver extends DeriverBase implements ContainerDeriverInterfac
   }
 
   protected function deriveMigrationName($mg_name, $target) {
-    return "{$mg_name}:{$target}";
+    return "{$mg_name}_{$target}";
   }
 
   protected function sameMigrationGroup($mig, $target) {
@@ -146,58 +123,71 @@ class SpreadsheetDeriver extends DeriverBase implements ContainerDeriverInterfac
     }
   }
 
-  /**
-   * {@inheritdoc}
-   */
-  public function getDerivativeDefinitions($base_plugin_definition) {
-    $this->derivatives = [];
-
-    foreach ($this->entityTypeManager->getStorage('isi_request')->loadMultiple() as $id => $request) {
-      $mg_name = $this->migrationGroupDeriver->deriveName($request);
-
-      if (!$request->status() || !$request->getActive()) {
-        continue;
-      }
-
-      assert($this->entityTypeManager->getStorage('migration_group')->load($mg_name));
-
-      foreach ($request->getMappings() as $name => $info) {
-        $original_migration = $this->migrationStorage->load($info['original_migration_id']);
-        $derived_name = $this->deriveMigrationName($mg_name, $name);
-        $this->derivatives[$derived_name] = [
-          'id' => $derived_name,
-          'label' => $name,
-          'migration_group' => $mg_name,
-          'source' => [
-            'columns' => array_unique(iterator_to_array($this->getUsedColumns($info['mappings']))),
-          ],
-          'process' => iterator_to_array(
-            $this->mapPipelineMigrations(
-              $info['mappings'],
-              $original_migration,
-              $mg_name
-            )
-          ),
-          'destination' => $original_migration->get('destination'),
-          'dependencies' => array_merge_recursive(
-            $original_migration->get('dependencies'),
-            [
-              'enforced' => [
-                $request->getConfigDependencyKey() => [
-                  $request->getConfigDependencyName(),
-                ],
-              ],
-            ]
-          ),
-          'migration_dependencies' => $this->mapDependencies($original_migration, $mg_name),
-        ];
-      }
-
+  public function createAll(RequestInterface $request) {
+    if (!$request->status() || !$request->getActive()) {
+      $this->logger->info('Call to create on non-active request {id}.', ['id' => $request->id()]);
+      return;
     }
 
-    dsm($this->derivatives, 'asdf');
+    $mg_name = $this->migrationGroupDeriver->deriveName($request);
 
-    return $this->derivatives;
+    assert($this->entityTypeManager->getStorage('migration_group')->load($mg_name));
+
+    foreach ($request->getMappings() as $name => $info) {
+      $original_migration = $this->migrationStorage->load($info['original_migration_id']);
+      $derived_name = $this->deriveMigrationName($mg_name, $name);
+      $info = [
+        'id' => $derived_name,
+        'label' => $original_migration->label(),
+        'migration_group' => $mg_name,
+        'source' => [
+          'columns' => array_unique(iterator_to_array($this->getUsedColumns($info['mappings']))),
+        ],
+        'process' => iterator_to_array(
+          $this->mapPipelineMigrations(
+            $info['mappings'],
+            $original_migration,
+            $mg_name
+          )
+        ),
+        'destination' => $original_migration->get('destination'),
+        'dependencies' => array_merge_recursive(
+          $original_migration->get('dependencies'),
+          [
+            'enforced' => [
+              $request->getConfigDependencyKey() => [
+                $request->getConfigDependencyName(),
+              ],
+            ],
+          ]
+        ),
+        'migration_dependencies' => $this->mapDependencies($original_migration, $mg_name),
+      ];
+
+      $migration = $this->migrationStorage->load($derived_name) ?? $this->migrationStorage->create();
+      foreach ($info as $key => $value) {
+        $migration->set($key, $value);
+      }
+      $migration->save();
+    }
+
+    $this->invalidateTags();
   }
 
+  public function deleteAll(RequestInterface $request) {
+    // Nuke the storage for the given mgiration group.
+    $this->migrationStorage->delete(
+      $this->migrationStorage->loadByProperties([
+        'migration_group' => $this->migrationGroupDeriver->deriveName($request)
+      ])
+    );
+
+    $this->invalidateTags();
+  }
+
+  protected function invalidateTags() {
+    $this->logger->debug('Invalidating cache for "migration_plugins"');
+    $this->cacheInvalidator->invalidateTags(['migration_plugins']);
+    $this->logger->info('Invalidated cache for "migration_plugins"');
+  }
 }

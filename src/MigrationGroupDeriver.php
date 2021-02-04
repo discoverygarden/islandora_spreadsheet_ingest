@@ -13,6 +13,7 @@ class MigrationGroupDeriver implements MigrationGroupDeriverInterface {
   protected $migrationGroupStorage;
   protected $fileStorage;
   protected $cacheInvalidator;
+  protected $migrationStorage;
 
   public function __construct(
     LoggerInterface $logger,
@@ -22,6 +23,7 @@ class MigrationGroupDeriver implements MigrationGroupDeriverInterface {
     $this->logger = $logger;
     $this->entityTypeManager = $entity_type_manager;
     $this->migrationGroupStorage = $this->entityTypeManager->getStorage('migration_group');
+    $this->migrationStorage = $this->entityTypeManager->getStorage('migration');
     $this->fileStorage = $this->entityTypeManager->getStorage('file');
     $this->cacheInvalidator = $invalidator;
   }
@@ -49,12 +51,12 @@ class MigrationGroupDeriver implements MigrationGroupDeriverInterface {
       if ($original_mg) {
         $mg = $original_mg->createDuplicate()
           ->set('id', $name)
-          ->set('label', $name);
+          ->set('label', $request->label());
       }
       else {
         $mg = $this->migrationGroupStorage->create([
           'id' => $name,
-          'label' => $name,
+          'label' => $request->label(),
           'description' => '',
         ]);
       }
@@ -90,7 +92,7 @@ class MigrationGroupDeriver implements MigrationGroupDeriverInterface {
   public function delete(RequestInterface $request) {
     $this->logger->debug('Deleting migration group for {id}', ['id' => $request->id()]);
     try {
-      $name = static::deriveName($request);
+      $name = $this->deriveName($request);
       $mg = $this->migrationGroupStorage->load($name);
       if ($mg) {
         $this->migrationGroupStorage->delete([$mg]);
