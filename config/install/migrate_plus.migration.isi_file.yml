@@ -20,25 +20,27 @@ process:
   _dest_dir:
     - plugin: default_value
       default_value: 'repo-bin:/'
-  uri:
+  _date_chunk:
     - plugin: default_value
       default_value: 'Y-m'
     - plugin: callback
       callable: date
+  _dest_path:
     - plugin: concat
       source:
         - '@_dest_dir'
-        - ''
+        - '@_date_chunk'
         - '@_destination_filename'
       delimiter: '/'
     - plugin: urlencode
     - plugin: dgi_migrate.process.log
       template: 'Destination Full Path: :value'
       level: 4
+  uri:
     - plugin: file_copy
       source:
         - Digital_File
-        - ''
+        - '@_dest_path'
       file_exists: 'rename'
       # Should probably be a move in non-examples.
       move: FALSE
