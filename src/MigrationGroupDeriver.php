@@ -11,6 +11,7 @@ class MigrationGroupDeriver implements MigrationGroupDeriverInterface {
   protected $logger;
   protected $entityTypeManager;
   protected $migrationGroupStorage;
+  protected $fileStorage;
   protected $cacheInvalidator;
 
   public function __construct(
@@ -21,6 +22,7 @@ class MigrationGroupDeriver implements MigrationGroupDeriverInterface {
     $this->logger = $logger;
     $this->entityTypeManager = $entity_type_manager;
     $this->migrationGroupStorage = $this->entityTypeManager->getStorage('migration_group');
+    $this->fileStorage = $this->entityTypeManager->getStorage('file');
     $this->cacheInvalidator = $invalidator;
   }
 
@@ -62,9 +64,11 @@ class MigrationGroupDeriver implements MigrationGroupDeriverInterface {
     $config = $mg->get('shared_configuration') ?? [];
     $config['source'] = [
       'plugin' => 'spreadsheet',
-      'worksheet' => $request->getSheet()['sheet'],
+      'worksheet' => $request->getSheet()['sheet'] ?
+        $request->getSheet()['sheet'] :
+        'nada',
       'track_changes' => TRUE,
-      'file' => $request->getSheet()['file'],
+      'file' => $this->fileStorage->load(reset($request->getSheet()['file']))->getFileUri(),
       'header_row' => 1,
       'keys' => [
         'ID' => [
@@ -90,7 +94,7 @@ class MigrationGroupDeriver implements MigrationGroupDeriverInterface {
       $mg = $this->migrationGroupStorage->load($name);
       if ($mg) {
         $this->migrationGroupStorage->delete([$mg]);
-        $this->logger->info('Deleted migration group for {id}.'. ['id' => $request->id()]);
+        $this->logger->info('Deleted migration group for {id}.', ['id' => $request->id()]);
       }
       else {
         $this->logger->debug('Migration group {id] does not exist, to be deleted.', ['id' => $request->id()]);

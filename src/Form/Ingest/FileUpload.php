@@ -40,6 +40,8 @@ class FileUpload extends EntityForm {
 
   protected $fileUsage;
 
+  protected $systemFileConfig;
+
   /**
    * {@inheritdoc}
    */
@@ -51,6 +53,7 @@ class FileUpload extends EntityForm {
     $instance->spreadsheetService = $container->get('islandora_spreadsheet_ingest.spreadsheet_service');
     $instance->migrationPluginManager = $container->get('plugin.manager.migration');
     $instance->fileUsage = $container->get('file.usage');
+    $instance->systemFileConfig = $container->get('config.factory')->get('system.file');
 
     return $instance;
   }
@@ -110,6 +113,7 @@ class FileUpload extends EntityForm {
         '#upload_validators' => [
           'file_validate_extensions' => ['xlsx xlsm xltx xltm xls xlt ods ots slk xml gnumeric htm html csv'],
         ],
+        '#upload_location' => "{$this->systemFileConfig->get('default_scheme')}://",
         'sheets' => [
           '#type' => 'item_list',
           '#title' => $this->t('Sheets contained'),
