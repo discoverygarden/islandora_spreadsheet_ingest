@@ -1,3 +1,4 @@
+---
 entity.isi_request.list:
   path: '/admin/content/islandora_spreadsheet_ingest'
   defaults:
@@ -33,10 +34,3 @@ entity.isi_request.view:
     _entity_form: 'isi_request.view'
   requirements:
     _permission: 'access content overview'
-islandora_spreadsheet_ingest.admin:
-  path: '/admin/config/content/islandora_spreadsheet_ingest'
-  defaults:
-    _title: 'Islandora Spreadsheet Ingest'
-    _form: '\Drupal\islandora_spreadsheet_ingest\Form\Admin'
-  requirements:
-    _permission: 'administer site configuration'

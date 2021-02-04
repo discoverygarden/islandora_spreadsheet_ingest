@@ -113,4 +113,16 @@ class Review extends EntityForm {
       ->save();
   }
 
+  public function submitProcessing(array &$form, FormStateInterface $form_state) {
+    if ($this->entity->getActive()) {
+      if ($form_state->getValue('enqueue') == 'immediate') {
+        // TODO: Setup a batch to process the group.
+        dsm('TODO: Actually setup the batch to batch...');
+      }
+      else {
+        dsm('TODO: Ensure things are actually setup to run...');
+      }
+    }
+  }
+
 }
