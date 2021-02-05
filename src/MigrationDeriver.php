@@ -7,14 +7,34 @@ use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Cache\CacheTagsInvalidatorInterface;
 use Psr\Log\LoggerInterface;
 
+use Drupal\migrate_plus\Entity\MigrationInterface;
+
+/**
+ * Derive migrations for a given request.
+ */
 class MigrationDeriver implements MigrationDeriverInterface {
+
+  /** @var \Psr\Log\LoggerInterface */
   protected $logger;
+
+  /** @var \Drupal\Core\Entity\EntityTypeManagerInterface */
   protected $entityTypeManager;
+
+  /** @var \Drupal\islandora_spreadsheet_ingest\MigrationGroupDeriverInterface */
   protected $migrationGroupDeriver;
+
+  /** @var \Drupal\Core\Config\Entity\ConfigEntityStorageInterface */
   protected $requestStorage;
+
+  /** @var \Drupal\Core\Config\Entity\ConfigEntityStorageInterface */
   protected $migrationStorage;
+
+  /** @var \Drupal\Core\Cache\CacheTagsInvalidatorInterface */
   protected $cacheInvalidator;
 
+  /**
+   * Constructor.
+   */
   public function __construct(
     LoggerInterface $logger,
     EntityTypeManagerInterface $entity_type_manager,
@@ -29,6 +49,12 @@ class MigrationDeriver implements MigrationDeriverInterface {
     $this->cacheInvalidator = $invalidator;
   }
 
+  /**
+   * Identify the columns from the source spreadsheet which are used here.
+   *
+   * @param array $mappings
+   *   The array of mappings to scan.
+   */
   protected function getUsedColumns(array $mappings) {
     $mapping = [
       'get' => function ($step) { yield from (array) ($step['source'] ?? []); },
@@ -58,7 +84,20 @@ class MigrationDeriver implements MigrationDeriverInterface {
     }
   }
 
-  protected function mapDependencies($migration, $new_mg) {
+  /**
+   * Remap referenced migration dependencies to their new names.
+   *
+   * @param \Drupal\migrate_plus\Entity\MigrationInterface $migration
+   *   The original migration from which to scrape the dependencies.
+   * @param string $new_mg
+   *   The name of the new migration group, such that we can derive the new
+   *   migration names.
+   *
+   * @return array
+   *   An associative array as per migrations' "migration_dependencies"
+   *   property.
+   */
+  protected function mapDependencies(MigrationInterface $migration, $new_mg) {
     $original_deps = $migration->get('migration_dependencies') ?? [];
     $deps = [];
 
@@ -66,8 +105,7 @@ class MigrationDeriver implements MigrationDeriverInterface {
       $_deps = [];
 
       foreach ($mig_deps as $mig_dep) {
-        $target = $this->migrationStorage->load($mig_dep);
-        if ($target->get('migration_group') === $migration->get('migration_group')) {
+        if ($this->sameMigrationGroup($migration, $mig_dep)) {
           $_deps[] = $this->deriveMigrationName($new_mg, $mig_dep);
         }
       }
@@ -78,17 +116,49 @@ class MigrationDeriver implements MigrationDeriverInterface {
     return $deps;
   }
 
+  /**
+   * Derive the name of a migration.
+   *
+   * @param string $mg_name
+   *   The name of the migration group to which the migration will belong.
+   * @param string $target
+   *   The name of the original migration.
+   *
+   * @return string
+   *   The derived name.
+   */
   protected function deriveMigrationName($mg_name, $target) {
     return "{$mg_name}_{$target}";
   }
 
-  protected function sameMigrationGroup($mig, $target) {
+  /**
+   * Determine if a migration appears to be a part of the same migration group.
+   *
+   * @param \Drupal\migrate_plus\Entity\MigrationInterface $mig
+   *   The original migration for comparison.
+   * @param string $target
+   *   The name/id of the migration to test.
+   *
+   * @return bool
+   *   TRUE if it is the same; otherwise, FALSE.
+   */
+  protected function sameMigrationGroup(MigrationInterface $mig, $target) {
     $loaded_target = $this->migrationStorage->load($target);
     $mg = $loaded_target->get('migration_group');
     return $mg && $mg == $mig->get('migration_group');
   }
 
-  protected function mapStepMigrations($steps, $mig, $mg_name) {
+  /**
+   * Generate steps with referenced migration names mapped.
+   *
+   * @param array $steps
+   *   The array of process plugin definitions to map.
+   * @param \Drupal\migrate_plus\Entity\MigrationInterface $mig
+   *   The original migration for comparison.
+   * @param string $mg_name
+   *   The name of the migration group we are populating.
+   */
+  protected function mapStepMigrations(array $steps, MigrationInterface $mig, $mg_name) {
     foreach ($steps as $step) {
       $plugin = $step['plugin'] ?? 'get';
       if ($plugin == 'migration_lookup') {
@@ -117,12 +187,25 @@ class MigrationDeriver implements MigrationDeriverInterface {
     }
   }
 
-  protected function mapPipelineMigrations($processes, $mig, $mg_name) {
+  /**
+   * Generate the mapping of field names to name-adjusted process pipelines.
+   *
+   * @param array $processes
+   *   Associative array mapping field names to process info.
+   * @param \Drupal\migrate_plus\Entity\MigrationInterface $mig
+   *   The migration from which we are deriving another migration.
+   * @param string $mg_name
+   *   The migration group we are populating.
+   */
+  protected function mapPipelineMigrations(array $processes, MigrationInterface $mig, $mg_name) {
     foreach ($processes as $name => $info) {
       yield $name => iterator_to_array($this->mapStepMigrations($info['pipeline'], $mig, $mg_name));
     }
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function createAll(RequestInterface $request) {
     if (!$request->status() || !$request->getActive()) {
       $this->logger->info('Call to create on non-active request {id}.', ['id' => $request->id()]);
@@ -174,6 +257,9 @@ class MigrationDeriver implements MigrationDeriverInterface {
     $this->invalidateTags();
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function deleteAll(RequestInterface $request) {
     // Nuke the storage for the given mgiration group.
     $this->migrationStorage->delete(
@@ -185,6 +271,9 @@ class MigrationDeriver implements MigrationDeriverInterface {
     $this->invalidateTags();
   }
 
+  /**
+   * Helper; invalidate the build migration plugin cache.
+   */
   protected function invalidateTags() {
     $this->logger->debug('Invalidating cache for "migration_plugins"');
     $this->cacheInvalidator->invalidateTags(['migration_plugins']);

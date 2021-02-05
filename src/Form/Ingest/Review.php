@@ -3,55 +3,12 @@
 namespace Drupal\islandora_spreadsheet_ingest\Form\Ingest;
 
 use Drupal\Core\Entity\EntityForm;
-use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\TypedData\TypedDataManagerInterface;
-use Drupal\Core\Cache\CacheTagsInvalidatorInterface;
-use Drupal\Core\Url;
-
-use Symfony\Component\DependencyInjection\ContainerInterface;
-use PhpOffice\PhpSpreadsheet\IOFactory;
-
-use Drupal\Core\TempStore\PrivateTempStoreFactory;
-use Drupal\migrate\Row;
-use Drupal\migrate\Plugin\migrate\destination\Entity;
-use Drupal\migrate\Plugin\MigrationPluginManager;
-use Drupal\islandora_spreadsheet_ingest\Spreadsheet\ChunkReadFilter;
 
 /**
  * Form for setting up ingests.
  */
 class Review extends EntityForm {
-
-  protected $entityTypeManager;
-
-  /**
-   * Is entity_type.manager service for `file`.
-   *
-   * @var Drupal\Core\Entity\EntityStorageInterface
-   */
-  protected $fileEntityStorage;
-
-  protected $typedDataManager;
-
-  /**
-   * {@inheritdoc}
-   */
-  public static function create(ContainerInterface $container) {
-    $instance = parent::create($container);
-
-    $instance->entityTypeManager = $container->get('entity_type.manager');
-    $instance->fileEntityStorage = $instance->entityTypeManager->getStorage('file');
-
-    return $instance;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function getFormId() {
-    return 'islandora_spreadsheet_ingest_review_form';
-  }
 
   /**
    * {@inheritdoc}
@@ -86,6 +43,9 @@ class Review extends EntityForm {
     return $form;
   }
 
+  /**
+   * {@inheritdoc}
+   */
   protected function actions(array $form, FormStateInterface $form_state) {
     $actions = parent::actions($form, $form_state);
 
@@ -103,9 +63,8 @@ class Review extends EntityForm {
     return $actions;
   }
 
-
   /**
-   * {@inheritdoc}
+   * Submission handler; submit the "active" value.
    */
   public function submitActivation(array &$form, FormStateInterface $form_state) {
     $this->entity
@@ -113,14 +72,14 @@ class Review extends EntityForm {
       ->save();
   }
 
+  /**
+   * Submission handler; kick off batch if relevant.
+   */
   public function submitProcessing(array &$form, FormStateInterface $form_state) {
     if ($this->entity->getActive()) {
       if ($form_state->getValue('enqueue') == 'immediate') {
-        // TODO: Setup a batch to process the group.
+        // @todo Setup a batch to process the group.
         dsm('TODO: Actually setup the batch to batch...');
-      }
-      else {
-        dsm('TODO: Ensure things are actually setup to run...');
       }
     }
   }

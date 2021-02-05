@@ -3,43 +3,56 @@
 namespace Drupal\islandora_spreadsheet_ingest\Form\Ingest;
 
 use Drupal\Core\Entity\EntityForm;
-use Drupal\Core\Config\Entity\ConfigEntityStorageInterface;
-use Drupal\Core\Config\Entity\ConfigEntityInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
-use Drupal\Core\TypedData\TypedDataManagerInterface;
-use Drupal\Core\Cache\CacheTagsInvalidatorInterface;
-use Drupal\Core\Url;
 
 use Symfony\Component\DependencyInjection\ContainerInterface;
-use PhpOffice\PhpSpreadsheet\IOFactory;
-
-use Drupal\Core\TempStore\PrivateTempStoreFactory;
-use Drupal\migrate\Row;
-use Drupal\migrate\Plugin\migrate\destination\Entity;
-use Drupal\migrate\Plugin\MigrationPluginManager;
-use Drupal\islandora_spreadsheet_ingest\Spreadsheet\ChunkReadFilter;
 
 /**
  * Form for setting up ingests.
  */
 class FileUpload extends EntityForm {
 
+  /**
+   * Entity type manager.
+   *
+   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
+   */
   protected $entityTypeManager;
 
   /**
-   * Is entity_type.manager service for `file`.
+   * File storage.
    *
-   * @var Drupal\Core\Entity\EntityStorageInterface
+   * @var \Drupal\file\FileStorageInterface
    */
   protected $fileEntityStorage;
 
+  /**
+   * Spreadsheet service.
+   *
+   * @var \Drupal\islandora_spreadsheet_ingest\Spreadsheet\SpreadsheetServiceInterface
+   */
   protected $spreadsheetService;
 
+  /**
+   * Migration plugin manager.
+   *
+   * @var \Drupal\Component\Plugin\PluginManagerInterface
+   */
   protected $migrationPluginManager;
 
+  /**
+   * File usage service.
+   *
+   * @var \Drupal\file\FileUsage\FileUsageInterface
+   */
   protected $fileUsage;
 
+  /**
+   * Drupal's system.file config.
+   *
+   * @var \Drupal\Core\Config\ConfigBase
+   */
   protected $systemFileConfig;
 
   /**
@@ -58,6 +71,9 @@ class FileUpload extends EntityForm {
     return $instance;
   }
 
+  /**
+   * Helper; load the target file.
+   */
   protected function getTargetFile(FormStateInterface $form_state) {
     $target_file = $form_state->getValue(['sheet', 'file']);
     if ($target_file) {
@@ -67,6 +83,9 @@ class FileUpload extends EntityForm {
 
   }
 
+  /**
+   * Helper; get the available options.
+   */
   protected function getSpreadsheetOptions(FormStateInterface $form_state) {
     $list = $this->spreadsheetService->listWorksheets($this->getTargetFile($form_state));
     return $list ?
@@ -153,8 +172,16 @@ class FileUpload extends EntityForm {
     return $form;
   }
 
+  /**
+   * Map according to the type of mapping requested.
+   *
+   * @param string $mapping
+   *   A type-namespaced identifier for the source mapping.
+   *
+   * @return array
+   *   The mapped mapping.
+   */
   protected function mapMappings($mapping) {
-    dsm($mapping);
     list($type, $id) = explode(':', $mapping);
 
     $map = [
@@ -165,16 +192,26 @@ class FileUpload extends EntityForm {
     return call_user_func([$this, $map[$type]], $id);
   }
 
+  /**
+   * Derive mapping from a given migration group.
+   *
+   * @param string $id
+   *   The id/name of the migration group from which to derive a mapping.
+   *
+   * @return array
+   *   The mapped mapping.
+   */
   protected function mapMappingFromMigrationGroup($id) {
     $map_migrations = function ($etm, $mpm) use ($id) {
       $storage = $etm->getStorage('migration');
       $names = $storage->getQuery()->condition('migration_group', $id)->execute();
-      $m_plus_m = $storage->loadMultiple($names);
 
       $migrations = $mpm->createinstances(
         $names,
         array_map(
-          function ($a) { return $a->toArray(); },
+          function ($a) {
+            return $a->toArray();
+          },
           $storage->loadMultiple($names)
         )
       );
@@ -192,7 +229,7 @@ class FileUpload extends EntityForm {
       foreach ($migrations as $mid => $migration) {
         yield $mid => [
           'original_migration_id' => $mid,
-          'mappings' => iterator_to_array($map_migration($migration))
+          'mappings' => iterator_to_array($map_migration($migration)),
         ];
       }
     };
@@ -203,6 +240,15 @@ class FileUpload extends EntityForm {
     ));
   }
 
+  /**
+   * Copy the mapping from another request.
+   *
+   * @param string $id
+   *   The other request from which to copy the mapping.
+   *
+   * @return array
+   *   The mapping to assign.
+   */
   protected function getMappingFromRequest($id) {
     return $this->entityTypeManager->getStorage('isi_request')->load($id)->getMappings();
   }
@@ -213,10 +259,8 @@ class FileUpload extends EntityForm {
   public function save(array $form, FormStateInterface $form_state) {
     $request = $this->entity;
 
-    // TODO: Copy/transform the info from the target.
+    // Copy/transform the info from the target.
     $mapped = $this->mapMappings($request->getOriginalMapping());
-    dsm($mapped);
-    if (!$mapped) { return ;}
     $request->set('mappings', $mapped);
 
     try {
@@ -234,10 +278,19 @@ class FileUpload extends EntityForm {
       ]);
     }
     catch (\Exception $e) {
-      dsm($e);
+      $this->logger('isi.request.file_upload')->error('Exception when saving: {exc}', ['exc' => $e]);
     }
   }
 
+  /**
+   * Machine name callback to test for existence.
+   *
+   * @param string $id
+   *   The name for which to test.
+   *
+   * @return bool
+   *   TRUE if an item with the ID already exists; otherwise, FALSE.
+   */
   public function exist($id) {
     $entity = $this->entityTypeManager->getStorage('isi_request')->getQuery()
       ->condition('id', $id)

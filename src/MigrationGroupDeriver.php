@@ -7,14 +7,56 @@ use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Cache\CacheTagsInvalidatorInterface;
 use Psr\Log\LoggerInterface;
 
+/**
+ * Migration group deriver.
+ */
 class MigrationGroupDeriver implements MigrationGroupDeriverInterface {
+
+  /**
+   * Logger.
+   *
+   * @var \Psr\Log\LoggerInterface
+   */
   protected $logger;
+
+  /**
+   * Entity type manager.
+   *
+   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
+   */
   protected $entityTypeManager;
+
+  /**
+   * Migration group storage.
+   *
+   * @var \Drupal\Core\Config\Entity\ConfigEntityStorageInterfaces
+   */
   protected $migrationGroupStorage;
+
+  /**
+   * File storage.
+   *
+   * @var \Drupal\file\FileStorageInterfaces
+   */
   protected $fileStorage;
+
+  /**
+   * Cache invalidator.
+   *
+   * @var \Drupal\Core\Cache\CacheTagsInvalidatorInterface
+   */
   protected $cacheInvalidator;
+
+  /**
+   * Migration storage.
+   *
+   * @var \Drupal\Core\Config\Entity\ConfigEntityStorageInterface
+   */
   protected $migrationStorage;
 
+  /**
+   * Constructor.
+   */
   public function __construct(
     LoggerInterface $logger,
     EntityTypeManagerInterface $entity_type_manager,
@@ -28,16 +70,25 @@ class MigrationGroupDeriver implements MigrationGroupDeriverInterface {
     $this->cacheInvalidator = $invalidator;
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function deriveName(RequestInterface $request) {
-    return "isi_request__{$request->id()}";
+    return "isi__{$request->id()}";
   }
 
+  /**
+   * Helper; clear the cache for migration plugins.
+   */
   protected function invalidateTags() {
     $this->logger->debug('Invalidating cache for "migration_plugins"');
     $this->cacheInvalidator->invalidateTags(['migration_plugins']);
     $this->logger->info('Invalidated cache for "migration_plugins"');
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function create(RequestInterface $request) {
     assert($request->getActive());
     $this->logger->debug('Deriving migration group for {id}', ['id' => $request->id()]);
@@ -66,9 +117,9 @@ class MigrationGroupDeriver implements MigrationGroupDeriverInterface {
     $config = $mg->get('shared_configuration') ?? [];
     $config['source'] = [
       'plugin' => 'spreadsheet',
-      'worksheet' => $request->getSheet()['sheet'] ?
+      'worksheet' => ($request->getSheet()['sheet'] ?
         $request->getSheet()['sheet'] :
-        'nada',
+        'nada'),
       'track_changes' => TRUE,
       'file' => $this->fileStorage->load(reset($request->getSheet()['file']))->getFileUri(),
       'header_row' => 1,
@@ -78,6 +129,12 @@ class MigrationGroupDeriver implements MigrationGroupDeriverInterface {
         ],
       ],
     ];
+    if (!isset($config['migration_tags'])) {
+      $config['migration_tags'] = ['isimd'];
+    }
+    elseif (!in_array('isimd', $config['migration_tags'])) {
+      $config['migration_tags'][] = 'isimd';
+    }
 
     $deps = $mg->get('dependencies') ?? [];
     $deps['enforced'][$request->getConfigDependencyKey()][] = $request->getConfigDependencyName();
@@ -89,6 +146,9 @@ class MigrationGroupDeriver implements MigrationGroupDeriverInterface {
     $this->invalidateTags();
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function delete(RequestInterface $request) {
     $this->logger->debug('Deleting migration group for {id}', ['id' => $request->id()]);
     try {
