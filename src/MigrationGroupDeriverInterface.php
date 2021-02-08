@@ -28,6 +28,21 @@ interface MigrationGroupDeriverInterface {
    *
    * @param \Drupal\islandora_spreadsheet_ingest\RequestInterface $request
    *   The request for which to derive a name.
+   *
+   * @return string
+   *   The derived name.
    */
   public function deriveName(RequestInterface $request);
+
+  /**
+   * Derive a migration_tags entry for the given request.
+   *
+   * @param \Drupal\islandora_spreadsheet_ingest\RequestInterface $request
+   *   The request for which to derive a tag.
+   *
+   * @return string
+   *   The derived tag.
+   */
+  public function deriveTag(RequestInterface $request);
+
 }

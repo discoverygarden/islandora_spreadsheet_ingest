@@ -2,13 +2,38 @@
 
 namespace Drupal\islandora_spreadsheet_ingest\Form\Ingest;
 
+use Drupal\Component\Graph;
 use Drupal\Core\Entity\EntityForm;
 use Drupal\Core\Form\FormStateInterface;
+
+use Symfony\Component\DependencyInjection\ContainerInterface;
+
+use Drupal\migrate\MigrateMessage;
+use Drupal\dgi_migrate\MigrateBatchExecutable;
+//use Drupal\migrate_tools\MigrateBatchExecutable;
 
 /**
  * Form for setting up ingests.
  */
 class Review extends EntityForm {
+
+  protected $entityTypeManager;
+  protected $migrationStorage;
+  protected $migrationGroupDeriver;
+  protected $migrationPluginManager;
+  protected $messenger;
+
+  public static function create(ContainerInterface $container) {
+    $instance = new static();
+
+    $instance->entityTypeManager = $container->get('entity_type.manager');
+    $instance->migrationStorage = $instance->entityTypeManager->getStorage('migration');
+    $instance->migrationGroupDeriver = $container->get('islandora_spreadsheet_ingest.migration_group_deriver');
+    $instance->migrationPluginManager = $container->get('plugin.manager.migration');
+    $instance->messenger = $container->get('messenger');
+
+    return $instance;
+  }
 
   /**
    * {@inheritdoc}
@@ -33,7 +58,7 @@ class Review extends EntityForm {
       '#default_value' => 'defer',
       '#states' => [
         'visible' => [
-          ':input[name="active"' => [
+          ':input[name="active"]' => [
             'checked' => TRUE,
           ],
         ],
@@ -78,8 +103,24 @@ class Review extends EntityForm {
   public function submitProcessing(array &$form, FormStateInterface $form_state) {
     if ($this->entity->getActive()) {
       if ($form_state->getValue('enqueue') == 'immediate') {
-        // @todo Setup a batch to process the group.
-        dsm('TODO: Actually setup the batch to batch...');
+        // Setup batch(es) to process the group.
+        $migrations = $this->migrationPluginManager->createInstancesByTag($this->migrationGroupDeriver->deriveTag($this->entity));
+
+        try {
+          $messenger = new MigrateMessage();
+          foreach ($migrations as $migration) {
+            $executable = new MigrateBatchExecutable($migration, $messenger, [
+              'limit' => 0,
+              'update' => 0,
+              'force' => 0,
+            ]);
+            batch_set($executable->prepareBatch());
+          }
+        }
+        catch (\Exception $e) {
+          $this->logger('isi.review')->error('Failed to enqueue batch: {exc}', ['exc' => $e->getMessage()]);
+          $this->messenger->addError($this->t('Failed to enqueue batch.'));
+        }
       }
     }
   }

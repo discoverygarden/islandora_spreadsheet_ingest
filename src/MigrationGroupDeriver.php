@@ -136,6 +136,10 @@ class MigrationGroupDeriver implements MigrationGroupDeriverInterface {
       $config['migration_tags'][] = 'isimd';
     }
 
+    $config['migration_tags'][] = $this->deriveTag($request);
+
+    $config['migration_tags'] = array_unique($config['migration_tags']);
+
     $deps = $mg->get('dependencies') ?? [];
     $deps['enforced'][$request->getConfigDependencyKey()][] = $request->getConfigDependencyName();
 
@@ -144,6 +148,13 @@ class MigrationGroupDeriver implements MigrationGroupDeriverInterface {
       ->save();
 
     $this->invalidateTags();
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function deriveTag(RequestInterface $request) {
+    return "isimd:{$request->id()}";
   }
 
   /**
