@@ -46,7 +46,7 @@ process:
       move: FALSE
   filemime:
     - plugin: get
-      source: '@_destination_filename'
+      source: '@_dest_path'
     - plugin: callback
       callable: mime_content_type
   filename: '@_destination_filename'
