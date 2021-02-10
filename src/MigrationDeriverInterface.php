@@ -23,4 +23,12 @@ interface MigrationDeriverInterface {
    */
   public function deleteAll(RequestInterface $request);
 
+  /**
+   * Identify the columns from the source spreadsheet which are used here.
+   *
+   * @param array $mappings
+   *   The array of mappings to scan.
+   */
+  public function getUsedColumns(array $mappings);
+
 }

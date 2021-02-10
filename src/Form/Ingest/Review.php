@@ -8,6 +8,7 @@ use Drupal\Core\Form\FormStateInterface;
 
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
+use Drupal\migrate\Plugin\MigrationInterface;
 use Drupal\migrate\MigrateMessage;
 use Drupal\dgi_migrate\MigrateBatchExecutable;
 //use Drupal\migrate_tools\MigrateBatchExecutable;
@@ -97,6 +98,31 @@ class Review extends EntityForm {
       ->save();
   }
 
+  public function doTheThing($migration, $e, &$context) {
+    $sandbox =& $context['sandbox'];
+
+    if (!isset($sandbox['prepped'])) {
+      $context['results']['status'] = NULL;
+
+      try {
+        $e->prepareBatch();
+      }
+      catch (\Exception $ex) {
+        $e->finishBatch(FALSE, [], [], NULL);
+      }
+      $sandbox['prepped'] = TRUE;
+    }
+
+    $e->processBatch($context);
+
+    if ($context['results']['status'] === MigrationInterface::RESULT_COMPLETED || $sandbox['total'] === 0 || $context['finished'] == 1) {
+      $e->finishBatch(TRUE, $context['results'], [], NULL);
+    }
+    elseif ($context['results']['status'] === MigrationInterface::RESULT_FAILED) {
+      $e->finishBatch(FALSE, $context['results'], [], NULL);
+    }
+  }
+
   /**
    * Submission handler; kick off batch if relevant.
    */
@@ -108,18 +134,33 @@ class Review extends EntityForm {
 
         try {
           $messenger = new MigrateMessage();
+          $batch = [
+            'operations' => [],
+          ];
+
           foreach ($migrations as $migration) {
+            dsm("Enqueueing {$migration->id()}");
             $executable = new MigrateBatchExecutable($migration, $messenger, [
               'limit' => 0,
               'update' => 0,
               'force' => 0,
             ]);
-            batch_set($executable->prepareBatch());
+            dsm('instantiated');
+            $batch['operations'][] = [[$this, 'doTheThing'], [$migration, $executable]];
+            dsm('set');
           }
+          batch_set($batch);
         }
         catch (\Exception $e) {
-          $this->logger('isi.review')->error('Failed to enqueue batch: {exc}', ['exc' => $e->getMessage()]);
+          $this->logger('isi.review')->error('Failed to enqueue batch: {exc}
+{backtrace}', [
+            'exc' => $e->getMessage(),
+            'backtrace' => $e->getTraceAsString(),
+          ]);
           $this->messenger->addError($this->t('Failed to enqueue batch.'));
+        }
+        finally {
+          dsm(batch_get());
         }
       }
     }

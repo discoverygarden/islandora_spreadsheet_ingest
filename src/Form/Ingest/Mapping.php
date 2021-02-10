@@ -5,12 +5,28 @@ namespace Drupal\islandora_spreadsheet_ingest\Form\Ingest;
 use Drupal\Core\Entity\EntityForm;
 use Drupal\Core\Form\FormStateInterface;
 
+use Symfony\Component\DependencyInjection\ContainerInterface;
+
 /**
  * Form for setting up ingests.
  */
 class Mapping extends EntityForm {
 
   use MigrationTrait;
+
+  protected $fileStorage;
+  protected $spreadsheetService;
+  protected $migrationDeriver;
+
+  public static function create(ContainerInterface $container) {
+   $instance = new static();
+
+   $instance->spreadsheetService = $container->get('islandora_spreadsheet_ingest.spreadsheet_service');
+   $instance->fileStorage = $container->get('entity_type.manager')->getStorage('file');
+   $instance->migrationDeriver = $container->get('islandora_spreadsheet_ingest.migration_deriver');
+
+   return $instance;
+  }
 
   /**
    * {@inheritdoc}
@@ -71,6 +87,10 @@ class Mapping extends EntityForm {
     $actions['save_and_review'] = [
       '#type' => 'submit',
       '#value' => $this->t('Save and review'),
+      '#validate' => [
+        '::preValidateEntity',
+        '::validateEntity',
+      ],
       '#submit' => array_merge(
         $actions['submit']['#submit'],
         [
@@ -102,6 +122,37 @@ class Mapping extends EntityForm {
       ],
       $options
     );
+  }
+
+  public function preValidateEntity(array $form, FormStateInterface $form_state) {
+    $form_state->cleanValues();
+    $entity = $this->buildEntity($form, $form_state);
+    $form_state->setTemporaryValue('entity', $entity);
+  }
+
+  public function validateEntity(array $form, FormStateInterface $form_state) {
+    $entity = $form_state->getTemporaryValue('entity');
+
+    // TODO: Assure that all the referenced columns can be located...
+    $header = $this->spreadsheetService->getHeader($this->fileStorage->load(reset($entity->getSheet()['file'])));
+    foreach ($entity->getMappings() as $name => $mapping) {
+      $used_columns = iterator_to_array($this->migrationDeriver->getUsedColumns($mapping['mappings']));
+      $intersection = array_intersect($used_columns, $header);
+      if ($intersection == $used_columns) {
+        // Looks good.
+        continue;
+      }
+      else {
+        $diff = array_diff($used_columns, $header);
+        $form_state->setError($form['mappings'][$name], $this->t('Mapping references column(s) absent in given spreadsheet: %columns', [
+          '%columns' => implode(', ', $diff),
+        ]));
+      }
+    }
+  }
+
+  public function submitForm(array &$form, FormStateInterface $form_state) {
+    $this->entity = $form_state->getTemporaryValue('entity');
   }
 
 }

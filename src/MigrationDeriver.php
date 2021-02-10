@@ -50,12 +50,9 @@ class MigrationDeriver implements MigrationDeriverInterface {
   }
 
   /**
-   * Identify the columns from the source spreadsheet which are used here.
-   *
-   * @param array $mappings
-   *   The array of mappings to scan.
+   * {@inheritdoc}
    */
-  protected function getUsedColumns(array $mappings) {
+  public function getUsedColumns(array $mappings) {
     $mapping = [
       'get' => function ($step) { yield from (array) ($step['source'] ?? []); },
       'migration_lookup' => function ($step) {
@@ -223,9 +220,10 @@ class MigrationDeriver implements MigrationDeriverInterface {
         'id' => $derived_name,
         'label' => $original_migration->label(),
         'migration_group' => $mg_name,
-        'source' => [
-          'columns' => array_unique(iterator_to_array($this->getUsedColumns($info['mappings']))),
-        ],
+        # XXX: Doesn't appear necessary to specify the columns?
+        #'source' => [
+        #  'columns' => array_unique(iterator_to_array($this->getUsedColumns($info['mappings']))),
+        #],
         'process' => iterator_to_array(
           $this->mapPipelineMigrations(
             $info['mappings'],
