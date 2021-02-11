@@ -221,9 +221,9 @@ class MigrationDeriver implements MigrationDeriverInterface {
         'label' => $original_migration->label(),
         'migration_group' => $mg_name,
         # XXX: Doesn't appear necessary to specify the columns?
-        #'source' => [
+        'source' => [
         #  'columns' => array_unique(iterator_to_array($this->getUsedColumns($info['mappings']))),
-        #],
+        ],
         'process' => iterator_to_array(
           $this->mapPipelineMigrations(
             $info['mappings'],

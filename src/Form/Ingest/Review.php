@@ -139,15 +139,12 @@ class Review extends EntityForm {
           ];
 
           foreach ($migrations as $migration) {
-            dsm("Enqueueing {$migration->id()}");
             $executable = new MigrateBatchExecutable($migration, $messenger, [
               'limit' => 0,
               'update' => 0,
               'force' => 0,
             ]);
-            dsm('instantiated');
             $batch['operations'][] = [[$this, 'doTheThing'], [$migration, $executable]];
-            dsm('set');
           }
           batch_set($batch);
         }
@@ -158,9 +155,6 @@ class Review extends EntityForm {
             'backtrace' => $e->getTraceAsString(),
           ]);
           $this->messenger->addError($this->t('Failed to enqueue batch.'));
-        }
-        finally {
-          dsm(batch_get());
         }
       }
     }
