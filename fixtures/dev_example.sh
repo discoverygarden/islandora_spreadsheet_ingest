@@ -1,5 +1,6 @@
 #!/bin/bash
 
+SCRIPT=$0
 MODULE=islandora_spreadsheet_ingest
 MG=isi
 MIGRATIONS=($(drush migrate:status --group=$MG --field=id))
@@ -14,7 +15,7 @@ function reset_all() {
 DEST_LINK="$(drush drupal:directory files)/isifixturefiles"
 FIXTURES="$(drush drupal:directory $MODULE)/fixtures"
 
-sudo -u $APACHE_USER -- rsync -av $FIXTURES $DEST_LINK && \
+bash "$(dirname $SCRIPT)/copy_fixtures.sh" $FIXTURES $DEST_LINK $APACHE_USER && \
 # Cheap script to facilitate dev.
 reset_all && \
 # Known issue with content sync causes OOM. Disable the context config.
