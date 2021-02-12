@@ -14,18 +14,38 @@ class Mapping extends EntityForm {
 
   use MigrationTrait;
 
+  /**
+   * File storage.
+   *
+   * @var \Drupal\file\FileStorageInterface
+   */
   protected $fileStorage;
+
+  /**
+   * Spreadsheet service.
+   *
+   * @var \Drupal\islandora_spreadsheet_ingest\Spreadsheet\SpreadsheetServiceInterface
+   */
   protected $spreadsheetService;
+
+  /**
+   * Migration deriver service.
+   *
+   * @var \Drupal\islandora_spreadsheet_ingest\MigrationDeriverInterface
+   */
   protected $migrationDeriver;
 
+  /**
+   * {@inheritdoc}
+   */
   public static function create(ContainerInterface $container) {
-   $instance = new static();
+    $instance = new static();
 
-   $instance->spreadsheetService = $container->get('islandora_spreadsheet_ingest.spreadsheet_service');
-   $instance->fileStorage = $container->get('entity_type.manager')->getStorage('file');
-   $instance->migrationDeriver = $container->get('islandora_spreadsheet_ingest.migration_deriver');
+    $instance->spreadsheetService = $container->get('islandora_spreadsheet_ingest.spreadsheet_service');
+    $instance->fileStorage = $container->get('entity_type.manager')->getStorage('file');
+    $instance->migrationDeriver = $container->get('islandora_spreadsheet_ingest.migration_deriver');
 
-   return $instance;
+    return $instance;
   }
 
   /**
@@ -124,16 +144,24 @@ class Mapping extends EntityForm {
     );
   }
 
+  /**
+   * Build up the base entity to validate.
+   *
+   * Normally, this would happen later in the submission process.
+   */
   public function preValidateEntity(array $form, FormStateInterface $form_state) {
     $form_state->cleanValues();
     $entity = $this->buildEntity($form, $form_state);
     $form_state->setTemporaryValue('entity', $entity);
   }
 
+  /**
+   * Validate that all the fields referenced exist.
+   */
   public function validateEntity(array $form, FormStateInterface $form_state) {
     $entity = $form_state->getTemporaryValue('entity');
 
-    // TODO: Assure that all the referenced columns can be located...
+    // Assure that all the referenced columns can be located...
     $header = $this->spreadsheetService->getHeader($this->fileStorage->load(reset($entity->getSheet()['file'])));
     foreach ($entity->getMappings() as $name => $mapping) {
       $used_columns = iterator_to_array($this->migrationDeriver->getUsedColumns($mapping['mappings']));
@@ -151,6 +179,9 @@ class Mapping extends EntityForm {
     }
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $this->entity = $form_state->getTemporaryValue('entity');
   }

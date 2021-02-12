@@ -2,7 +2,6 @@
 
 namespace Drupal\islandora_spreadsheet_ingest;
 
-use Drupal\Core\Entity\EntityStorageException;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Cache\CacheTagsInvalidatorInterface;
 use Psr\Log\LoggerInterface;
@@ -14,22 +13,46 @@ use Drupal\migrate_plus\Entity\MigrationInterface;
  */
 class MigrationDeriver implements MigrationDeriverInterface {
 
-  /** @var \Psr\Log\LoggerInterface */
+  /**
+   * Logger instance.
+   *
+   * @var \Psr\Log\LoggerInterface
+   */
   protected $logger;
 
-  /** @var \Drupal\Core\Entity\EntityTypeManagerInterface */
+  /**
+   * Entity type manager service.
+   *
+   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
+   */
   protected $entityTypeManager;
 
-  /** @var \Drupal\islandora_spreadsheet_ingest\MigrationGroupDeriverInterface */
+  /**
+   * Migration group deriver service.
+   *
+   * @var \Drupal\islandora_spreadsheet_ingest\MigrationGroupDeriverInterface
+   */
   protected $migrationGroupDeriver;
 
-  /** @var \Drupal\Core\Config\Entity\ConfigEntityStorageInterface */
+  /**
+   * Request config entity storage.
+   *
+   * @var \Drupal\Core\Config\Entity\ConfigEntityStorageInterface
+   */
   protected $requestStorage;
 
-  /** @var \Drupal\Core\Config\Entity\ConfigEntityStorageInterface */
+  /**
+   * Migration config entity storage.
+   *
+   * @var \Drupal\Core\Config\Entity\ConfigEntityStorageInterface
+   */
   protected $migrationStorage;
 
-  /** @var \Drupal\Core\Cache\CacheTagsInvalidatorInterface */
+  /**
+   * Cache invalidator service.
+   *
+   * @var \Drupal\Core\Cache\CacheTagsInvalidatorInterface
+   */
   protected $cacheInvalidator;
 
   /**
@@ -54,7 +77,9 @@ class MigrationDeriver implements MigrationDeriverInterface {
    */
   public function getUsedColumns(array $mappings) {
     $mapping = [
-      'get' => function ($step) { yield from (array) ($step['source'] ?? []); },
+      'get' => function ($step) {
+        yield from (array) ($step['source'] ?? []);
+      },
       'migration_lookup' => function ($step) {
         if (isset($step['source'])) {
           yield from (array) ($step['source'] ?? []);
@@ -67,7 +92,7 @@ class MigrationDeriver implements MigrationDeriverInterface {
       },
     ];
 
-    foreach ($mappings as $field => $info) {
+    foreach ($mappings as $info) {
       foreach ($info['pipeline'] as $process_step) {
         $plugin = $process_step['plugin'] ?? 'get';
         $mapper = $mapping[$plugin] ?? $mapping['get'];
@@ -220,9 +245,11 @@ class MigrationDeriver implements MigrationDeriverInterface {
         'id' => $derived_name,
         'label' => $original_migration->label(),
         'migration_group' => $mg_name,
-        # XXX: Doesn't appear necessary to specify the columns?
         'source' => [
-        #  'columns' => array_unique(iterator_to_array($this->getUsedColumns($info['mappings']))),
+        /*
+         *  XXX: Doesn't appear necessary to specify the columns?
+         *   'columns' => array_unique(iterator_to_array($this->getUsedColumns($info['mappings']))),
+         */
         ],
         'process' => iterator_to_array(
           $this->mapPipelineMigrations(
@@ -262,7 +289,7 @@ class MigrationDeriver implements MigrationDeriverInterface {
     // Nuke the storage for the given mgiration group.
     $this->migrationStorage->delete(
       $this->migrationStorage->loadByProperties([
-        'migration_group' => $this->migrationGroupDeriver->deriveName($request)
+        'migration_group' => $this->migrationGroupDeriver->deriveName($request),
       ])
     );
 
@@ -277,4 +304,5 @@ class MigrationDeriver implements MigrationDeriverInterface {
     $this->cacheInvalidator->invalidateTags(['migration_plugins']);
     $this->logger->info('Invalidated cache for "migration_plugins"');
   }
+
 }

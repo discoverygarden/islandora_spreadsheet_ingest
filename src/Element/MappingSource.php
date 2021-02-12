@@ -4,9 +4,7 @@ namespace Drupal\islandora_spreadsheet_ingest\Element;
 
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Element\FormElement;
-use Drupal\Component\Utility\Html as HtmlUtility;
 
-use Drupal\migrate\MigrationInterface;
 use Drupal\islandora_spreadsheet_ingest\Model\ConfiguredSourceInterface;
 
 /**
@@ -44,6 +42,9 @@ class MappingSource extends FormElement {
     ];
   }
 
+  /**
+   * Helper; get the machine name for the current selection.
+   */
   protected static function getSelected(array $element, $selection) {
     if ($selection === static::NOTHING) {
       throw new \Exception('Missing selection.');
@@ -56,12 +57,18 @@ class MappingSource extends FormElement {
 
   }
 
+  /**
+   * Helper; given a selection, get the related property/field mapping.
+   */
   protected static function getSelectedProperty(array $element, FormStateInterface $form_state) {
     $selection = $form_state->getValue(array_merge($element['#parents'], ['select']), static::NOTHING);
 
     return [$selection, static::getSelected($element, $selection)];
   }
 
+  /**
+   * Element validation; check that the selected source is valid, if adding.
+   */
   public static function validateSelectedForm(array &$element, FormStateInterface $form_state, array $form) {
     if (array_slice($element['#parents'], 0, -1) !== array_slice($form_state->getTriggeringElement()['#parents'], 0, -1)) {
       // XXX: To avoid polluting having to push out "#limit_validation_error"
@@ -69,7 +76,7 @@ class MappingSource extends FormElement {
       return;
     }
     try {
-      list($name, $prop) = static::getSelectedProperty($element, $form_state);
+      list(, $prop) = static::getSelectedProperty($element, $form_state);
       $form_state->setValueForElement($element, $prop);
     }
     catch (\Exception $e) {
@@ -78,6 +85,9 @@ class MappingSource extends FormElement {
     }
   }
 
+  /**
+   * Process callback; throw in any forms for configured sources.
+   */
   public static function processProperties(array &$element, FormStateInterface $form_state) {
     // Generate the #name, as per:
     // https://git.drupalcode.org/project/drupal/-/blob/1b29cf27aa94996407170fa1f77760745e4f3520/core/lib/Drupal/Core/Form/FormBuilder.php#L1167-1185
@@ -109,6 +119,9 @@ class MappingSource extends FormElement {
     return $element;
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public static function valueCallback(&$element, $input, FormStateInterface $form_state) {
     if ($input !== FALSE) {
       // Get the property for the thing that was selected, do its form
@@ -116,7 +129,10 @@ class MappingSource extends FormElement {
       try {
         list($name, $prop) = static::getSelectedProperty($element, $form_state);
         if ($prop instanceof ConfiguredSourceInterface) {
-          $prop->submitFormValues($form_state->getValue(array_merge($element['#parents'], ['config', $name])));
+          $prop->submitFormValues($form_state->getValue(array_merge(
+            $element['#parents'],
+            ['config', $name]
+          )));
         }
         $form_state->setValueForElement($element, $prop);
         return $prop;

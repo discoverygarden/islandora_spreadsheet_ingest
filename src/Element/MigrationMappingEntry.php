@@ -4,12 +4,6 @@ namespace Drupal\islandora_spreadsheet_ingest\Element;
 
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Element\FormElement;
-use Drupal\Component\Utility\Html as HtmlUtility;
-
-use Drupal\migrate\Row;
-use Drupal\file\FileInterface;
-use Drupal\migrate\Plugin\migrate\destination\Entity;
-use Drupal\migrate\Plugin\MigrationInterface;
 
 /**
  * Migration mapping element.
@@ -36,6 +30,9 @@ class MigrationMappingEntry extends FormElement {
     ];
   }
 
+  /**
+   * Process callback; expand out to our set of fields.
+   */
   public static function processEntry(array &$element, FormStateInterface $form_state) {
     assert($element['#entry'] !== NULL);
 
@@ -50,9 +47,9 @@ class MigrationMappingEntry extends FormElement {
     ];
     $source_name = $element['#entry']->getSource()->getName();
     $element['source'] = [
-      '#markup' => is_array($source_name) ?
+      '#markup' => (is_array($source_name) ?
         ('[' . implode(', ', $source_name) . ']') :
-        $source_name,
+        $source_name),
     ];
     $element['destination'] = [
       '#markup' => $element['#entry']->getDestinationName(),

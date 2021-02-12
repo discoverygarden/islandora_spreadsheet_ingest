@@ -2,34 +2,76 @@
 
 namespace Drupal\islandora_spreadsheet_ingest\Model;
 
+use Drupal\Core\StringTranslation\StringTranslationTrait;
+
+/**
+ * Concrete implementaion of the pipeline interface.
+ */
 class Pipeline implements PipelineInterface {
 
+  use StringTranslationTrait;
+
+  /**
+   * The source instance.
+   *
+   * @var \Drupal\islandora_spreadsheet_ingest\Model\SourceInterface
+   */
   protected $source;
+
+  /**
+   * The name of the destination field/property.
+   *
+   * @var string
+   */
   protected $destinationName;
+
+  /**
+   * The array of pipeline steps.
+   *
+   * @var \Drupal\islandora_spreadsheet_ingest\Model\PipelineStepInterface[]
+   */
   protected $steps;
 
+  /**
+   * Constructor.
+   */
   public function __construct(SourceInterface $source, $dest_name) {
     $this->source = $source;
     $this->destinationName = $dest_name;
     $this->steps = [];
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function getSource() {
     return $this->source;
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function getDestinationName() {
     return $this->destinationName;
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function getName() {
     return "@{$this->destinationName}";
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function getSourceName() {
-    return t('Processed value');
+    return $this->t('Processed value');
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function addStep(PipelineStepInterface $step) {
     if ($step->toProcessArray() == $this->source->toProcessArray()) {
       return;
@@ -37,6 +79,9 @@ class Pipeline implements PipelineInterface {
     $this->steps[] = $step;
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function removeStep(PipelineStepInterface $step) {
     $this->steps = array_filter(
       $this->steps,
@@ -46,6 +91,9 @@ class Pipeline implements PipelineInterface {
     );
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function toProcessArray() {
     return [
       'plugin' => 'get',
@@ -53,6 +101,9 @@ class Pipeline implements PipelineInterface {
     ];
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function toPipelineArray() {
     $to_return = [
       $this->source->toProcessArray(),

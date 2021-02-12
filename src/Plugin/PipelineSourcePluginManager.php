@@ -12,7 +12,6 @@ use Drupal\Component\Plugin\FallbackPluginManagerInterface;
  */
 class PipelineSourcePluginManager extends DefaultPluginManager implements FallbackPluginManagerInterface {
 
-
   /**
    * Constructs a new PipelineSourcePluginManager object.
    *
@@ -31,6 +30,9 @@ class PipelineSourcePluginManager extends DefaultPluginManager implements Fallba
     $this->setCacheBackend($cache_backend, 'islandora_spreadsheet_ingest_isi_pipeline_source_plugins');
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function getFallbackPluginId($plugin_id, array $config = []) {
     return 'wrapper';
   }

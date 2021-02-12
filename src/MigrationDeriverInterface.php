@@ -10,7 +10,7 @@ interface MigrationDeriverInterface {
   /**
    * Create all the migrations for the given request.
    *
-   * @param \Drupal\islandora_spreadsheet_ingest\RequestInterface $reqeust
+   * @param \Drupal\islandora_spreadsheet_ingest\RequestInterface $request
    *   The request for which to create the migration entities.
    */
   public function createAll(RequestInterface $request);
@@ -18,7 +18,7 @@ interface MigrationDeriverInterface {
   /**
    * Delete all the migrations for the given request.
    *
-   * @param \Drupal\islandora_spreadsheet_ingest\RequestInterface $reqeust
+   * @param \Drupal\islandora_spreadsheet_ingest\RequestInterface $request
    *   The request for which to delete the migration entities.
    */
   public function deleteAll(RequestInterface $request);

@@ -3,10 +3,8 @@
 namespace Drupal\islandora_spreadsheet_ingest\Entity;
 
 use Drupal\Core\Config\Entity\ConfigEntityBase;
-use Drupal\Core\Config\Entity\ConfigEntityStorageInterface;
 
 use Drupal\islandora_spreadsheet_ingest\RequestInterface;
-use Drupal\islandora_spreadsheet_ingest\SheetInterface;
 
 /**
  * Defines the Request entity.
@@ -44,27 +42,90 @@ use Drupal\islandora_spreadsheet_ingest\SheetInterface;
  * )
  */
 class Request extends ConfigEntityBase implements RequestInterface {
-  protected $storage;
 
+  /**
+   * The ID of the request.
+   *
+   * @var string
+   */
   protected $id;
+
+  /**
+   * The request's label.
+   *
+   * @var string
+   */
   protected $label;
+
+  /**
+   * Coordinates for where to find the particular worksheet.
+   *
+   * Includes:
+   * - sheet: The name of the worksheet.
+   * - file: An array of file IDs... though there should just be one.
+   *
+   * @var array
+   */
   protected $sheet;
+
+  /**
+   * A representation of the original mapping.
+   *
+   * Should only ever be a "migration_group:*" kind of thing...
+   *
+   * @var string
+   */
   protected $originalMapping = 'migration_group:isi';
+
+  /**
+   * The associative array of mappings.
+   *
+   * Mapping migration names to:
+   * - original_migration_id: The name of the original migration
+   * - mappings: An associative array mapping field/property names to an
+   *   associative array containing:
+   *   - pipeline: The array of process plugin definitions.
+   *
+   * May be NULL if not yet set.
+   *
+   * @var array|null
+   */
   protected $mappings = NULL;
+
+  /**
+   * Whether this request should be eligible to be processed.
+   *
+   * @var bool
+   *
+   * @todo Review whether or not the core ConfigEntityBase's "status" may cover
+   *   the same situation.
+   */
   protected $active = FALSE;
 
+  /**
+   * {@inheritdoc}
+   */
   public function getOriginalMapping() {
     return $this->originalMapping;
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function getActive() {
     return $this->active;
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function getSheet() {
     return $this->sheet;
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function getMappings() {
     return $this->mappings;
   }

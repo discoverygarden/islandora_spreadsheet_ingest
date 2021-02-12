@@ -4,21 +4,16 @@ namespace Drupal\islandora_spreadsheet_ingest\Element;
 
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Element\FormElement;
-use Drupal\Component\Utility\Html as HtmlUtility;
 use Drupal\Component\Utility\NestedArray;
 
 use Drupal\migrate\Row;
-use Drupal\file\FileInterface;
 use Drupal\migrate\Plugin\migrate\destination\Entity;
 use Drupal\migrate\Plugin\MigrationInterface;
 use Drupal\islandora_spreadsheet_ingest\Form\Ingest\MigrationTrait;
-use Drupal\islandora_spreadsheet_ingest\Model\RowSource;
 use Drupal\islandora_spreadsheet_ingest\Model\SourceInterface;
 use Drupal\islandora_spreadsheet_ingest\Model\Pipeline;
 use Drupal\islandora_spreadsheet_ingest\Model\PipelineInterface;
 use Drupal\islandora_spreadsheet_ingest\Model\ProcessPluginWrapper;
-use Drupal\islandora_spreadsheet_ingest\Model\ProcessSourcePluginWrapper;
-use Drupal\islandora_spreadsheet_ingest\Model\DefaultValueSourcePropertyCreator;
 
 /**
  * Migration mapping element.
@@ -48,6 +43,9 @@ class MigrationMapping extends FormElement {
     ];
   }
 
+  /**
+   * Load the referenced migration.
+   */
   public static function mapMigration(array &$element, FormStateInterface $form_state) {
     $element['#migration'] = \Drupal::service('plugin.manager.migration')
       ->createInstance(
@@ -61,6 +59,16 @@ class MigrationMapping extends FormElement {
     return $element;
   }
 
+  /**
+   * Enumerate the destination properties, given a migration.
+   *
+   * @param \Drupal\migrate\Plugin\MigrationInterface $migration
+   *   The migration from which to scrape the destination entity type, from
+   *   which to grab the properties.
+   *
+   * @return \Drupal\Core\TypedData\DataDefinitionInterface[]
+   *   An associative array mapping names to data definitions.
+   */
   protected static function getDestinationProperties(MigrationInterface $migration) {
     $row_probe = new Row();
     $dp = $migration->getDestinationPlugin();
@@ -70,6 +78,9 @@ class MigrationMapping extends FormElement {
       $def = \Drupal::typedDataManager()->createDataDefinition($bundle ? "$key:$bundle" : $key);
       $migration_options = [];
       foreach ($def->getPropertyDefinitions() as $prop) {
+        // XXX: This rekeying _may_ not be necessary...
+        // EntityDataDefinition::getPropertyDefinitions() indicates:
+        // > keyed by property name... shrug?
         $migration_options[$prop->getName()] = $prop;
       }
       return $migration_options;
@@ -79,6 +90,12 @@ class MigrationMapping extends FormElement {
     }
   }
 
+  /**
+   * Get the unused destinations in an "options" structure.
+   *
+   * @return mixed
+   *   The mapped options.
+   */
   protected static function getDestinationOptions(MigrationInterface $migration, FormStateInterface $form_state) {
     return array_map(
       function ($prop) {
@@ -92,6 +109,14 @@ class MigrationMapping extends FormElement {
     );
   }
 
+  /**
+   * Get the list of properties available as datasources...
+   *
+   * Generally, CSV/spreadsheet columns, but also other fields.
+   *
+   * @return \Drupal\islandora_spreadsheet_ingest\Plugin\PipelineSourcePluginInterface[]
+   *   An associative array of available sources.
+   */
   protected static function getSourceProperties(array $element, FormStateInterface $form_state) {
     $source = $element['#request']->getSheet();
     $header = \Drupal::service('islandora_spreadsheet_ingest.spreadsheet_service')
@@ -106,7 +131,7 @@ class MigrationMapping extends FormElement {
       array_combine($header, array_map(function ($col) use ($isi_manager) {
         return $isi_manager->createInstance('get', [
           'source' => $col,
-          'source_name' => t('Selected spreadsheet')
+          'source_name' => t('Selected spreadsheet'),
         ]);
       }, $header)),
       static::getEntries($element['#migration'], $form_state),
@@ -116,16 +141,24 @@ class MigrationMapping extends FormElement {
     );
   }
 
+  /**
+   * Helper; get the items selected in the table.
+   *
+   * @return array
+   *   An associative array with the selections.
+   */
   public static function tableSelection(array &$element, $input, FormStateInterface $form_state) {
     if ($input) {
       $keys = array_keys(array_filter($input, function ($row) {
         return $row['select'] ?? FALSE;
       }));
       return array_combine($keys, $keys);
-
     }
   }
 
+  /**
+   * Process callback; expand to table view.
+   */
   public static function processMapping(array &$element, FormStateInterface $form_state) {
     $element['table'] = [
       '#type' => 'table',
@@ -192,6 +225,9 @@ class MigrationMapping extends FormElement {
     return $element;
   }
 
+  /**
+   * Determine what fields on the given entity do not yet have a mapping.
+   */
   protected static function getUnusedDestinationProperties(MigrationInterface $migration, FormStateInterface $form_state) {
 
     return array_diff_key(
@@ -201,6 +237,9 @@ class MigrationMapping extends FormElement {
 
   }
 
+  /**
+   * Helper; create our "pipeline" objects for each entry.
+   */
   protected static function mapMigrationProcessToPipelines($migration_reference) {
     $entries = [];
 
@@ -240,6 +279,9 @@ class MigrationMapping extends FormElement {
     return $entries;
   }
 
+  /**
+   * Process callback; populate entries.
+   */
   public static function prepopulateEntries(array &$element, FormStateInterface $form_state) {
     $autopop_target = [
       'migration',
@@ -269,6 +311,9 @@ class MigrationMapping extends FormElement {
     return $element;
   }
 
+  /**
+   * Process callback; expand mapping entries to individual elements.
+   */
   public static function processEntries(array &$element, FormStateInterface $form_state) {
     $weight = 0;
 
@@ -284,21 +329,17 @@ class MigrationMapping extends FormElement {
       static::getEntries($element['#migration'], $form_state)
     );
 
-
     return $element;
   }
 
+  /**
+   * Submission validator; check that the entry input appears valid.
+   */
   public static function validateAddMapping(array &$form, FormStateInterface $form_state) {
     $trigger = $form_state->getTriggeringElement();
-    $element_target = array_merge(
-      array_slice($trigger['#array_parents'], 0, -2),
-      ['#migration']
-    );
-    $migration = NestedArray::getValue($form, $element_target);
 
     $adder = array_slice($trigger['#array_parents'], 0, -1);
     $source_target = array_merge($adder, ['source_column']);
-    $source_el = NestedArray::getValue($form, $source_target);
     $source = $form_state->getValue($source_target);
     $destination = $form_state->getValue(array_merge($adder, ['destination']));
 
@@ -310,6 +351,9 @@ class MigrationMapping extends FormElement {
     }
   }
 
+  /**
+   * Submission handler; add the new entry to the mapping.
+   */
   public static function submitAddMapping(array &$form, FormStateInterface $form_state) {
     // Add the entry to form state and rebuild.
     $trigger = $form_state->getTriggeringElement();
@@ -332,6 +376,9 @@ class MigrationMapping extends FormElement {
     $form_state->setRebuild();
   }
 
+  /**
+   * Submission validator; check referential integrity.
+   */
   public static function validateRemoveMapping(array $form, FormStateInterface $form_state) {
     // Remove the selected entries from the form state and rebuild.
     $trigger = $form_state->getTriggeringElement();
@@ -359,7 +406,7 @@ class MigrationMapping extends FormElement {
 
     $to_remain = array_diff_key($current, $selected);
     $form_state->setTemporaryValue('to_remain', $to_remain);
-    foreach ($to_remain as $name => $check) {
+    foreach ($to_remain as $check) {
       $source = $check->getSource();
 
       if ($source instanceof PipelineInterface && !isset($to_remain[$source->getDestinationName()])) {
@@ -370,6 +417,10 @@ class MigrationMapping extends FormElement {
       }
     }
   }
+
+  /**
+   * Submission handler; remove the selected entries from the givenmapping.
+   */
   public static function submitRemoveMapping(array $form, FormStateInterface $form_state) {
     // Remove the selected entries from the form state and rebuild.
     $trigger = $form_state->getTriggeringElement();

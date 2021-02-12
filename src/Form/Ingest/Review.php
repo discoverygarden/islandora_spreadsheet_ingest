@@ -2,7 +2,6 @@
 
 namespace Drupal\islandora_spreadsheet_ingest\Form\Ingest;
 
-use Drupal\Component\Graph;
 use Drupal\Core\Entity\EntityForm;
 use Drupal\Core\Form\FormStateInterface;
 
@@ -11,19 +10,50 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\migrate\Plugin\MigrationInterface;
 use Drupal\migrate\MigrateMessage;
 use Drupal\dgi_migrate\MigrateBatchExecutable;
-//use Drupal\migrate_tools\MigrateBatchExecutable;
 
 /**
  * Form for setting up ingests.
  */
 class Review extends EntityForm {
 
+  /**
+   * Entity type manager.
+   *
+   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
+   */
   protected $entityTypeManager;
+
+  /**
+   * Migration storage.
+   *
+   * @var \Drupal\Core\Config\Entity\ConfigEntityStorageInterface
+   */
   protected $migrationStorage;
+
+  /**
+   * Migration group deriver.
+   *
+   * @var \Drupal\islandora_spreadsheet_ingest\MigrationGroupDeriverInterface
+   */
   protected $migrationGroupDeriver;
+
+  /**
+   * Migration plugin manager.
+   *
+   * @var \Drupal\migrate\Plugin\MigrationPluginManagerInterface
+   */
   protected $migrationPluginManager;
+
+  /**
+   * Drupal messenger service.
+   *
+   * @var \Drupal\Core\Messenger\MessengerInterface
+   */
   protected $messenger;
 
+  /**
+   * {@inheritdoc}
+   */
   public static function create(ContainerInterface $container) {
     $instance = new static();
 
@@ -98,7 +128,17 @@ class Review extends EntityForm {
       ->save();
   }
 
-  public function doTheThing($migration, $e, &$context) {
+  /**
+   * Run a batch migration import operation.
+   *
+   * @param \Drupal\migrate\Plugin\MigrationInterface $migration
+   *   The migration being run.
+   * @param \Drupal\dgi_migrate\MigrateBatchExecutable $e
+   *   A migration batch exectuable to manipulate, to run the batch.
+   * @param mixed $context
+   *   A reference to the batch context.
+   */
+  public function runBatchOp(MigrationInterface $migration, MigrateBatchExecutable $e, &$context) {
     $sandbox =& $context['sandbox'];
 
     if (!isset($sandbox['prepped'])) {
@@ -144,13 +184,15 @@ class Review extends EntityForm {
               'update' => 0,
               'force' => 0,
             ]);
-            $batch['operations'][] = [[$this, 'doTheThing'], [$migration, $executable]];
+            $batch['operations'][] = [
+              [$this, 'runBatchOp'],
+              [$migration, $executable],
+            ];
           }
           batch_set($batch);
         }
         catch (\Exception $e) {
-          $this->logger('isi.review')->error('Failed to enqueue batch: {exc}
-{backtrace}', [
+          $this->logger('isi.review')->error("Failed to enqueue batch: {exc}\n{backtrace}", [
             'exc' => $e->getMessage(),
             'backtrace' => $e->getTraceAsString(),
           ]);

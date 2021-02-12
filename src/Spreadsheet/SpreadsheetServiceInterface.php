@@ -16,6 +16,7 @@ interface SpreadsheetServiceInterface {
    *   The spreadsheet file to read.
    *
    * @return \PhpOffice\PhpSpreadsheet\Spreadsheet
+   *   A spreadsheet object representing the given file.
    */
   public function read(FileInterface $file);
 
@@ -41,7 +42,7 @@ interface SpreadsheetServiceInterface {
    * @param int $row
    *   Zero-indexed row which represents the header to scrape.
    *
-   * @param string[]
+   * @return string[]
    *   The values of the cells from the indicated header row.
    */
   public function getHeader(FileInterface $file, $sheet = NULL, $row = 0);

@@ -40,7 +40,7 @@ class SpreadsheetService implements SpreadsheetServiceInterface {
     if ($sheet) {
       $reader->setLoadSheetsOnly($sheet);
     }
-    $filter = new ChunkReadFilter($row, $row + 1);
+    $reader->setReadFilter(new ChunkReadFilter($row, $row + 1));
     $loaded = $reader->load($file->getFileUri());
 
     foreach ($loaded->getActiveSheet()->getRowIterator() as $row) {

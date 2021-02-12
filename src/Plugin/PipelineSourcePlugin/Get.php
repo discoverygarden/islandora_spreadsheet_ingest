@@ -2,40 +2,52 @@
 
 namespace Drupal\islandora_spreadsheet_ingest\Plugin\PipelineSourcePlugin;
 
-#use Drupal\Component\Plugin\PluginBase;
-use Drupal\Component\Plugin\ConfigurablePluginInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
+use Drupal\Component\Plugin\ConfigurablePluginInterface;
 
-use Drupal\islandora_spreadsheet_ingest\Plugin\PluginBase;
-use Drupal\islandora_spreadsheet_ingest\Plugin\PipelineSourcePluginInterface;
+use Drupal\islandora_spreadsheet_ingest\Plugin\PipelineSourcePluginBase;
+use Drupal\islandora_spreadsheet_ingest\Plugin\PluginConfigTrait;
 
 /**
- * Get plugin.
+ * Get plugin; handle accessing an item from the input row.
  *
  * @PipelineSourcePlugin(
  *   id = "get",
  *   label = @Translation("Get Plugin"),
  * )
  */
-class Get extends PluginBase implements PipelineSourcePluginInterface {
+class Get extends PipelineSourcePluginBase implements ConfigurablePluginInterface {
 
   use StringTranslationTrait;
+  use PluginConfigTrait;
 
+  /**
+   * {@inheritdoc}
+   */
   public function defaultConfiguration() {
     return [
       'plugin' => $this->getPluginId(),
-      'source_name' => $this->t('Source row')
+      'source_name' => $this->t('Source row'),
     ];
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function getName() {
     return $this->configuration['source'];
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function getSourceName() {
     return $this->configuration['source_name'];
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function toProcessArray() {
     return [
       'plugin' => 'get',
@@ -43,6 +55,9 @@ class Get extends PluginBase implements PipelineSourcePluginInterface {
     ];
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function calculateDependencies() {
     return [];
   }
