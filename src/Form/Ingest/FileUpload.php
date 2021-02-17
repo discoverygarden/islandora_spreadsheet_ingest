@@ -83,7 +83,13 @@ class FileUpload extends EntityForm {
    * Helper; get the available options.
    */
   protected function getSpreadsheetOptions(FormStateInterface $form_state) {
-    $list = $this->spreadsheetService->listWorksheets($this->getTargetFile($form_state));
+    $file = $this->getTargetFile($form_state);
+    if (!$file) {
+      $form_state->setValue(['sheet', 'sheet'], '');
+    }
+    $list = $file ?
+      $this->spreadsheetService->listWorksheets($file) :
+      NULL;
     // XXX: Need to provide _some_ name for things like CSVs.
     return $list ?? [$this->t('Single-sheet format')];
   }
@@ -92,7 +98,11 @@ class FileUpload extends EntityForm {
    * {@inheritdoc}
    */
   public function validateForm(array &$form, FormStateInterface $form_state) {
-    $sheets = $this->spreadsheetService->listWorksheets($this->getTargetFile($form_state));
+    $file = $this->getTargetFile($form_state);
+    $sheets = $file ?
+      $this->spreadsheetService->listWorksheets($file) :
+      FALSE;
+
     $coords = ['sheet', 'sheet'];
 
     $entered = $form_state->getValue($coords);
@@ -161,6 +171,7 @@ class FileUpload extends EntityForm {
         '#type' => 'textfield',
         '#title' => $this->t('Sheet'),
         '#description' => $this->t('The name of the worksheet. Leave empty for single-sheet formats such as CSV.'),
+        '#default_value' => $form_state->getValue(['sheet', 'sheet'], $entity->getSheet()['sheet']),
         '#states' => [
           'visible' => [
             ':input[name="sheet[file][fids]"]' => [
@@ -179,7 +190,7 @@ class FileUpload extends EntityForm {
       '#type' => 'select',
       '#title' => $this->t('Base mapping'),
       '#description' => $this->t('The mapping upon which this ingest will be based.'),
-      '#default_value' => $this->entity->getOriginalMapping(),
+      '#default_value' => $entity->getOriginalMapping(),
       '#disabled' => !$entity->isNew(),
       '#options' => [
         "{$this->t('Migration Group')}" => iterator_to_array($map_to_labels($this->entityTypeManager, 'migration_group')),
