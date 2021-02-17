@@ -14,10 +14,17 @@ entity.isi_request.add_form:
   requirements:
     _permission: 'access content overview'
 entity.isi_request.edit_form:
+  path: '/admin/content/islandora_spreadsheet_ingest/{isi_request}/edit'
+  defaults:
+    _title: 'Edit'
+    _entity_form: 'isi_request.edit'
+  requirements:
+    _permission: 'access content overview'
+entity.isi_request.map_form:
   path: '/admin/content/islandora_spreadsheet_ingest/{isi_request}/mapping'
   defaults:
     _title: 'Mapping'
-    _entity_form: 'isi_request.edit'
+    _entity_form: 'isi_request.map'
   requirements:
     _permission: 'access content overview'
 entity.isi_request.delete_form:
@@ -30,7 +37,14 @@ entity.isi_request.delete_form:
 entity.isi_request.view:
   path: '/admin/content/islandora_spreadsheet_ingest/{isi_request}'
   defaults:
-    _title: 'Add Content From Spreadsheet - Review'
+    #_title: 'View'
     _entity_form: 'isi_request.view'
+  requirements:
+    _permission: 'access content overview'
+entity.isi_request.activate_form:
+  path: '/admin/content/islandora_spreadsheet_ingest/{isi_request}/activate'
+  defaults:
+    _title: 'Activate'
+    _entity_form: 'isi_request.activate'
   requirements:
     _permission: 'access content overview'

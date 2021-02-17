@@ -18,6 +18,7 @@ class RequestListBuilder extends ConfigEntityListBuilder {
 
     $header['label'] = $this->t('Request');
     $header['id'] = $this->t('ID');
+    $header['active'] = $this->t('Active');
 
     return $header + parent::buildHeader();
   }
@@ -28,6 +29,7 @@ class RequestListBuilder extends ConfigEntityListBuilder {
   public function buildRow(EntityInterface $entity) {
     $row['label'] = $entity->label();
     $row['id'] = $entity->id();
+    $row['active'] = $entity->getActive() ? $this->t('Active') : $this->t('Inactive');
 
     return $row + parent::buildRow($entity);
   }

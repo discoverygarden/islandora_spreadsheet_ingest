@@ -15,10 +15,12 @@ use Drupal\islandora_spreadsheet_ingest\RequestInterface;
  *   handlers = {
  *     "list_builder" = "Drupal\islandora_spreadsheet_ingest\Controller\RequestListBuilder",
  *     "form" = {
- *       "view" = "Drupal\islandora_spreadsheet_ingest\Form\Ingest\Review",
+ *       "activate" = "Drupal\islandora_spreadsheet_ingest\Form\Ingest\Review",
  *       "add" = "Drupal\islandora_spreadsheet_ingest\Form\Ingest\FileUpload",
- *       "edit" = "Drupal\islandora_spreadsheet_ingest\Form\Ingest\Mapping",
  *       "delete" = "Drupal\islandora_spreadsheet_ingest\Form\RequestDeleteForm",
+ *       "edit" = "Drupal\islandora_spreadsheet_ingest\Form\Ingest\FileUpload",
+ *       "map" = "Drupal\islandora_spreadsheet_ingest\Form\Ingest\Mapping",
+ *       "view" = "Drupal\islandora_spreadsheet_ingest\Form\Ingest\Review",
  *     }
  *   },
  *   config_prefix = "request",
@@ -36,7 +38,9 @@ use Drupal\islandora_spreadsheet_ingest\RequestInterface;
  *   },
  *   links = {
  *     "canonical" = "/admin/content/islandora_spreadsheet_ingest/{isi_request}",
- *     "edit-form" = "/admin/content/islandora_spreadsheet_ingest/{isi_request}/mapping",
+ *     "activate-form" = "/admin/content/islandora_spreadsheet_ingest/{isi_request}/activate",
+ *     "edit-form" = "/admin/content/islandora_spreadsheet_ingest/{isi_request}/edit",
+ *     "map-form" = "/admin/content/islandora_spreadsheet_ingest/{isi_request}/mapping",
  *     "delete-form" = "/admin/content/islandora_spreadsheet_ingest/{isi_request}/delete",
  *   }
  * )

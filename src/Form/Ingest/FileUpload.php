@@ -5,6 +5,7 @@ namespace Drupal\islandora_spreadsheet_ingest\Form\Ingest;
 use Drupal\Core\Entity\EntityForm;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Component\Utility\NestedArray;
 
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -42,13 +43,6 @@ class FileUpload extends EntityForm {
   protected $migrationPluginManager;
 
   /**
-   * File usage service.
-   *
-   * @var \Drupal\file\FileUsage\FileUsageInterface
-   */
-  protected $fileUsage;
-
-  /**
    * Drupal's system.file config.
    *
    * @var \Drupal\Core\Config\ConfigBase
@@ -65,7 +59,6 @@ class FileUpload extends EntityForm {
     $instance->fileEntityStorage = $instance->entityTypeManager->getStorage('file');
     $instance->spreadsheetService = $container->get('islandora_spreadsheet_ingest.spreadsheet_service');
     $instance->migrationPluginManager = $container->get('plugin.manager.migration');
-    $instance->fileUsage = $container->get('file.usage');
     $instance->systemFileConfig = $container->get('config.factory')->get('system.file');
 
     return $instance;
@@ -76,6 +69,9 @@ class FileUpload extends EntityForm {
    */
   protected function getTargetFile(FormStateInterface $form_state) {
     $target_file = $form_state->getValue(['sheet', 'file']);
+    if (!$target_file) {
+      $target_file = $this->entity->getSheet()['file'] ?? FALSE;
+    }
     if ($target_file) {
       return $this->fileEntityStorage->load(reset($target_file));
     }
@@ -88,10 +84,28 @@ class FileUpload extends EntityForm {
    */
   protected function getSpreadsheetOptions(FormStateInterface $form_state) {
     $list = $this->spreadsheetService->listWorksheets($this->getTargetFile($form_state));
-    return $list ?
-      $list :
-      // XXX: Need to provide _some_ name for things like CSVs.
-      [$this->t('Single-sheet format')];
+    // XXX: Need to provide _some_ name for things like CSVs.
+    return $list ?? [$this->t('Single-sheet format')];
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function validateForm(array &$form, FormStateInterface $form_state) {
+    $sheets = $this->spreadsheetService->listWorksheets($this->getTargetFile($form_state));
+    $coords = ['sheet', 'sheet'];
+
+    $entered = $form_state->getValue($coords);
+
+    if ($sheets === NULL) {
+      // No sheets in the given file, don't really care about the "entered"
+      // value.
+    }
+    elseif (!in_array($entered, $sheets)) {
+      $form_state->setError(NestedArray::getValue($form, $coords), $this->t('The targeted sheet "%sheet" does not appear to exist.', [
+        '%sheet' => $entered,
+      ]));
+    }
   }
 
   /**
@@ -108,6 +122,7 @@ class FileUpload extends EntityForm {
     catch (\Exception $e) {
       $sheets = [];
     }
+
     $form['#tree'] = TRUE;
     $form['label'] = [
       '#type' => 'textfield',
@@ -120,6 +135,7 @@ class FileUpload extends EntityForm {
     $form['id'] = [
       '#type' => 'machine_name',
       '#default_value' => $entity->id(),
+      '#disabled' => !$entity->isNew(),
       '#machine_name' => [
         'exists' => [$this, 'exist'],
       ],
@@ -128,7 +144,7 @@ class FileUpload extends EntityForm {
       'file' => [
         '#type' => 'managed_file',
         '#title' => $this->t('Target file'),
-        '#default_value' => $entity->getSheet()['file'],
+        '#default_value' => $form_state->getValue(['sheet', 'file'], $entity->getSheet()['file']),
         '#upload_validators' => [
           'file_validate_extensions' => ['xlsx xlsm xltx xltm xls xlt ods ots slk xml gnumeric htm html csv'],
         ],
@@ -163,6 +179,7 @@ class FileUpload extends EntityForm {
       '#title' => $this->t('Base mapping'),
       '#description' => $this->t('The mapping upon which this ingest will be based.'),
       '#default_value' => $this->entity->getOriginalMapping(),
+      '#disabled' => !$entity->isNew(),
       '#options' => [
         "{$this->t('Migration Group')}" => iterator_to_array($map_to_labels($this->entityTypeManager, 'migration_group')),
         "{$this->t('Ingest Requests')}" => iterator_to_array($map_to_labels($this->entityTypeManager, 'isi_request')),
@@ -234,10 +251,13 @@ class FileUpload extends EntityForm {
       }
     };
 
-    return iterator_to_array($map_migrations(
-      $this->entityTypeManager,
-      $this->migrationPluginManager
-    ));
+    return [
+      "migration_group:{$id}",
+      iterator_to_array($map_migrations(
+        $this->entityTypeManager,
+        $this->migrationPluginManager
+      )),
+    ];
   }
 
   /**
@@ -250,7 +270,8 @@ class FileUpload extends EntityForm {
    *   The mapping to assign.
    */
   protected function getMappingFromRequest($id) {
-    return $this->entityTypeManager->getStorage('isi_request')->load($id)->getMappings();
+    $original = $this->entityTypeManager->getStorage('isi_request')->load($id);
+    return [$original->getOriginalMapping(), $original->getMappings()];
   }
 
   /**
@@ -260,20 +281,14 @@ class FileUpload extends EntityForm {
     $request = $this->entity;
 
     // Copy/transform the info from the target.
-    $mapped = $this->mapMappings($request->getOriginalMapping());
+    list($original, $mapped) = $this->mapMappings($request->getOriginalMapping());
     $request->set('mappings', $mapped);
+    $request->set('originalMapping', $original);
 
     try {
       $request->save();
 
-      $this->fileUsage->add(
-        $this->getTargetFile($form_state),
-        'islandora_spreadsheet_ingest',
-        $request->getEntityTypeId(),
-        $request->id()
-      );
-
-      $form_state->setRedirect('entity.isi_request.edit_form', [
+      $form_state->setRedirect('entity.isi_request.map_form', [
         'isi_request' => $request->id(),
       ]);
     }
