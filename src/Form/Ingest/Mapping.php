@@ -106,7 +106,7 @@ class Mapping extends EntityForm {
     // Add "save and review" button or whatever.
     $actions['save_and_review'] = [
       '#type' => 'submit',
-      '#value' => $this->t('Save and review'),
+      '#value' => $this->t('Save and proceed'),
       '#validate' => [
         '::preValidateEntity',
         '::validateEntity',
@@ -136,7 +136,7 @@ class Mapping extends EntityForm {
     }
 
     $form_state->setRedirect(
-      'entity.isi_request.view',
+      'entity.isi_request.activate_form',
       [
         'isi_request' => $this->entity->id(),
       ],

@@ -102,8 +102,9 @@ class FileUpload extends EntityForm {
       // value.
     }
     elseif (!in_array($entered, $sheets)) {
-      $form_state->setError(NestedArray::getValue($form, $coords), $this->t('The targeted sheet "%sheet" does not appear to exist.', [
+      $form_state->setError(NestedArray::getValue($form, $coords), $this->t('The targeted sheet "%sheet" does not appear to exist. Valid sheets: %sheets', [
         '%sheet' => $entered,
+        '%sheets' => implode(', ', $sheets),
       ]));
     }
   }

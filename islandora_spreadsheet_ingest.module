@@ -19,12 +19,19 @@ use Drupal\islandora_spreadsheet_ingest\RequestInterface;
 function _islandora_spreadsheet_ingest_add_file_usage(RequestInterface $request) {
   $file_usage_service = \Drupal::service('file.usage');
   $file_service = \Drupal::service('entity_type.manager')->getStorage('file');
-  $file_usage_service->add(
-    $file_service->load(reset($request->getSheet()['file'])),
-    'islandora_spreadsheet_ingest',
-    $request->getEntityTypeId(),
-    $request->id()
-  );
+  $fids = $request->getSheet()['file'];
+  $file = $fids ? $file_service->load(reset($fids)) : FALSE;
+  if ($file && $request->id()) {
+    $file_usage_service->add(
+      $file,
+      'islandora_spreadsheet_ingest',
+      $request->getEntityTypeId(),
+      $request->id()
+    );
+  }
+  else {
+    // Nothing to do.
+  }
 }
 
 /**
@@ -36,12 +43,19 @@ function _islandora_spreadsheet_ingest_add_file_usage(RequestInterface $request)
 function _islandora_spreadsheet_ingest_delete_file_usage(RequestInterface $request) {
   $file_usage_service = \Drupal::service('file.usage');
   $file_service = \Drupal::service('entity_type.manager')->getStorage('file');
-  $file_usage_service->delete(
-    $file_service->load(reset($request->getSheet()['file'])),
-    'islandora_spreadsheet_ingest',
-    $request->getEntityTypeId(),
-    $request->id()
-  );
+  $fids = $request->getSheet()['file'];
+  $file = $fids ? $file_service->load(reset($fids)) : FALSE;
+  if ($file && $request->id()) {
+    $file_usage_service->delete(
+      $file,
+      'islandora_spreadsheet_ingest',
+      $request->getEntityTypeId(),
+      $request->id()
+    );
+  }
+  else {
+    // Nothing to do.
+  }
 }
 
 /**
