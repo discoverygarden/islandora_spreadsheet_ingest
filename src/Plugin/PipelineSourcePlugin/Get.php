@@ -3,7 +3,7 @@
 namespace Drupal\islandora_spreadsheet_ingest\Plugin\PipelineSourcePlugin;
 
 use Drupal\Core\StringTranslation\StringTranslationTrait;
-use Drupal\Component\Plugin\ConfigurablePluginInterface;
+use Drupal\Component\Plugin\ConfigurableInterface;
 
 use Drupal\islandora_spreadsheet_ingest\Plugin\PipelineSourcePluginBase;
 use Drupal\islandora_spreadsheet_ingest\Plugin\PluginConfigTrait;
@@ -16,7 +16,7 @@ use Drupal\islandora_spreadsheet_ingest\Plugin\PluginConfigTrait;
  *   label = @Translation("Get Plugin"),
  * )
  */
-class Get extends PipelineSourcePluginBase implements ConfigurablePluginInterface {
+class Get extends PipelineSourcePluginBase implements ConfigurableInterface {
 
   use StringTranslationTrait;
   use PluginConfigTrait;
@@ -53,13 +53,6 @@ class Get extends PipelineSourcePluginBase implements ConfigurablePluginInterfac
       'plugin' => 'get',
       'source' => $this->getName(),
     ];
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function calculateDependencies() {
-    return [];
   }
 
 }
