@@ -9,6 +9,8 @@ use Drupal\Component\Utility\NestedArray;
 
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
+use Drupal\islandora_spreadsheet_ingest\RequestInterface;
+
 /**
  * Form for setting up ingests.
  */
@@ -69,9 +71,13 @@ class FileUpload extends EntityForm {
    */
   protected function getTargetFile(FormStateInterface $form_state) {
     $target_file = $form_state->getValue(['sheet', 'file']);
-    if (!$target_file) {
+    if (isset($target_file['fids'])) {
+      $target_file = $target_file['fids'];
+    }
+    elseif (!$target_file) {
       $target_file = $this->entity->getSheet()['file'] ?? FALSE;
     }
+
     if ($target_file) {
       return $this->fileEntityStorage->load(reset($target_file));
     }
@@ -97,25 +103,48 @@ class FileUpload extends EntityForm {
   /**
    * {@inheritdoc}
    */
-  public function validateForm(array &$form, FormStateInterface $form_state) {
-    $file = $this->getTargetFile($form_state);
-    $sheets = $file ?
-      $this->spreadsheetService->listWorksheets($file) :
-      FALSE;
+  protected function actions(array $form, FormStateInterface $form_state) {
+    $actions = parent::actions($form, $form_state);
 
-    $coords = ['sheet', 'sheet'];
-
-    $entered = $form_state->getValue($coords);
-
-    if ($sheets === NULL) {
-      // No sheets in the given file, don't really care about the "entered"
-      // value.
+    if ($actions['submit']) {
+      $actions['submit']['#validate'] = array_merge(
+        $actions['submit']['#validate'] ?? [],
+        [
+          '::validateForm',
+        ]
+      );
     }
-    elseif (!in_array($entered, $sheets)) {
-      $form_state->setError(NestedArray::getValue($form, $coords), $this->t('The targeted sheet "%sheet" does not appear to exist. Valid sheets: %sheets', [
-        '%sheet' => $entered,
-        '%sheets' => implode(', ', $sheets),
-      ]));
+
+    return $actions;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function validateForm(array &$form, FormStateInterface $form_state) {
+    try {
+      $file = $this->getTargetFile($form_state);
+      $sheets = $file ?
+        $this->spreadsheetService->listWorksheets($file) :
+        FALSE;
+
+      $coords = ['sheet', 'sheet'];
+
+      $entered = $form_state->getValue($coords);
+
+      if ($sheets === NULL) {
+        // No sheets in the given file, don't really care about the "entered"
+        // value.
+      }
+      elseif (!in_array($entered, $sheets)) {
+        $form_state->setError(NestedArray::getValue($form, $coords), $this->t('The targeted sheet "%sheet" does not appear to exist. Valid sheets: %sheets', [
+          '%sheet' => $entered,
+          '%sheets' => implode(', ', $sheets),
+        ]));
+      }
+    }
+    catch (\Exception $e) {
+      $form_state->setError(NestedArray::getValue($form, ['sheet', 'file']), $e->getMessage());
     }
   }
 
@@ -155,7 +184,8 @@ class FileUpload extends EntityForm {
       'file' => [
         '#type' => 'managed_file',
         '#title' => $this->t('Target file'),
-        '#default_value' => $form_state->getValue(['sheet', 'file'], $entity->getSheet()['file']),
+        '#default_value' => $form_state->getValue(['sheet', 'file', 'fids'], $entity->getSheet()['file']),
+        '#required' => TRUE,
         '#upload_validators' => [
           'file_validate_extensions' => ['xlsx xlsm xltx xltm xls xlt ods ots slk xml gnumeric htm html csv'],
         ],
@@ -197,8 +227,35 @@ class FileUpload extends EntityForm {
         "{$this->t('Ingest Requests')}" => iterator_to_array($map_to_labels($this->entityTypeManager, 'isi_request')),
       ],
     ];
+    $form['#entity_builders'] = [
+      [$this, 'builder'],
+    ];
 
     return $form;
+  }
+
+  /**
+   * Entity building callback.
+   *
+   * @param string $entity_type_id
+   *   The entity type ID.
+   * @param \Drupal\islandora_spreadsheet_ingest\RequestInterface $request
+   *   The entity being build.
+   * @param array $form
+   *   A reference to the form being used to build the entity.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The form state while building.
+   */
+  protected function builder($entity_type_id, RequestInterface $request, array &$form, FormStateInterface &$form_state) {
+    // Copy/transform the info from the target.
+    list($original, $mapped) = $this->mapMappings($request->getOriginalMapping());
+    $request->set('mappings', $mapped);
+    $request->set('originalMapping', $original);
+    $request->set('sheet', [
+      'file' => ($form_state->getValue(['sheet', 'file', 'fids']) ??
+        $form_state->getValue(['sheet', 'file'])),
+      'sheet' => $form_state->getValue(['sheet', 'sheet']),
+    ]);
   }
 
   /**
@@ -291,11 +348,6 @@ class FileUpload extends EntityForm {
    */
   public function save(array $form, FormStateInterface $form_state) {
     $request = $this->entity;
-
-    // Copy/transform the info from the target.
-    list($original, $mapped) = $this->mapMappings($request->getOriginalMapping());
-    $request->set('mappings', $mapped);
-    $request->set('originalMapping', $original);
 
     try {
       $request->save();
