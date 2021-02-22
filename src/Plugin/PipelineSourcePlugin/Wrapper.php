@@ -2,8 +2,6 @@
 
 namespace Drupal\islandora_spreadsheet_ingest\Plugin\PipelineSourcePlugin;
 
-use Drupal\Core\StringTranslation\StringTranslationTrait;
-
 use Drupal\islandora_spreadsheet_ingest\Plugin\PipelineSourcePluginBase;
 
 /**
@@ -15,8 +13,6 @@ use Drupal\islandora_spreadsheet_ingest\Plugin\PipelineSourcePluginBase;
  * )
  */
 class Wrapper extends PipelineSourcePluginBase {
-
-  use StringTranslationTrait;
 
   /**
    * {@inheritdoc}

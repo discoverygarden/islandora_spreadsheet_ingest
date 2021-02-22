@@ -2,6 +2,7 @@
 
 namespace Drupal\islandora_spreadsheet_ingest\Model;
 
+use Drupal\Core\DependencyInjection\DependencySerializationTrait;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 
 /**
@@ -9,6 +10,7 @@ use Drupal\Core\StringTranslation\StringTranslationTrait;
  */
 class Pipeline implements PipelineInterface {
 
+  use DependencySerializationTrait;
   use StringTranslationTrait;
 
   /**

@@ -2,7 +2,6 @@
 
 namespace Drupal\islandora_spreadsheet_ingest\Plugin\PipelineSourcePlugin;
 
-use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\Component\Plugin\ConfigurableInterface;
 
 use Drupal\islandora_spreadsheet_ingest\Plugin\PipelineSourcePluginBase;
@@ -18,7 +17,6 @@ use Drupal\islandora_spreadsheet_ingest\Plugin\PluginConfigTrait;
  */
 class Get extends PipelineSourcePluginBase implements ConfigurableInterface {
 
-  use StringTranslationTrait;
   use PluginConfigTrait;
 
   /**

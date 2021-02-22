@@ -3,7 +3,6 @@
 namespace Drupal\islandora_spreadsheet_ingest\Plugin\PipelineSourcePlugin;
 
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\StringTranslation\StringTranslationTrait;
 
 use Drupal\islandora_spreadsheet_ingest\Model\ConfiguredSourceInterface;
 use Drupal\islandora_spreadsheet_ingest\Model\ConfiguredSourceTrait;
@@ -20,7 +19,6 @@ use Drupal\islandora_spreadsheet_ingest\Plugin\PipelineSourcePluginBase;
 class DefaultValue extends PipelineSourcePluginBase implements ConfiguredSourceInterface {
 
   use ConfiguredSourceTrait;
-  use StringTranslationTrait;
 
   /**
    * {@inheritdoc}
