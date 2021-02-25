@@ -1,15 +1,6 @@
-islandora_spreadsheet_ingest.templates:
-  route_name: islandora_spreadsheet_ingest.templates
-  parent: system.admin_structure
-  title: 'Migrate Templates'
-  description: 'Create and delete Islandora Spreadsheet Ingest templates.'
-islandora_spreadsheet_ingest.ingest:
-  route_name: islandora_spreadsheet_ingest.ingest
-  parent: system.admin_structure
-  title: 'CSV Ingests'
-  description: 'Use Islandora Spreadsheet Ingest to add to the repository.'
-islandora_spreadsheet_ingest.admin:
-  parent: system.admin_config
-  route_name: islandora_spreadsheet_ingest.admin
-  title: 'Islandora Spreadsheet Ingest'
-  description: 'Configure Islandora Spreadsheet Ingest.'
+---
+islandora_spreadsheet_ingest.request.list:
+  route_name: entity.isi_request.list
+  parent: system.admin_content
+  title: 'Add from Spreadsheet'
+  description: 'Permits ingest of content described in spreadsheets.'

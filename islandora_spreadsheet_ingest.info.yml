@@ -9,5 +9,6 @@ dependencies:
   - media
   - islandora
   - migrate_plus
+  - migrate_tools
   - dgi_migrate
   - migrate_spreadsheet

@@ -1,0 +1,6 @@
+---
+islandora_spreadsheet_ingest.request.add:
+  route_name: entity.isi_request.add_form
+  title: 'Add request'
+  appears_on:
+    - entity.isi_request.list

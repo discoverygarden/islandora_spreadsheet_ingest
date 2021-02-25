@@ -7,3 +7,48 @@ islandora_spreadsheet_ingest.settings:
       label: 'List of allowed source directories.'
       sequence:
         type: string
+
+islandora_spreadsheet_ingest.request.*:
+  type: config_entity
+  mapping:
+    id:
+      type: string
+      label: ID
+    label:
+      type: label
+      label: Label
+    active:
+      type: boolean
+      label: Active
+      description: If this request should have migrations derived for it.
+    sheet:
+      type: mapping
+      mapping:
+        file:
+          type: entity:file
+          label: The spreadsheet file to process.
+        sheet:
+          type: string
+          label: The worksheet of the file to process.
+    mappings:
+      type: sequence
+      sequence:
+        type: islandora_spreadsheet_ingest.migration_structure
+
+islandora_spreadsheet_ingest.migration_structure:
+  type: mapping
+  mapping:
+    original_migration_id:
+      type: string
+      label: ID
+    mappings:
+      type: sequence
+      sequence:
+        type: mapping
+        mapping:
+          type: mapping
+          mapping:
+            pipeline:
+              type: sequence
+              sequence:
+                type: ignore

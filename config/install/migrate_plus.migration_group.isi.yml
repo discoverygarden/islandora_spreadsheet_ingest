@@ -1,4 +1,4 @@
-id: islandora_spreadsheet_example
+id: isi
 label: CSV to Islandora Repository Object nodes
 description: Mapping from CSV to I8.
 source_type: CSV

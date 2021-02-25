@@ -1,6 +1,6 @@
-id: islandora_spreadsheet_media_example
-label: Create media from rows in the csv.
-migration_group: islandora_spreadsheet_example
+id: isi_media_image
+label: Create image media from rows in the csv.
+migration_group: isi
 source:
   columns:
     - 'ID'
@@ -8,30 +8,32 @@ source:
     - 'Model'
     - 'Digital_File'
 process:
-  field_digital_file_exists:
+  _file_exists:
+    - plugin: get
+      source: 'Digital_File'
     - plugin: skip_on_empty
       method: row
-      source: 'Digital_File'
       message: 'Field Digital_File is missing'
+  bundle:
+    - plugin: get
+      source: 'Model'
+    - plugin: static_map
+      bypass: false
+      map:
+        'Image': 'image'
+        'Page': 'image'
 
   name: Title
 
-  _file_id:
-    - plugin: migration_lookup
-      migration: islandora_spreadsheet_files_example
-      source: ID
-      no_stub: true
-  _file:
-    plugin: dgi_migrate.load_entity
-    source: '@_file_id'
-    entity_type: entity:file
   # XXX: Somewhat counter-intuitive, but it will just ignore those file field
   # entries with which the target bundle does not deal.
-  field_media_audio_file: '@_file'
-  field_media_file: '@_file'
-  field_media_image/target_id: '@_file_id'
+  field_media_image/target_id:
+    - plugin: get
+      source: ID
+    - plugin: migration_lookup
+      migration: isi_file
+      no_stub: true
   field_media_image/alt: '@name'
-  field_media_video_file: '@_file'
 
   field_media_use:
     - plugin: default_value
@@ -47,30 +49,22 @@ process:
       # "main" property... we want "uri", but it assumes "value".
       ignore_case: true
 
-  bundle:
-    - plugin: static_map
-      source: 'Model'
-      bypass: false
-      map:
-        'Image': 'image'
-        'Digital Document': 'file'
-        'Video': 'video'
-        'Audio': 'audio'
-        'Binary': 'video'
-
-  field_media_of/target_id:
-    - plugin: migration_lookup
-      migration: islandora_spreadsheet_nodes_example
+  field_media_of:
+    - plugin: get
       source: 'ID'
+    - plugin: migration_lookup
+      migration: isi_node
       no_stub: true
+    - plugin: dgi_migrate.load_entity
+      entity_type: entity:node
 
 destination:
   plugin: entity:media
-  default_bundle: file
+  default_bundle: image
 migration_dependencies:
   required:
-    - islandora_spreadsheet_files_example
-    - islandora_spreadsheet_nodes_example
+    - isi_file
+    - isi_node
 dependencies:
   enforced:
     module:

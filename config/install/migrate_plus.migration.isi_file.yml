@@ -1,0 +1,67 @@
+id: isi_file
+label: Create files from rows in the csv.
+migration_group: isi
+source:
+  columns:
+    - 'ID'
+    - 'Digital_File'
+process:
+  _file_defined:
+    - plugin: get
+      source: 'Digital_File'
+    - plugin: skip_on_empty
+      method: row
+      message: 'Field Digital_File is missing'
+  _destination_filename:
+    - plugin: get
+      source: '@_file_defined'
+    - plugin: callback
+      callable: basename
+  _dest_dir:
+    - plugin: default_value
+      default_value: 'repo-bin:/'
+  _date_chunk:
+    - plugin: default_value
+      default_value: 'Y-m'
+    - plugin: callback
+      callable: date
+  _dest_path:
+    - plugin: concat
+      source:
+        - '@_dest_dir'
+        - '@_date_chunk'
+        - '@_destination_filename'
+      delimiter: '/'
+    - plugin: urlencode
+    - plugin: dgi_migrate.process.log
+      template: 'Destination Full Path: :value'
+      level: 4
+  uri:
+    - plugin: file_copy
+      source:
+        - Digital_File
+        - '@_dest_path'
+      file_exists: 'rename'
+      # Should probably be a move in non-examples.
+      move: FALSE
+  filemime:
+    - plugin: get
+      source: '@_dest_path'
+    - plugin: callback
+      callable: mime_content_type
+  filename: '@_destination_filename'
+  status:
+    - plugin: default_value
+      default_value: 1
+  filesize:
+    - plugin: get
+      source: '@uri'
+    - plugin: callback
+      callable: filesize
+destination:
+  plugin: 'entity:file'
+  validate: true
+dependencies:
+  enforced:
+    module:
+      - islandora_spreadsheet_ingest
