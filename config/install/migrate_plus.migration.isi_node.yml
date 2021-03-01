@@ -87,6 +87,80 @@ process:
       method: process
     - plugin: get
 
+  field_faceted_subject:
+    - plugin: get
+      source: field_faceted_subject
+    - plugin: skip_on_empty
+      method: process
+    - plugin: dgi_migrate.process.log
+    - plugin: subdelimited_explode
+      delimiter: ';'
+      subdelimiter: '|'
+      keys:
+        - ffs_source
+        - ffs_url
+        - ffs_topic
+        - ffs_genre
+        - ffs_temp
+        - ffs_geo
+    - plugin: dgi_migrate.process.log
+    - plugin: sub_process
+      process:
+        _sources:
+          - plugin: get
+            source:
+              source: ffs_source
+              uri: ffs_url
+        _topic:
+          - plugin: entity_lookup
+            source: ffs_topic
+            entity_type: taxonomy_term
+            bundle: subject
+            bundle_key: vid
+            value_key: name
+        _genre:
+          - plugin: entity_lookup
+            source: ffs_genre
+            entity_type: taxonomy_term
+            bundle: genre
+            bundle_key: vid
+            value_key: name
+        _temporal:
+          - plugin: entity_lookup
+            source: ffs_temp
+            entity_type: taxonomy_term
+            bundle: temporal
+            bundle_key: vid
+            value_key: name
+        _geographic:
+          - plugin: entity_lookup
+            source: ffs_geo
+            entity_type: taxonomy_term
+            bundle: geo_location
+            bundle_key: vid
+            value_key: name
+        _paragraph:
+          - plugin: entity_generate
+            entity_type: entity_reference_revisions:paragraph
+            bundle: faceted_subject
+            values:
+              field_authority_sources: '@_sources'
+              field_topic_general_subdivision_: '@_topic'
+              field_genre_form_subdivision_: '@_genre'
+              field_temporal_chronological_sub: '@_temporal'
+              field_geographic_geographic_subd: '@_geographic'
+    - plugin: dgi_migrate.process.log
+    - plugin: sub_process
+      process:
+        target_id:
+          - plugin: extract
+            index: [_paragraph, 0]
+          - plugin: dgi_migrate.process.log
+        target_revision_id:
+          - plugin: extract
+            index: [_paragraph, 1]
+          - plugin: dgi_migrate.process.log
+
 destination:
   plugin: entity:node
   default_bundle: islandora_object
