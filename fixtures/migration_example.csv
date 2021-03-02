@@ -1,4 +1,4 @@
-ID,Member_of,Member_of_existing_entity,Model,Digital_File,Title,Description,Mime,Date_created
+ID,member_of,member_of_existing_entity,model,digital_file,title,description,mime,date_created
 1,,,Collection,,Collection 1,desc 1,,
 2,1,,Image,public://isifixturefiles/fixtures/images/dg1.png,title 1,desc 1,image/png,
 3,1,,Image,public://isifixturefiles/fixtures/images/dg2.png,title 2,desc 2,image/png,4/18/2008

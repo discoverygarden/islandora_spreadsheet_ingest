@@ -4,14 +4,14 @@ migration_group: isi
 source:
   columns:
     - 'ID'
-    - 'Digital_File'
+    - 'digital_file'
 process:
   _file_defined:
     - plugin: get
-      source: 'Digital_File'
+      source: 'digital_file'
     - plugin: skip_on_empty
       method: row
-      message: 'Field Digital_File is missing'
+      message: '"digital_file" column is missing'
   _destination_filename:
     - plugin: get
       source: '@_file_defined'
@@ -39,7 +39,7 @@ process:
   uri:
     - plugin: file_copy
       source:
-        - Digital_File
+        - digital_file
         - '@_dest_path'
       file_exists: 'rename'
       # Should probably be a move in non-examples.

@@ -4,20 +4,19 @@ migration_group: isi
 source:
   columns:
     - 'ID'
-    - 'Title'
-    - 'Model'
-    - 'Member_of'
-    - 'Member_of_existing_entity'
-    - 'Description'
+    - 'title'
+    - 'model'
+    - 'member_of'
+    - 'member_of_existing_entity'
+    - 'description'
 process:
   field_model:
     - plugin: get
-      source: 'Model'
+      source: 'model'
     - plugin: skip_on_empty
       method: row
-      message: 'Field Model is missing'
+      message: '"model" column is missing'
     - plugin: static_map
-      source: 'Model'
       bypass: false
       map:
         'Image': 'http://purl.org/coar/resource_type/c_c513'
@@ -36,10 +35,10 @@ process:
       ignore_case: true
 
   # Metadata.
-  title: Title
+  title: title
   field_display_hints:
     - plugin: static_map
-      source: 'Model'
+      source: 'model'
       bypass: true
       map:
         'Image': 'http://openseadragon.github.io'
@@ -64,14 +63,14 @@ process:
   _member_of_csv_id:
     - plugin: skip_on_empty
       method: process
-      source: 'Member_of'
+      source: 'member_of'
     - plugin: migration_lookup
       migration: isi_node
 
   _member_of_existing_entity:
     - plugin: skip_on_empty
       method: process
-      source: 'Member_of_existing_entity'
+      source: 'member_of_existing_entity'
     - plugin: entity_lookup
       bundle_key: type
       bundle: islandora_object

@@ -4,25 +4,25 @@ migration_group: isi
 source:
   columns:
     - 'ID'
-    - 'Title'
-    - 'Model'
-    - 'Digital_File'
+    - 'title'
+    - 'model'
+    - 'digital_file'
 process:
   _file_exists:
     - plugin: get
-      source: 'Digital_File'
+      source: 'digital_file'
     - plugin: skip_on_empty
       method: row
-      message: 'Field Digital_File is missing'
+      message: '"digital_file" column is missing'
   bundle:
     - plugin: get
-      source: 'Model'
+      source: 'model'
     - plugin: static_map
       bypass: false
       map:
         'Audio': 'audio'
 
-  name: Title
+  name: title
 
   field_media_audio_file:
     - plugin: get
