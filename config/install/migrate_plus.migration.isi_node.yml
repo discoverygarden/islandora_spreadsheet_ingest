@@ -88,7 +88,7 @@ process:
 
   field_faceted_subject:
     - plugin: get
-      source: field_faceted_subject
+      source: faceted_subject
     - plugin: skip_on_empty
       method: process
     - plugin: dgi_migrate.process.log
@@ -105,11 +105,12 @@ process:
     - plugin: dgi_migrate.process.log
     - plugin: sub_process
       process:
-        _sources:
+        _sources/source:
           - plugin: get
-            source:
-              source: ffs_source
-              uri: ffs_url
+            source: ffs_source
+        _sources/uri:
+          - plugin: get
+            source: ffs_url
         _topic:
           - plugin: entity_lookup
             source: ffs_topic
@@ -117,6 +118,9 @@ process:
             bundle: subject
             bundle_key: vid
             value_key: name
+            # XXX: migrate_plus's case comparison makes assumptions about the entity's
+            # "main" property... we want "uri", but it assumes "value".
+            ignore_case: true
         _genre:
           - plugin: entity_lookup
             source: ffs_genre
@@ -124,6 +128,9 @@ process:
             bundle: genre
             bundle_key: vid
             value_key: name
+            # XXX: migrate_plus's case comparison makes assumptions about the entity's
+            # "main" property... we want "uri", but it assumes "value".
+            ignore_case: true
         _temporal:
           - plugin: entity_lookup
             source: ffs_temp
@@ -131,6 +138,9 @@ process:
             bundle: temporal
             bundle_key: vid
             value_key: name
+            # XXX: migrate_plus's case comparison makes assumptions about the entity's
+            # "main" property... we want "uri", but it assumes "value".
+            ignore_case: true
         _geographic:
           - plugin: entity_lookup
             source: ffs_geo
@@ -138,27 +148,32 @@ process:
             bundle: geo_location
             bundle_key: vid
             value_key: name
+            # XXX: migrate_plus's case comparison makes assumptions about the entity's
+            # "main" property... we want "uri", but it assumes "value".
+            ignore_case: true
         _paragraph:
-          - plugin: entity_generate
-            entity_type: entity_reference_revisions:paragraph
-            bundle: faceted_subject
+          - plugin: isi_paragraph_generate
+            type: faceted_subject
             values:
               field_authority_sources: '@_sources'
               field_topic_general_subdivision_: '@_topic'
               field_genre_form_subdivision_: '@_genre'
               field_temporal_chronological_sub: '@_temporal'
               field_geographic_geographic_subd: '@_geographic'
+    - plugin: single_value
     - plugin: dgi_migrate.process.log
     - plugin: sub_process
       process:
         target_id:
           - plugin: extract
-            index: [_paragraph, 0]
+            source: _paragraph
+            index: [target_id]
           - plugin: dgi_migrate.process.log
         target_revision_id:
           - plugin: extract
-            index: [_paragraph, 1]
-          - plugin: dgi_migrate.process.log
+            source: _paragraph
+            index: [target_revision_id]
+    - plugin: dgi_migrate.process.log
 
 destination:
   plugin: entity:node
