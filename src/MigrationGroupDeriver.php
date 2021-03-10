@@ -170,7 +170,7 @@ class MigrationGroupDeriver implements MigrationGroupDeriverInterface {
         $this->logger->info('Deleted migration group for {id}.', ['id' => $request->id()]);
       }
       else {
-        $this->logger->debug('Migration group {id] does not exist, to be deleted.', ['id' => $request->id()]);
+        $this->logger->debug('Migration group {id} does not exist, to be deleted.', ['id' => $request->id()]);
       }
     }
     catch (EntityStorageException $e) {
