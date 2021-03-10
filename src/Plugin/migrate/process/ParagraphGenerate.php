@@ -3,7 +3,6 @@
 namespace Drupal\islandora_spreadsheet_ingest\Plugin\migrate\process;
 
 use Drupal\Component\Plugin\ConfigurableInterface;
-use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 
 use Drupal\migrate\ProcessPluginBase;
 use Drupal\migrate\MigrateExecutableInterface;
@@ -30,25 +29,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * @endcode
  *
  */
-class ParagraphGenerate extends ProcessPluginBase implements ConfigurableInterface, ContainerFactoryPluginInterface {
-
-  protected $getProcessPlugin;
-
-  /**
-   * {@inheritdoc}
-   */
-  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
-    $instance = new static($configuration, $plugin_id, $plugin_definition);
-
-    assert(!empty($configuration['type']));
-    assert(!empty($configuration['values']));
-
-    $instance->getProcessPlugin = $container->get('plugin.manager.migrate.process')->createInstance('get', [
-      'source' => $instance->getConfiguration(),
-    ]);
-
-    return $instance;
-  }
+class ParagraphGenerate extends ProcessPluginBase implements ConfigurableInterface {
 
   /**
    * {@inheritdoc}
@@ -75,6 +56,9 @@ class ParagraphGenerate extends ProcessPluginBase implements ConfigurableInterfa
    * {@inheritdoc}
    */
   public function transform($value, MigrateExecutableInterface $migrate_executable, Row $row, $destination_property) {
+    assert(!empty($this->configuration['type']));
+    assert(!empty($this->configuration['values']));
+
     $paragraph = Paragraph::create(
       [
       'type' => $this->configuration['type'],
