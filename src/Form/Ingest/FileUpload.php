@@ -211,9 +211,11 @@ class FileUpload extends EntityForm {
         ],
       ],
     ];
-    $map_to_labels = function (EntityTypeManagerInterface $etm, $type) {
+    $map_to_labels = function (EntityTypeManagerInterface $etm, $type, $filter = NULL) {
       foreach ($etm->getStorage($type)->loadMultiple() as $id => $entity) {
-        yield "$type:$id" => $entity->label();
+        if ($filter === NULL || $filter($entity)) {
+          yield "$type:$id" => $entity->label();
+        }
       }
     };
     $form['originalMapping'] = [
@@ -222,10 +224,18 @@ class FileUpload extends EntityForm {
       '#description' => $this->t('The mapping upon which this ingest will be based.'),
       '#default_value' => $entity->getOriginalMapping(),
       '#disabled' => !$entity->isNew(),
-      '#options' => [
-        "{$this->t('Migration Group')}" => iterator_to_array($map_to_labels($this->entityTypeManager, 'migration_group')),
+      '#options' => array_filter([
+        "{$this->t('Migration Group')}" => iterator_to_array($map_to_labels($this->entityTypeManager, 'migration_group', function ($group) {
+          // XXX: Ideally, we could pass conditions or whatever to an entity
+          // query; however, it fails due to "migration_tags" being an
+          // array...
+          $config = $group->get('shared_configuration');
+          return !empty($config['migration_tags']) &&
+            in_array('isi_template', $config['migration_tags']) &&
+            !in_array('isi_derived_migration', $config['migration_tags']);
+        })),
         "{$this->t('Ingest Requests')}" => iterator_to_array($map_to_labels($this->entityTypeManager, 'isi_request')),
-      ],
+      ]),
     ];
     $form['#entity_builders'] = [
       [$this, 'builder'],
