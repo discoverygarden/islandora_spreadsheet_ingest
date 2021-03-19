@@ -13,6 +13,8 @@ shared_configuration:
     keys:
       'ID':
         type: integer
+  migration_tags:
+    - isi_template
 dependencies:
   enforced:
     module:

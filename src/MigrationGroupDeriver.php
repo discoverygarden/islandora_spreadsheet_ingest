@@ -129,11 +129,17 @@ class MigrationGroupDeriver implements MigrationGroupDeriverInterface {
         ],
       ],
     ];
+
+    $tags = ['isimd', 'isi_derived_migration'];
     if (!isset($config['migration_tags'])) {
-      $config['migration_tags'] = ['isimd'];
+      $config['migration_tags'] = $tags;
     }
-    elseif (!in_array('isimd', $config['migration_tags'])) {
-      $config['migration_tags'][] = 'isimd';
+    else {
+      foreach ($tags as $tag) {
+       if (!in_array($tag, $config['migration_tags'])) {
+        $config['migration_tags'][] = $tag;
+       }
+      }
     }
 
     $config['migration_tags'][] = $this->deriveTag($request);
@@ -170,7 +176,7 @@ class MigrationGroupDeriver implements MigrationGroupDeriverInterface {
         $this->logger->info('Deleted migration group for {id}.', ['id' => $request->id()]);
       }
       else {
-        $this->logger->debug('Migration group {id] does not exist, to be deleted.', ['id' => $request->id()]);
+        $this->logger->debug('Migration group {id} does not exist, to be deleted.', ['id' => $request->id()]);
       }
     }
     catch (EntityStorageException $e) {
