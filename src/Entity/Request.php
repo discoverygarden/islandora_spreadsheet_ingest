@@ -33,6 +33,7 @@ use Drupal\islandora_spreadsheet_ingest\RequestInterface;
  *     "id",
  *     "label",
  *     "sheet",
+ *     "originalMapping",
  *     "mappings",
  *     "active",
  *   },

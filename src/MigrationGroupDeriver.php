@@ -115,13 +115,22 @@ class MigrationGroupDeriver implements MigrationGroupDeriverInterface {
 
     // Setup the shared config on the group.
     $config = $mg->get('shared_configuration') ?? [];
-    $config['source'] = [
-      'plugin' => 'spreadsheet',
+
+
+    // Set the filepath and sheet as defined in the UI.
+    $source = [
       'worksheet' => ($request->getSheet()['sheet'] ?
         $request->getSheet()['sheet'] :
         'nada'),
-      'track_changes' => TRUE,
       'file' => $this->fileStorage->load(reset($request->getSheet()['file']))->getFileUri(),
+    ];
+    // Grab the original values.
+    $source += $config['source'];
+
+    // Add on the rest of the defaults that may be missing.
+    $source += [
+      'plugin' => 'spreadsheet',
+      'track_changes' => TRUE,
       'header_row' => 1,
       'keys' => [
         'ID' => [
@@ -129,6 +138,7 @@ class MigrationGroupDeriver implements MigrationGroupDeriverInterface {
         ],
       ],
     ];
+    $config['source'] = $source;
 
     $tags = ['isimd', 'isi_derived_migration'];
     if (!isset($config['migration_tags'])) {
