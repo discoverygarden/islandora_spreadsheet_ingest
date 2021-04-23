@@ -537,10 +537,18 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
    */
   public function addRelationships() {
     $this->models = $this->getValue('cmodel');
-    if ($parent_object = $this->getValue('parent_object')) {
-      $parent_uri = $this->getValue('parent_uri', FEDORA_RELS_EXT_URI);
-      $parent_predicate = $this->getValue('parent_predicate', 'isMemberOfCollection');
-      $this->relationships->add($parent_uri, $parent_predicate, $parent_object);
+    $parents = array_unique(split(" ; ", $this->getValue('parent_object')));
+    $parent_predicate = $this->getValue('parent_predicate', 'isMemberOfCollection');
+    $parent_uri = $this->getValue('parent_uri', FEDORA_RELS_EXT_URI);
+
+    // Add object to multiple parents.
+    foreach ($parents as $parent) {
+      if (!empty($parent)) {
+        $this->relationships->add($parent_uri, $parent_predicate, $parent);
+      }
+      if ($parent_predicate != 'isMemberOfCollection') {
+        break;
+      }
     }
   }
 
