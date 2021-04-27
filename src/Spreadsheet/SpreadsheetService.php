@@ -35,7 +35,8 @@ class SpreadsheetService implements SpreadsheetServiceInterface {
    * @return string
    *   The real path of the file
    *
-   * @throws \InvalidArgumentException if the given file is not stored locally.
+   * @throws \InvalidArgumentException
+   *   Thrown if the given file is not stored locally.
    */
   protected function getFilePath(FileInterface $file) {
     $path = $this->fileSystem->realpath($file->getFileUri());
