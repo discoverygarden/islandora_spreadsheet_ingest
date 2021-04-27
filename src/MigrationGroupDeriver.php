@@ -137,6 +137,9 @@ class MigrationGroupDeriver implements MigrationGroupDeriverInterface {
           'type' => 'integer',
         ],
       ],
+      'isi' => [
+        'uid' => $request->getOwner(),
+      ]
     ];
     $config['source'] = $source;
 

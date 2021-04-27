@@ -184,7 +184,7 @@ class FileUpload extends EntityForm {
       'file' => [
         '#type' => 'managed_file',
         '#title' => $this->t('Target file'),
-        '#default_value' => $form_state->getValue(['sheet', 'file', 'fids'], $entity->getSheet()['file']),
+        '#default_value' => $form_state->getValue(['sheet', 'file', 'fids'], $entity->getSheet()['file'] ?? NULL),
         '#required' => TRUE,
         '#upload_validators' => [
           'file_validate_extensions' => ['xlsx xlsm xltx xltm xls xlt ods ots slk xml gnumeric htm html csv'],
@@ -201,7 +201,7 @@ class FileUpload extends EntityForm {
         '#type' => 'textfield',
         '#title' => $this->t('Sheet'),
         '#description' => $this->t('The name of the worksheet. Leave empty for single-sheet formats such as CSV.'),
-        '#default_value' => $form_state->getValue(['sheet', 'sheet'], $entity->getSheet()['sheet']),
+        '#default_value' => $form_state->getValue(['sheet', 'sheet'], $entity->getSheet()['sheet'] ?? NULL),
         '#states' => [
           'visible' => [
             ':input[name="sheet[file][fids]"]' => [
@@ -266,6 +266,7 @@ class FileUpload extends EntityForm {
         $form_state->getValue(['sheet', 'file'])),
       'sheet' => $form_state->getValue(['sheet', 'sheet']),
     ]);
+    $request->set('owner', $this->currentUser()->id());
   }
 
   /**

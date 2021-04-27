@@ -34,6 +34,9 @@ islandora_spreadsheet_ingest.request.*:
       type: sequence
       sequence:
         type: islandora_spreadsheet_ingest.migration_structure
+    owner:
+      type: ignore
+      label: The owner's ID; should be either an int or a string.
 
 islandora_spreadsheet_ingest.migration_structure:
   type: mapping

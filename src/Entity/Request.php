@@ -36,6 +36,7 @@ use Drupal\islandora_spreadsheet_ingest\RequestInterface;
  *     "originalMapping",
  *     "mappings",
  *     "active",
+ *     "owner",
  *   },
  *   links = {
  *     "canonical" = "/admin/content/islandora_spreadsheet_ingest/{isi_request}",
@@ -108,6 +109,13 @@ class Request extends ConfigEntityBase implements RequestInterface {
   protected $active = FALSE;
 
   /**
+   * The creator/owner of this request.
+   *
+   * @var string
+   */
+  protected $owner = NULL;
+
+  /**
    * {@inheritdoc}
    */
   public function getOriginalMapping() {
@@ -133,6 +141,13 @@ class Request extends ConfigEntityBase implements RequestInterface {
    */
   public function getMappings() {
     return $this->mappings;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getOwner() {
+    return $this->owner;
   }
 
 }
