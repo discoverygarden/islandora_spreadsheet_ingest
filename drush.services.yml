@@ -4,3 +4,11 @@ services:
     arguments: ['@entity_field.manager']
     tags:
       - { name: drush.command }
+  islandora_spreadsheet_ingest.deferred_ingest.command:
+    class: \Drupal\islandora_spreadsheet_ingest\Commands\DeferredIngestCommand
+    arguments:
+      - '@islandora_spreadsheet_ingest.deferred_ingest.queue'
+      - '@entity_type.manager'
+      - '@islandora_spreadsheet_ingest.migration_group_deriver'
+    tags:
+      - { name: drush.command }
