@@ -5,6 +5,7 @@ namespace Drupal\islandora_spreadsheet_ingest\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Cell\Cell;
 use Drupal\file\FileInterface;
+use Drupal\Core\File\FileSystemInterface;
 
 /**
  * Spreadsheet service.
@@ -12,20 +13,54 @@ use Drupal\file\FileInterface;
 class SpreadsheetService implements SpreadsheetServiceInterface {
 
   /**
+   * The file system service.
+   *
+   * @var \Drupal\Core\File\FileSystemInterface
+   */
+  protected $fileSystem;
+
+  /**
+   * Constructor.
+   */
+  public function __construct(FileSystemInterface $file_system) {
+    $this->fileSystem = $file_system;
+  }
+
+  /**
+   * Helper to get the real path of the given file.
+   *
+   * @param \Drupal\file\FileInterface $file
+   *   The file for which to determine the real path.
+   *
+   * @return string
+   *   The real path of the file
+   *
+   * @throws \InvalidArgumentException
+   *   Thrown if the given file is not stored locally.
+   */
+  protected function getFilePath(FileInterface $file) {
+    $path = $this->fileSystem->realpath($file->getFileUri());
+    if ($path) {
+      return $path;
+    }
+    else {
+      throw new \InvalidArgumentException('The file must be local in order to be parsed.');
+    }
+  }
+
+  /**
    * {@inheritdoc}
    */
   public function read(FileInterface $file) {
     $reader = $this->getReader($file);
-    return $reader->load($file->getFileUri());
+    return $reader->load($this->getFilePath($file));
   }
 
   /**
    * {@inheritdoc}
    */
   public function getReader(FileInterface $file) {
-    $uri = $file->getFileUri();
-
-    $reader = IOFactory::createReaderForFile($uri);
+    $reader = IOFactory::createReaderForFile($this->getFilePath($file));
     $reader->setReadDataOnly(TRUE);
 
     return $reader;
@@ -41,7 +76,7 @@ class SpreadsheetService implements SpreadsheetServiceInterface {
       $reader->setLoadSheetsOnly($sheet);
     }
     $reader->setReadFilter(new ChunkReadFilter($row, $row + 1));
-    $loaded = $reader->load($file->getFileUri());
+    $loaded = $reader->load($this->getFilePath($file));
 
     foreach ($loaded->getActiveSheet()->getRowIterator() as $row) {
       $cell_iterator = $row->getCellIterator();
@@ -73,7 +108,7 @@ class SpreadsheetService implements SpreadsheetServiceInterface {
     $reader = $this->getReader($file);
     $lister = [$reader, 'listWorksheetNames'];
     if (is_callable($lister)) {
-      return call_user_func($lister, $file->getFileUri());
+      return call_user_func($lister, $this->getFilePath($file));
     }
   }
 

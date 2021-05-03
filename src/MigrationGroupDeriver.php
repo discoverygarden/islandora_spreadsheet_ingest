@@ -116,7 +116,6 @@ class MigrationGroupDeriver implements MigrationGroupDeriverInterface {
     // Setup the shared config on the group.
     $config = $mg->get('shared_configuration') ?? [];
 
-
     // Set the filepath and sheet as defined in the UI.
     $source = [
       'worksheet' => ($request->getSheet()['sheet'] ?
@@ -137,6 +136,9 @@ class MigrationGroupDeriver implements MigrationGroupDeriverInterface {
           'type' => 'integer',
         ],
       ],
+      'isi' => [
+        'uid' => $request->getOwner(),
+      ],
     ];
     $config['source'] = $source;
 
@@ -146,9 +148,9 @@ class MigrationGroupDeriver implements MigrationGroupDeriverInterface {
     }
     else {
       foreach ($tags as $tag) {
-       if (!in_array($tag, $config['migration_tags'])) {
-        $config['migration_tags'][] = $tag;
-       }
+        if (!in_array($tag, $config['migration_tags'])) {
+          $config['migration_tags'][] = $tag;
+        }
       }
     }
 
