@@ -99,7 +99,7 @@ spreadsheet column headers are reserved and may be required:
   </tr>
   <tr>
     <td>parent_object</td>
-    <td>The parent of this object.</td>
+    <td>The parent of this object. This can be multiple values seperated by " ; " when parent_predicate is "isMemberOfCollection".</td>
     <td>Required when creating a paged content child object.<br/> Not required
       when creating a general object, omitting will generate an object with no
       parent.</td>
