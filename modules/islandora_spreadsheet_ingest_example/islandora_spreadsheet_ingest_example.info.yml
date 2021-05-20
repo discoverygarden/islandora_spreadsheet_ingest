@@ -1,0 +1,7 @@
+name: 'Islandora Spreadsheet Ingest Example'
+description: "Example CSV import of Islandora content."
+type: module
+package: DGI
+core: 8.x
+dependencies:
+  - islandora_spreadsheet_ingest
