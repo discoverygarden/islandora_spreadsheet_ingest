@@ -8,7 +8,7 @@ shared_configuration:
     # Worksheet nonsensical but required.
     worksheet: nada
     track_changes: true
-    file: 'modules/contrib/islandora_spreadsheet_ingest/fixtures/migration_example.csv'
+    file: 'modules/contrib/islandora_spreadsheet_ingest/modules/islandora_spreadsheet_ingest_example/fixtures/migration_example.csv'
     header_row: 1
     keys:
       'ID':
@@ -18,4 +18,4 @@ shared_configuration:
 dependencies:
   enforced:
     module:
-      - islandora_spreadsheet_ingest
+      - islandora_spreadsheet_ingest_example

@@ -64,4 +64,4 @@ destination:
 dependencies:
   enforced:
     module:
-      - islandora_spreadsheet_ingest
+      - islandora_spreadsheet_ingest_example

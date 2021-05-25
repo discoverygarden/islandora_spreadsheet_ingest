@@ -1,7 +1,7 @@
 #!/bin/bash
 
 SCRIPT=$0
-MODULE=islandora_spreadsheet_ingest
+MODULE=islandora_spreadsheet_ingest_example
 MG=isi
 MIGRATIONS=($(drush migrate:status --group=$MG --field=id))
 APACHE_USER=www-data
