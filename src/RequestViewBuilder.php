@@ -21,6 +21,13 @@ class RequestViewBuilder extends EntityViewBuilder {
   protected $userStorage;
 
   /**
+   * The migration group deriver service.
+   *
+   * @var \Drupal\islandora_spreadsheet_ingest\MigrationGroupDeriverInterface
+   */
+  protected $migrationGroupDeriver;
+
+  /**
    * {@inheritdoc}
    */
   public function buildMultiple(array $build_list) {
@@ -38,7 +45,8 @@ class RequestViewBuilder extends EntityViewBuilder {
       $item['owner'] = [
         '#type' => 'item',
         '#title' => $this->t('Owner'),
-        'username' => ($owner ? [
+        'username' => ($owner ?
+          [
             '#theme' => 'username',
             '#account' => $owner,
           ] :
@@ -50,6 +58,19 @@ class RequestViewBuilder extends EntityViewBuilder {
         '#markup' => ($item['#isi_request']->getActive() ?
           $this->t('Yes') :
           $this->t('No')),
+      ];
+      $mg_name = $this->migrationGroupDeriver->deriveName($entity);
+      $mg_link = Link::createFromRoute(
+        $mg_name,
+        'entity.migration.list',
+        ['migration_group' => $mg_name]
+      );
+      $item['migration_group'] = [
+        '#type' => 'item',
+        '#access' => $item['#isi_request']->getActive(),
+        '#markup' => ($mg_link->getUrl()->access() ?
+          $mg_link :
+          $mg_link->getText()),
       ];
     }
 
@@ -63,6 +84,7 @@ class RequestViewBuilder extends EntityViewBuilder {
     $instance = parent::createInstance($container, $entity_type);
 
     $instance->userStorage = $container->get('entity_type.manager')->getStorage('user');
+    $instance->migrationGroupDeriver = $container->get('islandora_spreadsheet_ingest.migration_group_deriver');
 
     return $instance;
   }
