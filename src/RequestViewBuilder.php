@@ -2,6 +2,7 @@
 
 namespace Drupal\islandora_spreadsheet_ingest;
 
+use Drupal\Core\Link;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Entity\EntityViewBuilder;
 use Drupal\Core\Render\Element;
@@ -59,7 +60,7 @@ class RequestViewBuilder extends EntityViewBuilder {
           $this->t('Yes') :
           $this->t('No')),
       ];
-      $mg_name = $this->migrationGroupDeriver->deriveName($entity);
+      $mg_name = $this->migrationGroupDeriver->deriveName($item['#isi_request']);
       $mg_link = Link::createFromRoute(
         $mg_name,
         'entity.migration.list',
@@ -67,11 +68,15 @@ class RequestViewBuilder extends EntityViewBuilder {
       );
       $item['migration_group'] = [
         '#type' => 'item',
+        '#title' => $this->t('Migration group'),
         '#access' => $item['#isi_request']->getActive(),
-        '#markup' => ($mg_link->getUrl()->access() ?
-          $mg_link :
-          $mg_link->getText()),
       ];
+      if ($mg_link->getUrl()->access()) {
+        $item['migration_group']['link'] = $mg_link->toRenderable();
+      }
+      else {
+        $item['migration_group']['#markup'] = $mg_link->getText();
+      }
     }
 
     return $build_list;
