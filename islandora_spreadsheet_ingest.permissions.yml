@@ -1,0 +1,15 @@
+---
+'administer islandora_spreadsheet_ingest requests':
+  title: 'Administer requests'
+'create islandora_spreadsheet_ingest requests':
+  title: 'Create request'
+'edit islandora_spreadsheet_ingest requests':
+  title: 'Edit request'
+'edit islandora_spreadsheet_ingest request mapping':
+  title: 'Edit request mapping'
+'view islandora_spreadsheet_ingest requests':
+  title: 'View requests'
+'activate islandora_spreadsheet_ingest requests':
+  title: 'Activate requests'
+'deleta islandora_spreadsheet_ingest requests':
+  title: 'Delete requests'

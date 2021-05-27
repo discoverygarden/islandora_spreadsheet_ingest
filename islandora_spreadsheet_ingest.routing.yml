@@ -5,46 +5,45 @@ entity.isi_request.list:
     _entity_list: isi_request
     _title: Islandora Spreadsheet Ingest
   requirements:
-    _permission: 'access content overview'
+    _permission: 'view islandora_spreadsheet_ingest requests'
 entity.isi_request.add_form:
   path: '/admin/content/islandora_spreadsheet_ingest/add'
   defaults:
     _title: 'Add Content From Spreadsheet - Upload'
     _entity_form: 'isi_request.add'
   requirements:
-    _permission: 'access content overview'
+    _entity_create_access: 'isi_request'
 entity.isi_request.edit_form:
   path: '/admin/content/islandora_spreadsheet_ingest/{isi_request}/edit'
   defaults:
     _title: 'Edit'
     _entity_form: 'isi_request.edit'
   requirements:
-    _permission: 'access content overview'
+    _entity_access: 'isi_request.update'
 entity.isi_request.map_form:
   path: '/admin/content/islandora_spreadsheet_ingest/{isi_request}/mapping'
   defaults:
     _title: 'Mapping'
     _entity_form: 'isi_request.map'
   requirements:
-    _permission: 'access content overview'
+    _entity_access: 'isi_request.map'
 entity.isi_request.delete_form:
   path: '/admin/content/islandora_spreadsheet_ingest/{isi_request}/delete'
   defaults:
     _title: 'Delete'
     _entity_form: 'isi_request.delete'
   requirements:
-    _permission: 'access content overview'
+    _entity_access: 'isi_request.delete'
 entity.isi_request.view:
   path: '/admin/content/islandora_spreadsheet_ingest/{isi_request}'
   defaults:
-    #_title: 'View'
-    _entity_form: 'isi_request.view'
+    _entity_view: 'isi_request.full'
   requirements:
-    _permission: 'access content overview'
+    _entity_access: 'isi_request.view'
 entity.isi_request.activate_form:
   path: '/admin/content/islandora_spreadsheet_ingest/{isi_request}/activate'
   defaults:
     _title: 'Activate'
     _entity_form: 'isi_request.activate'
   requirements:
-    _permission: 'access content overview'
+    _entity_access: 'isi_request.activate'
