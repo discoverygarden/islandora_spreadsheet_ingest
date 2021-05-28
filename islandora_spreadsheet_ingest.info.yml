@@ -4,11 +4,11 @@ type: module
 package: DGI
 core: 8.x
 dependencies:
-  - migrate
-  - node
-  - media
-  - islandora
-  - migrate_plus
-  - migrate_tools
-  - dgi_migrate
-  - migrate_spreadsheet
+  # We implement a plugin making use of their base class.
+  - drupal:migrate
+  # We generate migrate_plus migration/migration_group entities.
+  - migrate_plus:migrate_plus
+  # We generate links to endpoints migrate_tools defines.
+  - migrate_plus:migrate_tools
+  # We generate migrations using migrate_spreadsheet.
+  - migrate_spreadsheet:migrate_spreadsheet
