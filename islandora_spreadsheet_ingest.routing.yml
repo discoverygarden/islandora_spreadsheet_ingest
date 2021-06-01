@@ -47,3 +47,12 @@ entity.isi_request.activate_form:
     _entity_form: 'isi_request.activate'
   requirements:
     _entity_access: 'isi_request.activate'
+islandora_spreadsheet_ingest.admin:
+  path: '/admin/config/islandora_spreadsheet_ingest'
+  defaults:
+    _title: 'Islandora Spreadsheet Ingest'
+    _form: '\Drupal\islandora_spreadsheet_ingest\Form\Admin'
+  requirements:
+    _permission: 'administer islandora_spreadsheet_ingest requests'
+  options:
+    _admin_route: TRUE
