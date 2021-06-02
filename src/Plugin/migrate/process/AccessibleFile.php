@@ -86,8 +86,7 @@ class AccessibleFile extends ProcessPluginBase implements ContainerFactoryPlugin
       $plugin_definition,
       $container->get('stream_wrapper_manager'),
       $container->get('file_system'),
-      $container->get('config.factory'),
-
+      $container->get('config.factory')
     );
   }
 
