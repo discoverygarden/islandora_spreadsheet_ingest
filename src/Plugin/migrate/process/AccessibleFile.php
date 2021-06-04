@@ -68,6 +68,8 @@ class AccessibleFile extends ProcessPluginBase implements ContainerFactoryPlugin
    *   The stream wrapper manager service.
    * @param \Drupal\Core\File\FileSystemInterface $file_system
    *   The file system service.
+   * @param \Drupal\Core\Config\ConfigFactoryInterface $config
+   *   The config factory.
    */
   public function __construct(array $configuration, $plugin_id, $plugin_definition, StreamWrapperManagerInterface $stream_wrappers, FileSystemInterface $file_system, ConfigFactoryInterface $config) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
