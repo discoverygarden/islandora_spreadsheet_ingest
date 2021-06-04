@@ -12,6 +12,7 @@ process:
     - plugin: skip_on_empty
       method: row
       message: 'Field Digital_File is missing'
+    - plugin: file_is_accessible
   _destination_filename:
     - plugin: get
       source: '@_file_defined'

@@ -103,14 +103,19 @@ class Mapping extends EntityForm {
   protected function actions(array $form, FormStateInterface $form_state) {
     $actions = parent::actions($form, $form_state);
 
+    $entity_validation = [
+      '::preValidateEntity',
+      '::validateEntity',
+    ];
+
+    // Add the validation to the normal submit.
+    $actions['submit']['#validate'] = $entity_validation;
+
     // Add "save and review" button or whatever.
     $actions['save_and_review'] = [
       '#type' => 'submit',
       '#value' => $this->t('Save and proceed'),
-      '#validate' => [
-        '::preValidateEntity',
-        '::validateEntity',
-      ],
+      '#validate' => $entity_validation,
       '#submit' => array_merge(
         $actions['submit']['#submit'],
         [

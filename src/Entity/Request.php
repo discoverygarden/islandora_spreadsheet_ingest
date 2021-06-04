@@ -21,10 +21,12 @@ use Drupal\islandora_spreadsheet_ingest\RequestInterface;
  *       "edit" = "Drupal\islandora_spreadsheet_ingest\Form\Ingest\FileUpload",
  *       "map" = "Drupal\islandora_spreadsheet_ingest\Form\Ingest\Mapping",
  *       "view" = "Drupal\islandora_spreadsheet_ingest\Form\Ingest\Review",
- *     }
+ *     },
+ *     "access" = "Drupal\islandora_spreadsheet_ingest\RequestAccessControlHandler",
+ *     "view_builder" = "Drupal\islandora_spreadsheet_ingest\RequestViewBuilder",
  *   },
  *   config_prefix = "request",
- *   admin_permission = "administer site configuration",
+ *   admin_permission = "administer islandora_spreadsheet_ingest requests",
  *   entity_keys = {
  *     "id" = "id",
  *     "label" = "label",

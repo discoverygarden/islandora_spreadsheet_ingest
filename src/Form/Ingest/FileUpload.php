@@ -363,7 +363,7 @@ class FileUpload extends EntityForm {
     try {
       $request->save();
 
-      $form_state->setRedirect('entity.isi_request.map_form', [
+      $form_state->setRedirect('entity.isi_request.view', [
         'isi_request' => $request->id(),
       ]);
     }

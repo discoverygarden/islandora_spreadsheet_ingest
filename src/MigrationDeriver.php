@@ -246,9 +246,12 @@ class MigrationDeriver implements MigrationDeriverInterface {
         'label' => $original_migration->label(),
         'migration_group' => $mg_name,
         'source' => [
-        /*
-         *  XXX: Doesn't appear necessary to specify the columns?
+        /* XXX: Doesn't appear necessary to specify the columns?
          *   'columns' => array_unique(iterator_to_array($this->getUsedColumns($info['mappings']))),
+         *
+         * @note: Constants and other things defined in the source on
+         * individual migrations will not be passed through. This is a design
+         * choice. If needed specify them on the group itself.
          */
         ],
         'process' => iterator_to_array(
