@@ -1,5 +1,5 @@
-id: isi_media_doc
-label: Create document media from rows in the csv.
+id: isi_media_image
+label: Create image media from rows in the csv.
 migration_group: isi
 source:
   columns:
@@ -20,18 +20,20 @@ process:
     - plugin: static_map
       bypass: false
       map:
-        'Digital Document': 'document'
+        'Image': 'image'
+        'Page': 'image'
 
   name: Title
 
-  field_media_document:
+  # XXX: Somewhat counter-intuitive, but it will just ignore those file field
+  # entries with which the target bundle does not deal.
+  field_media_image/target_id:
     - plugin: get
       source: ID
     - plugin: migration_lookup
       migration: isi_file
       no_stub: true
-    - plugin: dgi_migrate.load_entity
-      entity_type: entity:file
+  field_media_image/alt: '@name'
 
   field_media_use:
     - plugin: default_value
@@ -58,7 +60,7 @@ process:
 
 destination:
   plugin: entity:media
-  default_bundle: document
+  default_bundle: image
 migration_dependencies:
   required:
     - isi_file
@@ -66,4 +68,4 @@ migration_dependencies:
 dependencies:
   enforced:
     module:
-      - islandora_spreadsheet_ingest
+      - islandora_spreadsheet_ingest_example

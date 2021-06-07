@@ -123,8 +123,11 @@ class MigrationGroupDeriver implements MigrationGroupDeriverInterface {
         'nada'),
       'file' => $this->fileStorage->load(reset($request->getSheet()['file']))->getFileUri(),
     ];
+
     // Grab the original values.
-    $source += $config['source'];
+    if (isset($config['source'])) {
+      $source += $config['source'];
+    }
 
     // Add on the rest of the defaults that may be missing.
     $source += [

@@ -152,4 +152,29 @@ class Request extends ConfigEntityBase implements RequestInterface {
     return $this->owner;
   }
 
+  /**
+   * {@inheritdoc}
+   */
+  public function calculateDependencies() {
+    parent::calculateDependencies();
+
+    foreach (array_column($this->getMappings(), 'original_migration_id') as $original_migration_id) {
+      $this->addDependency('config', "migrate_plus.migration.{$original_migration_id}");
+    }
+    list($type, $id) = explode(':', $this->getOriginalMapping());
+    switch ($type) {
+      case 'migration_group':
+        $this->addDependency('config', "migrate_plus.migration_group.{$id}");
+        break;
+
+      default:
+        throw new Exception(strtr('Unknown type of original mapping: "!type"', [
+          '!type' => $type,
+        ]));
+
+    }
+
+    return $this;
+  }
+
 }

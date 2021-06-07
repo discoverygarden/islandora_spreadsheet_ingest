@@ -1,5 +1,5 @@
-id: isi_media_video
-label: Create video media from rows in the csv.
+id: isi_media_file
+label: Create file media from rows in the csv.
 migration_group: isi
 source:
   columns:
@@ -20,18 +20,17 @@ process:
     - plugin: static_map
       bypass: false
       map:
-        'Video': 'video'
+        'Binary': 'file'
 
   name: Title
-  field_media_video_file:
+  field_media_file:
     - plugin: get
       source: ID
     - plugin: migration_lookup
       migration: isi_file
+      no_stub: true
     - plugin: dgi_migrate.load_entity
       entity_type: entity:file
-      no_stub: true
-
   field_media_use:
     - plugin: default_value
       # XXX: Not a perfect match, but seems to be closest, without rolling our
@@ -65,4 +64,4 @@ migration_dependencies:
 dependencies:
   enforced:
     module:
-      - islandora_spreadsheet_ingest
+      - islandora_spreadsheet_ingest_example

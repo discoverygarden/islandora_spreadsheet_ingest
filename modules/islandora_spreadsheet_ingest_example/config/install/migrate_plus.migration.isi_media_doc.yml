@@ -1,5 +1,5 @@
-id: isi_media_audio
-label: Create audio media from rows in the csv.
+id: isi_media_doc
+label: Create document media from rows in the csv.
 migration_group: isi
 source:
   columns:
@@ -20,11 +20,11 @@ process:
     - plugin: static_map
       bypass: false
       map:
-        'Audio': 'audio'
+        'Digital Document': 'document'
 
   name: Title
 
-  field_media_audio_file:
+  field_media_document:
     - plugin: get
       source: ID
     - plugin: migration_lookup
@@ -58,7 +58,7 @@ process:
 
 destination:
   plugin: entity:media
-  default_bundle: audio
+  default_bundle: document
 migration_dependencies:
   required:
     - isi_file
@@ -66,4 +66,4 @@ migration_dependencies:
 dependencies:
   enforced:
     module:
-      - islandora_spreadsheet_ingest
+      - islandora_spreadsheet_ingest_example
