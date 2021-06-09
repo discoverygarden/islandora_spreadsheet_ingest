@@ -4,3 +4,8 @@ islandora_spreadsheet_ingest.request.add:
   title: 'Add request'
   appears_on:
     - entity.isi_request.list
+islandora_spreadsheet_ingest.request.list:
+  route_name: entity.isi_request.list
+  title: 'Spreadsheet Ingest'
+  appears_on:
+    - system.admin_content
