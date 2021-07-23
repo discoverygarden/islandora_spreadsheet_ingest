@@ -27,6 +27,7 @@ class IslandoraSpreadsheetIngestBatch extends IslandoraBatchPreprocessor {
    * Preprocess the batch.
    */
   public function preprocess() {
+    // var_dump($this->parameters);die('death');
     module_load_include('inc', 'islandora_spreadsheet_ingest', 'includes/utilities');
     // Open the CSV file and start reading lines.
     $csv_file = fopen($this->parameters['spreadsheet_file'], 'r');
@@ -74,7 +75,9 @@ class IslandoraSpreadsheetIngestBatch extends IslandoraBatchPreprocessor {
       $parameters = $base_parameters + array(
         'value_map' => $row,
         'dsid' => $this->parameters['dsid'],
+        'namespace' => $this->parameters['namespace'],
       );
+      // var_dump($parameters);die('params');
       $object = IslandoraSpreadsheetIngestBatchObject::create($this->connection, $parameters);
       try {
         // Only add to be ingested if it does not already exist.
@@ -149,6 +152,7 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
 
   protected $connection;
   protected $parameters;
+  public $pid;
 
   /**
    * Parameters to be imploded and passed on to Saxon.
@@ -189,8 +193,16 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
   public function __construct(IslandoraTuque $connection, array $parameters) {
     $this->connection = $connection;
     $this->parameters = $parameters;
-    $id = $this->getValue('pid', empty($this->parameters['namespace']) ? NULL : $this->parameters['namespace']);
-    parent::__construct($id, $connection->repository);
+    // var_dump($parameters);
+    $this->pid = $this->getValue(
+      'pid',
+      $this
+        ->connection
+        ->repository
+        ->getNextIdentifier($this->parameters['namespace'])
+    );
+    // var_dump($this->pid);die("Received namespace {$this->parameters['namespace']}");
+    parent::__construct($this->pid, $connection->repository);
   }
 
   /**
@@ -232,6 +244,21 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
     }
     elseif (isset($child_paged[$cmodel])) {
       return new IslandoraSpreadsheetIngestPagedContentChildBatchObject($connection, $parameters);
+    }
+    // If is a serial object and islandora_spreadsheet_ingest_serial is enabled.
+    elseif ($cmodel == 'islandora:rootSerialCModel') {
+      // if (module_exists('islandora_spreadsheet_ingest_serial')) {
+        // Include islandora_spreadsheet_ingest_serial/spreadsheet_ingest_batch.inc
+        // module_load_include('inc', 'islandora_spreadsheet_ingest_serial', 'includes/spreadsheet_serial_batch_ingest');
+        //create IslandoraSpreadsheetIngestBatchObject.
+        module_load_include('inc', 'islandora_spreadsheet_ingest_serial', 'includes/spreadsheet_serial_batch_ingest');
+        return new IslandoraSpreadsheetIngestSerialBatchObject($connection, $parameters);
+      // }
+      // else {
+        // else if is a serial object and islandora_spreadsheet_ingest_serial is disabled
+        //   Put out a warning.
+        watchdog('my_module', "could not instantiate serial batch obj", array());
+      // }
     }
     else {
       return new static($connection, $parameters);
@@ -664,7 +691,7 @@ class IslandoraSpreadsheetIngestPagedContentChildBatchObject extends IslandoraSp
    *   - 'generate_hocr': Whether to generate HOCR for paged content children.
    *   - 'aggregate_ocr': Whether to aggregate OCR from children to parents.
    */
-  public function __construct(IslandoraTuque $connection, array $parameters) {
+    public function __construct(IslandoraTuque $connection, array $parameters) {
     parent::__construct($connection, $parameters);
     $this->parent = $this->getValue('parent_object');
   }
@@ -730,3 +757,5 @@ class IslandoraSpreadsheetIngestPagedContentChildBatchObject extends IslandoraSp
   }
 
 }
+
+// ########################

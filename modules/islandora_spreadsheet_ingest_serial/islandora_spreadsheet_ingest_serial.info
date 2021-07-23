@@ -1,0 +1,8 @@
+name = "Islandora Spreadsheet Ingest Serial"
+description = "Allows for the ingest of Serial objects."
+package = "Islandora Tools"
+dependencies[] = islandora_spreadsheet_ingest
+dependencies[] = islandora_serial_object
+version = 7.x-dev
+core = 7.x
+php = 5.5
