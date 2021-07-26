@@ -78,15 +78,37 @@ class IslandoraSpreadsheetIngestBatch extends IslandoraBatchPreprocessor {
         'namespace' => $this->parameters['namespace'],
       );
       // var_dump($parameters);die('params');
+      // if $parameters[cmodel] == serialroot
+        // create islandoraSpreadsheetSerialBatchObject
+        // return array of objects root serial obj and intermediate/pdf parts
       $object = IslandoraSpreadsheetIngestBatchObject::create($this->connection, $parameters);
+      // var_dump($row[$key_map['cmodel']]);
+      // die();
       try {
         // Only add to be ingested if it does not already exist.
         if (!islandora_object_load($object->id)) {
-          call_user_func_array(array(
-            $this,
-            'addToDatabase',
-          ), $object->getInitialDatabaseInfo($this->getSetId()));
-          $this->total++;
+          // var_dump($parameters);die();
+          if ($row[$key_map['cmodel']] == 'islandora:rootSerialCModel') {
+            // var_dump($object);die();
+            // part is IslandoraSpreadsheetIngestIntermediateBatchObject extends IslandoraBatchObject
+            foreach ($object->getSerialParts() as $part) {
+              call_user_func_array(
+                array(
+                  $this,
+                  'addToDatabase',
+                ),
+                array($part)
+              );
+              $this->total++;
+            }
+          }
+          else {
+            call_user_func_array(array(
+              $this,
+              'addToDatabase',
+            ), $object->getInitialDatabaseInfo($this->getSetId()));
+            $this->total++;
+          }
         }
         else {
           throw new IslandoraSpreadsheetIngestBatchException('Object already exists in Islandora.');
@@ -152,7 +174,7 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
 
   protected $connection;
   protected $parameters;
-  public $pid;
+  protected $pid;
 
   /**
    * Parameters to be imploded and passed on to Saxon.
@@ -637,6 +659,10 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
     return $info;
   }
 
+  public function getPid() {
+    return $this->pid;
+  }
+
 }
 
 /**
@@ -764,20 +790,20 @@ class IslandoraSpreadsheetIngestPagedContentChildBatchObject extends IslandoraSp
  */
 class IslandoraSpreadsheetIngestSerialBatchObject extends IslandoraSpreadsheetIngestBatchObject {
 
-  // protected $namespace;
+  // Array of batch objects.
+  protected $serialParts;
   // protected $serial_root_pid;
 
-  // public function __construct(IslandoraTuque $connection, array $parameters) {
-  //   parent::__construct($connection, $parameters);
-  //   // $this->serial_root_pid = $serial_root_pid;
-  //   // watchdog('my_module', "params namespace: " . $this->parameters['namespace'], array());
-  //   // watchdog('my_module', "parent pid: " . $this->pid, array());
-  //   // var_dump($this->parameters['namespace']);
-  //   // die();
-  //
-  //   // module_load_include('inc', 'islandora', 'includes/utilities');
-  //   // $namespace = islandora_get_namespace($this->pid);
-  // }
+  public function getSerialParts() {
+    return (array) $this->serialParts;
+  }
+  public function __construct(IslandoraTuque $connection, array $parameters) {
+    parent::__construct($connection, $parameters);
+    module_load_include('inc', 'islandora_spreadsheet_ingest', 'includes/utilities');
+
+    $object_location = islandora_spreadsheet_ingest_normalize_binary_file_path($this->parameters['binary_path'], $this->getValue('object_location'));
+    $this->serialParts = $this->constructSerials($parameters['namespace'], $object_location);
+  }
 
   /**
    * Processes the object.
@@ -828,15 +854,18 @@ class IslandoraSpreadsheetIngestSerialBatchObject extends IslandoraSpreadsheetIn
    *
    * @param namespace
    *   The namespace to use for created serial parts.
+   * @param object_location
+   *   Absolute path to the directory.
+   *
+   * @return array
+   *   Array of intermediate parts.
    */
   function constructSerials($namespace, $object_location) {
+    module_load_include('inc', 'islandora_spreadsheet_ingest_serial', 'includes/spreadsheet_serial_batch_ingest');
+    $section_objects = [];
     //TODO wrap this in try catch.
     dd('lets create the serial parts');
     watchdog('my_module', "lets create the serial parts", array());
-    // ISLANDORA_SPREADSHEET_INGST_SERIAL_ROOT = 'islandora:rootSerialCModel';
-    // ISLANDORA_SPREADSHEET_INGST_SERIAL_INTERMEDIATE = 'islandora:intermediateCModel';
-    // const ISLANDORA_SPREADSHEET_INGST_SERIAL_STUB = 'islandora:intermediateSerialCModelStub';
-
     // get dir structure as an array.
     // intermediate_1_Drawer_1A (Array, 1 element)
     //     section_1_Ecumenical China Study Reports and Minutes (1976 – 1980) (Array, 1 element)
@@ -845,15 +874,14 @@ class IslandoraSpreadsheetIngestSerialBatchObject extends IslandoraSpreadsheetIn
     //             1 (String, 7 characters ) OBJ.pdf
     $serial_array = $this->dirStructureToArray($object_location);
 
-    $intermediate_objects = [];
-    $section_objects = [];
-    $pdfs = [];
+    // $intermediate_objects = [];
     // iterate the array
     foreach ($serial_array as $intermediate_dir => $section_or_pdf_info) {
       // explode the keys (names) with "_" as delimiter
       // 0 => intermediate
       // 1 => sequence to use (1)
       // 2 => label
+      $current_intermediate = NULL;
       $intermediate_dir_parts = explode('_', $intermediate_dir);
       $type = $intermediate_dir_parts[0];
       $sequence = $intermediate_dir_parts[1];
@@ -861,33 +889,17 @@ class IslandoraSpreadsheetIngestSerialBatchObject extends IslandoraSpreadsheetIn
 
       // each key that has "intermediate" (lowercase) creates an intermediate object
       if (strtolower($type) === 'intermediate') {
-        $intermediate_pid = $this->connection->repository->getNextIdentifier($namespace);
-        $intermediate_object = $this->connection->repository->constructObject($intermediate_pid);
-        // use the remaining text as the label
-        $intermediate_object->label = $label;
-        $intermediate_object->models = ISLANDORA_SPREADSHEET_INGEST_SERIAL_INTERMEDIATE;
-        // intermediates need isMemberOf and sequence.
-        $intermediate_object->relationships->add(
-          FEDORA_RELS_EXT_URI,
-          'isMemberOf',
+        $current_intermediate = new IslandoraSpreadsheetIngestIntermediateBatchObject(
+          $this->connection,
           $this->pid,
-          RELS_TYPE_URI
-        );
-        $intermediate_object->relationships->add(
-          ISLANDORA_RELS_EXT_URI,
-          ISLANDORA_SERIAL_OBJECT_SEQUENCE_PREDICATE,
-          // use the number from the explode as the sequence
+          $namespace,
           $sequence,
-          RELS_TYPE_INT
+          $label,
+          $type
         );
-        // add to an array with a pid.
-        // $intermediate_objects[$intermediate_pid] = $intermediate_object;
-        // Just ingest it.
-        $this->connection->repository->ingestObject($intermediate_object);
+        $serial_objects[] = $current_intermediate;
+        watchdog('my_module', "created an intermediate with pid " .$current_intermediate->getPid(), array());
       }
-      dd('created an intermediate with pid ' . $intermediate_pid);
-      watchdog('my_module', "created an intermediate with pid $intermediate_pid", array());
-
 
       // interate the intermediates
       // explode keys (names) with "_" as delimiter.
@@ -907,28 +919,15 @@ class IslandoraSpreadsheetIngestSerialBatchObject extends IslandoraSpreadsheetIn
           watchdog('my_module', "lets create a stub", array());
 
           // create a stub. islandora:intermediateSerialCModelStub (ISLANDORA_SPREADSHEET_INGEST_SERIAL_STUB).
-          $stub_pid = $this->connection->repository->getNextIdentifier($namespace);
-          $stub_object = $this->connection->repository->constructObject($stub_pid);
-          // use the remaining text as the label.
-          $stub_object->label = $stub_label;
-          $stub_object->models = ISLANDORA_SPREADSHEET_INGEST_SERIAL_STUB;
-          // add isComponentOf
-          $stub_object->relationships->add(
-            ISLANDORA_RELS_EXT_URI,
-            ISLANDORA_SERIAL_OBJECT_PDF_PARENT_PREDICATE,
-            $intermediate_pid
+          $serial_objects[] = new IslandoraSpreadsheetIngestIntermediateBatchObject(
+            $this->connection,
+            $current_intermediate->getPid(),
+            $namespace,
+            $sequence,
+            $label,
+            $stub_type
           );
-          $stub_object->relationships->add(
-            ISLANDORA_RELS_EXT_URI,
-            ISLANDORA_SERIAL_OBJECT_SEQUENCE_PREDICATE,
-            // use the number from the explode as the sequence
-            $stub_sequence,
-            RELS_TYPE_INT
-          );
-          // $section_objects[$stub_pid] = $stub_object;
-          $this->connection->repository->ingestObject($stub_object);
-          dd("created a stub with pid $stub_pid");
-          watchdog('my_module', "created a stub with pid $stub_pid", array());
+          watchdog('my_module', "created a stub", array());
 
           // if a section, loop that for a pdf
           if (is_array($contents) && count($contents) > 0) {
@@ -938,30 +937,18 @@ class IslandoraSpreadsheetIngestSerialBatchObject extends IslandoraSpreadsheetIn
               $info_type = $info_array[0];
               $info_sequence = $info_array[1];
               $info_label = $info_array[2];
-              module_load_include('inc', 'islandora_serial_object', 'includes/utilities');
-              $sequence = islandora_serial_object_get_max_sequence_number($intermediate_pid);
+              // module_load_include('inc', 'islandora_serial_object', 'includes/utilities');
+              // $sequence = islandora_serial_object_get_max_sequence_number($intermediate_pid);
 
               // create a pdf.
-              $pdf_pid = $this->connection->repository->getNextIdentifier($namespace);
-              $pdf_object = $this->connection->repository->constructObject($pdf_pid);
-              // use the remaining text as the label
-              $pdf_object->label = $info_label;
-              $pdf_object->models = ISLANDORA_SPREADSHEET_INGEST_SERIAL_PDF;
-              // add isComponentOf
-              $pdf_object->relationships->add(
-                ISLANDORA_RELS_EXT_URI,
-                ISLANDORA_SERIAL_OBJECT_PDF_PARENT_PREDICATE,
-                $intermediate_pid
-              );
-              $pdf_object->relationships->add(
-                ISLANDORA_RELS_EXT_URI,
-                ISLANDORA_SERIAL_OBJECT_SEQUENCE_PREDICATE,
-                // use the number from the explode as the sequence
+              $serial_objects[] = new IslandoraSpreadsheetIngestIntermediateBatchObject(
+                $this->connection,
+                $current_intermediate->getPid(),
+                $namespace,
                 $sequence,
-                RELS_TYPE_INT
+                $label,
+                $info_type
               );
-              // $pdfs[$pdf_pid] = $pdf_object;
-              $this->connection->repository->ingestObject($pdf_object);
               // assign contents appropriately.
                 // use $this->addDatastreams maybe?
             }
@@ -971,42 +958,20 @@ class IslandoraSpreadsheetIngestSerialBatchObject extends IslandoraSpreadsheetIn
         elseif ($stub_or_pdf === 'pdf') {
           dd("lets create a pdf");
           watchdog('my_module', "lets create a pdf", array());
+          $serial_objects[] = new IslandoraSpreadsheetIngestIntermediateBatchObject(
+            $this->connection,
+            $current_intermediate->getPid(),
+            $namespace,
+            $sequence,
+            $label,
+            $stub_type
+          );
           // create a pdf.
-          $pdf_pid = $this->connection->repository->getNextIdentifier($namespace);
-          $pdf_object = $this->connection->repository->constructObject($pdf_pid);
-          // use the remaining text as the label
-          $pdf_object->label = $stub_label;
-          $pdf_object->models = ISLANDORA_SPREADSHEET_INGEST_SERIAL_PDF;
-          // add isComponentOf
-          $pdf_object->relationships->add(
-            ISLANDORA_RELS_EXT_URI,
-            ISLANDORA_SERIAL_OBJECT_PDF_PARENT_PREDICATE,
-            $intermediate_pid
-          );
-          $pdf_object->relationships->add(
-            ISLANDORA_RELS_EXT_URI,
-            ISLANDORA_SERIAL_OBJECT_SEQUENCE_PREDICATE,
-            // use the number from the explode as the sequence
-            $stub_sequence,
-            RELS_TYPE_INT
-          );
-          $pdfs[$pdf_pid] = $pdf_object;
-          $this->connection->repository->ingestObject($pdf_object);
-          dd("created a pdf with pid $pdf_pid");
-          watchdog('my_module', "created a pdf with pid $pdf_pid", array());
+          watchdog('my_module', "created a pdf", array());
         }
       }
     }
-
-    // foreach ($intermediate_objects as $obj) {
-    //   $this->connection->repository->ingestObject($obj);
-    // }
-    // foreach($section_objects as $obj) {
-    //   $this->connection->repository->ingestObject($obj);
-    // }
-    // foreach($pdfs as $obj) {
-    //   $this->connection->repository->ingestObject($obj);
-    // }
+    return $serial_objects;
   }
 
   /**
