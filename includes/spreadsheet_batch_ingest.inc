@@ -790,19 +790,32 @@ class IslandoraSpreadsheetIngestPagedContentChildBatchObject extends IslandoraSp
  */
 class IslandoraSpreadsheetIngestSerialBatchObject extends IslandoraSpreadsheetIngestBatchObject {
 
-  // Array of batch objects.
+  // Array of batch objects i.e. the intermediates, stubs and pdfs.
   protected $serialParts;
-  // protected $serial_root_pid;
 
   public function getSerialParts() {
     return (array) $this->serialParts;
   }
+
+  public function countParts() {
+    return count($this->serialParts);
+  }
+
   public function __construct(IslandoraTuque $connection, array $parameters) {
     parent::__construct($connection, $parameters);
     module_load_include('inc', 'islandora_spreadsheet_ingest', 'includes/utilities');
 
-    $object_location = islandora_spreadsheet_ingest_normalize_binary_file_path($this->parameters['binary_path'], $this->getValue('object_location'));
-    $this->serialParts = $this->constructSerials($parameters['namespace'], $object_location);
+    // Get the location of the absolute path of the serial directory object.
+    $object_location = islandora_spreadsheet_ingest_normalize_binary_file_path(
+      $this->parameters['binary_path'],
+      $this->getValue('object_location')
+    );
+    // Create the serial parts and add to the array. This will be used to properly
+    // update the number of objects to be ingested in the batch.
+    $this->serialParts = $this->constructSerials(
+      $parameters['namespace'],
+      $object_location
+    );
   }
 
   /**
@@ -850,48 +863,45 @@ class IslandoraSpreadsheetIngestSerialBatchObject extends IslandoraSpreadsheetIn
   }
 
   /**
-   * Orchestrats construction of the serial objects.
+   * Orchestrates construction of the serial objects.
    *
    * @param namespace
    *   The namespace to use for created serial parts.
    * @param object_location
-   *   Absolute path to the directory.
+   *   Absolute path to the serial directory.
    *
    * @return array
-   *   Array of intermediate parts.
+   *   Array of intermediate, stub and/or pdf parts.
    */
   function constructSerials($namespace, $object_location) {
-    module_load_include('inc', 'islandora_spreadsheet_ingest_serial', 'includes/spreadsheet_serial_batch_ingest');
-    $section_objects = [];
-    //TODO wrap this in try catch.
-    dd('lets create the serial parts');
+    // TODO wrap this in try catch.
     watchdog('my_module', "lets create the serial parts", array());
     // get dir structure as an array.
     // intermediate_1_Drawer_1A (Array, 1 element)
     //     section_1_Ecumenical China Study Reports and Minutes (1976 – 1980) (Array, 1 element)
-    //         pdf_1_Ecumenical China Study Liaison Group in Germany (Array, 2 elements)
-    //             0 (String, 8 characters ) MODS.xml
-    //             1 (String, 7 characters ) OBJ.pdf
+    //     pdf_1_Ecumenical China Study Liaison Group in Germany (Array, 2 elements)
+    //       0 (String, 8 characters ) MODS.xml
+    //       1 (String, 7 characters ) OBJ.pdf
     $serial_array = $this->dirStructureToArray($object_location);
 
-    // $intermediate_objects = [];
+    $section_objects = [];
+    $current_intermediate = NULL;
     // iterate the array
     foreach ($serial_array as $intermediate_dir => $section_or_pdf_info) {
       // explode the keys (names) with "_" as delimiter
       // 0 => intermediate
       // 1 => sequence to use (1)
       // 2 => label
-      $current_intermediate = NULL;
       $intermediate_dir_parts = explode('_', $intermediate_dir);
       $type = $intermediate_dir_parts[0];
       $sequence = $intermediate_dir_parts[1];
       $label = $intermediate_dir_parts[2];
 
-      // each key that has "intermediate" (lowercase) creates an intermediate object
+      // each key that has "intermediate" (lowercase) creates an intermediate object.
       if (strtolower($type) === 'intermediate') {
         $current_intermediate = new IslandoraSpreadsheetIngestIntermediateBatchObject(
           $this->connection,
-          $this->pid,
+          $this->pid, // serial root's pid.
           $namespace,
           $sequence,
           $label,
@@ -915,52 +925,25 @@ class IslandoraSpreadsheetIngestSerialBatchObject extends IslandoraSpreadsheetIn
         $stub_or_pdf = strtolower($stub_type);
         // each key that has "section" creates an "intermediate stub".
         if ($stub_or_pdf === 'section') {
-          dd("lets create a stub");
           watchdog('my_module', "lets create a stub", array());
 
           // create a stub. islandora:intermediateSerialCModelStub (ISLANDORA_SPREADSHEET_INGEST_SERIAL_STUB).
           $serial_objects[] = new IslandoraSpreadsheetIngestIntermediateBatchObject(
             $this->connection,
-            $current_intermediate->getPid(),
+            $current_intermediate->getPid(), // the curent intermediate will be the parent.
             $namespace,
             $sequence,
             $label,
             $stub_type
           );
           watchdog('my_module', "created a stub", array());
-
-          // if a section, loop that for a pdf
-          if (is_array($contents) && count($contents) > 0) {
-            // Should be a pdf directory so explode the name.
-            foreach ($contents as $info => $content) {
-              $info_array = explode('_', $info);
-              $info_type = $info_array[0];
-              $info_sequence = $info_array[1];
-              $info_label = $info_array[2];
-              // module_load_include('inc', 'islandora_serial_object', 'includes/utilities');
-              // $sequence = islandora_serial_object_get_max_sequence_number($intermediate_pid);
-
-              // create a pdf.
-              $serial_objects[] = new IslandoraSpreadsheetIngestIntermediateBatchObject(
-                $this->connection,
-                $current_intermediate->getPid(),
-                $namespace,
-                $sequence,
-                $label,
-                $info_type
-              );
-              // assign contents appropriately.
-                // use $this->addDatastreams maybe?
-            }
-          }
         }
         // if the key has "pdf" create a "pdf object".
         elseif ($stub_or_pdf === 'pdf') {
-          dd("lets create a pdf");
           watchdog('my_module', "lets create a pdf", array());
           $serial_objects[] = new IslandoraSpreadsheetIngestIntermediateBatchObject(
             $this->connection,
-            $current_intermediate->getPid(),
+            $current_intermediate->getPid(), // the curent intermediate will be the parent.
             $namespace,
             $sequence,
             $label,
@@ -977,6 +960,11 @@ class IslandoraSpreadsheetIngestSerialBatchObject extends IslandoraSpreadsheetIn
   /**
    * Converts a serial directory structure to an array.
    * https://stackoverflow.com/a/4987637
+   *
+   * @param dir
+   *
+   * @param listDir
+   *
    */
   function dirStructureToArray($dir, $listDir = array()) {
     $listDir = array();
@@ -996,4 +984,128 @@ class IslandoraSpreadsheetIngestSerialBatchObject extends IslandoraSpreadsheetIn
     return $listDir;
   }
 
+}
+
+class IslandoraSpreadsheetIngestIntermediateBatchObject extends IslandoraBatchObject {
+  protected $connection;
+  protected $parentPid;
+  protected $namespace;
+  protected $sequence;
+  public $label;
+  protected $pid;
+
+  /**
+   * Constructor.
+   */
+  public function __construct(IslandoraTuque $connection, $parentPid, $namespace, $sequence, $label, $serialType) {
+    $this->parentPid = $parentPid;
+    $this->namespace = $namespace;
+    $this->sequence = $sequence;
+    $this->label = $label;
+    $this->pid = $connection->repository->getNextIdentifier($namespace);
+    $this->connection = $connection;
+    parent::__construct($this->pid, $this->connection->repository);
+
+    watchdog('my_module', "Doing this $label", array());
+
+    switch (strtolower($serialType)) {
+      case 'intermediate':
+        $this->models = ISLANDORA_SPREADSHEET_INGEST_SERIAL_INTERMEDIATE;
+        break;
+      case 'section':
+        $this->models = ISLANDORA_SPREADSHEET_INGEST_SERIAL_STUB;
+        break;
+      case 'pdf':
+        $this->models = ISLANDORA_SPREADSHEET_INGEST_SERIAL_PDF;
+        // add datastreams in batchProcess?.
+        break;
+    }
+  }
+
+  public function batchProcess() {
+    // add the obj and mods for pdf
+    if ($this->models == ISLANDORA_SPREADSHEET_INGEST_SERIAL_PDF) {
+      watchdog('my_module', "batch - update pdf", array());
+    }
+  }
+
+  public function addRelationships() {
+    // intermediates need isMemberOf and sequence.
+    switch (strtolower($serialType)) {
+      case 'intermediate':
+        $this->relationships->add(
+          FEDORA_RELS_EXT_URI,
+          'isMemberOf',
+          $this->parentPid, // pid of the rootSerialCModel object.
+          RELS_TYPE_URI
+        );
+        $this->relationships->add(
+          ISLANDORA_RELS_EXT_URI,
+          ISLANDORA_SERIAL_OBJECT_SEQUENCE_PREDICATE,
+          // use the number from the explode as the sequence
+          $this->sequence,
+          RELS_TYPE_INT
+        );
+        break;
+      case 'section':
+      case 'pdf':
+      $this->relationships->add(
+        FEDORA_RELS_EXT_URI,
+        'isComponentOf',
+        $this->parentPid, // pid of the rootSerialCModel object.
+        RELS_TYPE_URI
+      );
+      $this->relationships->add(
+        ISLANDORA_RELS_EXT_URI,
+        ISLANDORA_SERIAL_OBJECT_SEQUENCE_PREDICATE,
+        $this->sequence,
+        RELS_TYPE_INT
+      );
+      break;
+    }
+  }
+
+  /**
+   * Adds arbitrary datastreams in the given directory.
+   *
+   * @param string $object_location
+   *   The relative path to a folder where arbitrary datastreams are being held.
+   */
+  public function addDatastreams($object_location) {
+    module_load_include('inc', 'islandora', 'includes/utilities');
+    if (!is_readable($object_location) || !is_dir($object_location)) {
+      throw new IslandoraSpreadsheetIngestBatchException(t('Failed to find or read the path to the datastreams at @path', array(
+        '@path' => $object_location,
+      )));
+    }
+    $files = file_scan_directory(
+      drupal_realpath($object_location),
+      '/.*/',
+      array('recurse' => FALSE));
+    foreach ($files as $file) {
+      if (!isset($this[$file->name])) {
+        $ds = $this->constructDatastream($file->name, 'M');
+      }
+      else {
+        $ds = $this[$file->name];
+      }
+      $ds->setContentFromFile($file->uri, FALSE);
+      $ds->mimetype = file_get_mimetype($file->uri);
+      $ds->label = "{$file->name} Datastream";
+      if (!isset($this[$file->name])) {
+        $this->ingestDatastream($ds);
+      }
+    }
+  }
+
+  /**
+   * Get resources for this item.
+   */
+  public function getResources() {
+    return array();
+  }
+
+  public function getPid() {
+    return $this->pid;
+  }
 }
