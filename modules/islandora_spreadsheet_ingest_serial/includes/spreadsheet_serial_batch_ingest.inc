@@ -10,11 +10,11 @@
  */
 class IslandoraSpreadsheetIngestSerialBatchObject extends IslandoraSpreadsheetIngestBatchObject {
 
-  // Array of batch objects i.e. the intermediates, stubs and pdfs.
   /**
    * An array of created IslandoraSpreadsheetIngestIntermediateBatchObjects
    *
    * @var IslandoraSpreadsheetIngestIntermediateBatchObject[]
+   *   These objects can be the intermediates, stubs and pdfs.
    */
   private $serialParts;
 
@@ -59,8 +59,6 @@ class IslandoraSpreadsheetIngestSerialBatchObject extends IslandoraSpreadsheetIn
         }
         $this->alter();
         $this->relationships->commitRelationships();
-        // Get the serial parts created.
-        // $this->setSerialParts($this->parameters['namespace'], $object_location);
       }
     }
     catch (Exception $e) {
@@ -97,7 +95,6 @@ class IslandoraSpreadsheetIngestSerialBatchObject extends IslandoraSpreadsheetIn
 
     $this->serialParts = [];
     $current_intermediate = NULL;
-    // iterate the array
     foreach ($serial_array as $intermediate_dir => $section_or_pdf_info) {
       // explode the keys (names) with "_" as delimiter
       // 0 => intermediate
@@ -111,7 +108,6 @@ class IslandoraSpreadsheetIngestSerialBatchObject extends IslandoraSpreadsheetIn
       $sequence = $intermediate_dir_parts[1];
       $label = $intermediate_dir_parts[2];
 
-      // each key that has "intermediate" (lowercase) creates an intermediate object.
       if (strtolower($type) === 'intermediate') {
         try {
           $current_intermediate = new IslandoraSpreadsheetIngestIntermediateBatchObject(
@@ -130,7 +126,7 @@ class IslandoraSpreadsheetIngestSerialBatchObject extends IslandoraSpreadsheetIn
         }
       }
 
-      // interate the intermediates
+      // Iterate the intermediates.
       // explode keys (names) with "_" as delimiter.
       foreach ($section_or_pdf_info as $part => $contents) {
         // 0 (String, 7 characters ) section

@@ -27,7 +27,6 @@ class IslandoraSpreadsheetIngestBatch extends IslandoraBatchPreprocessor {
    * Preprocess the batch.
    */
   public function preprocess() {
-    // var_dump($this->parameters);die('death');
     module_load_include('inc', 'islandora_spreadsheet_ingest', 'includes/utilities');
     // Open the CSV file and start reading lines.
     $csv_file = fopen($this->parameters['spreadsheet_file'], 'r');
@@ -78,7 +77,6 @@ class IslandoraSpreadsheetIngestBatch extends IslandoraBatchPreprocessor {
         'namespace' => $this->parameters['namespace'],
       );
       $object = IslandoraSpreadsheetIngestBatchObject::create($this->connection, $parameters);
-
       try {
         // Only add to be ingested if it does not already exist.
         if (!islandora_object_load($object->id)) {
@@ -705,7 +703,7 @@ class IslandoraSpreadsheetIngestPagedContentChildBatchObject extends IslandoraSp
    *   - 'generate_hocr': Whether to generate HOCR for paged content children.
    *   - 'aggregate_ocr': Whether to aggregate OCR from children to parents.
    */
-    public function __construct(IslandoraTuque $connection, array $parameters) {
+  public function __construct(IslandoraTuque $connection, array $parameters) {
     parent::__construct($connection, $parameters);
     $this->parent = $this->getValue('parent_object');
   }

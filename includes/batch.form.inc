@@ -431,7 +431,6 @@ function islandora_spreadsheet_ingest_batch_form_submit(&$form, &$form_state) {
 
     $connection = islandora_get_tuque_connection();
     $preprocessor = new IslandoraSpreadsheetIngestBatch($connection, $form_state['values']);
-    // var_dump($form_state['values']);die();
     file_usage_add($csv_file, 'islandora_batch', 'islandora_batch_set', $preprocessor->getSetId());
 
     if ($form_state['values']['ingest_immediately']) {
