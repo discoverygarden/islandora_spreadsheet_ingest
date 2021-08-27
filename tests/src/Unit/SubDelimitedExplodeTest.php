@@ -5,7 +5,6 @@ namespace Drupal\Tests\islandora_spreadsheet_ingest\Unit;
 use Drupal\Tests\UnitTestCase;
 
 use Drupal\islandora_spreadsheet_ingest\Plugin\migrate\process\SubDelimitedExplode;
-use Drupal\migrate\MigrateException;
 use Drupal\migrate\MigrateExecutableInterface;
 use Drupal\migrate\Row;
 
@@ -16,9 +15,23 @@ use Drupal\migrate\Row;
  */
 class SubDelimitedExplodeTest extends UnitTestCase {
 
+  /**
+   * Mock executable for test execution.
+   *
+   * @var \Drupal\migrate\MigrateExecutableInterface
+   */
   protected $mockExecutable;
+
+  /**
+   * Mock row for test execution.
+   *
+   * @var \Drupal\migrate\Row
+   */
   protected $mockRow;
 
+  /**
+   * {@inheritdoc}
+   */
   public function setUp() {
     parent::setUp();
 
@@ -56,7 +69,7 @@ class SubDelimitedExplodeTest extends UnitTestCase {
         [
           ['A', 'alpha'],
           ['B', 'bravo'],
-        ]
+        ],
       ],
       [
         'Base explode with different delimiters',
@@ -65,16 +78,22 @@ class SubDelimitedExplodeTest extends UnitTestCase {
         [
           ['A', 'alpha'],
           ['B', 'bravo'],
-        ]
+        ],
       ],
       [
         'Base explode with keys and no trimming',
-        ['delimiter' => ';', 'subdelimiter' => '|', 'keys' => ['a', 'b'], 'trim' => FALSE, 'subtrim' => FALSE],
+        [
+          'delimiter' => ';',
+          'subdelimiter' => '|',
+          'keys' => ['a', 'b'],
+          'trim' => FALSE,
+          'subtrim' => FALSE,
+        ],
         'A|alpha;B|bravo',
         [
           ['a' => 'A', 'b' => 'alpha'],
           ['a' => 'B', 'b' => 'bravo'],
-        ]
+        ],
       ],
       [
         'Base explode with keys',
@@ -83,7 +102,7 @@ class SubDelimitedExplodeTest extends UnitTestCase {
         [
           ['a' => 'A', 'b' => 'alpha'],
           ['a' => 'B', 'b' => 'bravo'],
-        ]
+        ],
       ],
       [
         'Base explode with insufficient keys',
@@ -92,34 +111,49 @@ class SubDelimitedExplodeTest extends UnitTestCase {
         [
           ['a' => 'A', 1 => 'alpha'],
           ['a' => 'B', 1 => 'bravo'],
-        ]
+        ],
       ],
       [
         'Base explode, with full trimming',
-        ['delimiter' => ';', 'subdelimiter' => '|', 'trim' => TRUE, 'subtrim' => TRUE],
+        [
+          'delimiter' => ';',
+          'subdelimiter' => '|',
+          'trim' => TRUE,
+          'subtrim' => TRUE,
+        ],
         'A | alpha ; B |bravo',
         [
           ['A', 'alpha'],
           ['B', 'bravo'],
-        ]
+        ],
       ],
       [
         'Base explode, with only subtrimming',
-        ['delimiter' => ';', 'subdelimiter' => '|', 'trim' => FALSE, 'subtrim' => TRUE],
+        [
+          'delimiter' => ';',
+          'subdelimiter' => '|',
+          'trim' => FALSE,
+          'subtrim' => TRUE,
+        ],
         'A | alpha ; B |bravo',
         [
           ['A', 'alpha'],
           ['B', 'bravo'],
-        ]
+        ],
       ],
       [
         'Base explode, with only top trimming',
-        ['delimiter' => ';', 'subdelimiter' => '|', 'trim' => TRUE, 'subtrim' => FALSE],
+        [
+          'delimiter' => ';',
+          'subdelimiter' => '|',
+          'trim' => TRUE,
+          'subtrim' => FALSE,
+        ],
         'A | alpha ; B |bravo',
         [
           ['A ', ' alpha'],
           ['B ', 'bravo'],
-        ]
+        ],
       ],
     ];
   }

@@ -197,7 +197,6 @@ class SubDelimitedExplode extends ProcessPluginBase {
       return [];
     }
 
-
     // Build and return the array. Resultant array should use keys from config;
     // if those run out, use the native index of each item.
     $out = explode($this->delimiter, $value, $this->limit);
