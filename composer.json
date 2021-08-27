@@ -5,6 +5,6 @@
     "require": {
       "drupal/migrate_plus": "^4.2",
       "drupal/migrate_spreadsheet": "^1",
-      "discoverygarden/dgi_migrate": "^8"
+      "discoverygarden/dgi_migrate": "^1"
     }
 }
