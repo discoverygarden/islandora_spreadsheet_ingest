@@ -6,7 +6,8 @@ use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Cache\CacheTagsInvalidatorInterface;
 use Psr\Log\LoggerInterface;
 
-use Drupal\migrate_plus\Entity\MigrationInterface;
+use Drupal\migrate\Plugin\MigrationInterface;
+use Drupal\migrate\Plugin\MigrationPluginManagerInterface;
 
 /**
  * Derive migrations for a given request.
@@ -56,13 +57,21 @@ class MigrationDeriver implements MigrationDeriverInterface {
   protected $cacheInvalidator;
 
   /**
+   * The migration plugin manager service.
+   *
+   * @var \Drupal\migrate\Plugin\MigrationPluginManagerInterface
+   */
+  protected $migrationPluginManager;
+
+  /**
    * Constructor.
    */
   public function __construct(
     LoggerInterface $logger,
     EntityTypeManagerInterface $entity_type_manager,
     CacheTagsInvalidatorInterface $invalidator,
-    MigrationGroupDeriverInterface $migration_group_deriver
+    MigrationGroupDeriverInterface $migration_group_deriver,
+    MigrationPluginManagerInterface $migration_plugin_manager
   ) {
     $this->logger = $logger;
     $this->entityTypeManager = $entity_type_manager;
@@ -70,6 +79,7 @@ class MigrationDeriver implements MigrationDeriverInterface {
     $this->requestStorage = $this->entityTypeManager->getStorage('isi_request');
     $this->migrationStorage = $this->entityTypeManager->getStorage('migration');
     $this->cacheInvalidator = $invalidator;
+    $this->migrationPluginManager = $migration_plugin_manager;
   }
 
   /**
@@ -109,7 +119,7 @@ class MigrationDeriver implements MigrationDeriverInterface {
   /**
    * Remap referenced migration dependencies to their new names.
    *
-   * @param \Drupal\migrate_plus\Entity\MigrationInterface $migration
+   * @param \Drupal\migrate\Plugin\MigrationInterface $migration
    *   The original migration from which to scrape the dependencies.
    * @param string $new_mg
    *   The name of the new migration group, such that we can derive the new
@@ -156,7 +166,7 @@ class MigrationDeriver implements MigrationDeriverInterface {
   /**
    * Determine if a migration appears to be a part of the same migration group.
    *
-   * @param \Drupal\migrate_plus\Entity\MigrationInterface $mig
+   * @param \Drupal\migrate\Plugin\MigrationInterface $mig
    *   The original migration for comparison.
    * @param string $target
    *   The name/id of the migration to test.
@@ -165,7 +175,7 @@ class MigrationDeriver implements MigrationDeriverInterface {
    *   TRUE if it is the same; otherwise, FALSE.
    */
   protected function sameMigrationGroup(MigrationInterface $mig, $target) {
-    $loaded_target = $this->migrationStorage->load($target);
+    $loaded_target = $this->migrationPluginManager->createInstance($target);
     $mg = $loaded_target->get('migration_group');
     return $mg && $mg == $mig->get('migration_group');
   }
@@ -175,7 +185,7 @@ class MigrationDeriver implements MigrationDeriverInterface {
    *
    * @param array $steps
    *   The array of process plugin definitions to map.
-   * @param \Drupal\migrate_plus\Entity\MigrationInterface $mig
+   * @param \Drupal\migrate\Plugin\MigrationInterface $mig
    *   The original migration for comparison.
    * @param string $mg_name
    *   The name of the migration group we are populating.
@@ -214,7 +224,7 @@ class MigrationDeriver implements MigrationDeriverInterface {
    *
    * @param array $processes
    *   Associative array mapping field names to process info.
-   * @param \Drupal\migrate_plus\Entity\MigrationInterface $mig
+   * @param \Drupal\migrate\Plugin\MigrationInterface $mig
    *   The migration from which we are deriving another migration.
    * @param string $mg_name
    *   The migration group we are populating.
@@ -239,7 +249,7 @@ class MigrationDeriver implements MigrationDeriverInterface {
     assert($this->entityTypeManager->getStorage('migration_group')->load($mg_name));
 
     foreach ($request->getMappings() as $name => $info) {
-      $original_migration = $this->migrationStorage->load($info['original_migration_id']);
+      $original_migration = $this->migrationPluginManager->createInstance($info['original_migration_id']);
       $derived_name = $this->deriveMigrationName($mg_name, $name);
       $info = [
         'id' => $derived_name,
