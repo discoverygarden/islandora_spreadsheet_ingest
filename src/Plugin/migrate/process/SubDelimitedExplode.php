@@ -36,9 +36,9 @@ use Drupal\migrate\Row;
  *   array has more values than keys given, additional keys will be provided at
  *   the same native index in the subset.
  * - trim: (optional) Flag indicating if whitespace should be trimmed from top-
- *   level elemeents. Defaults to TRUE.
+ *   level elements. Defaults to TRUE.
  * - subtrim: (optional) Flag indicating if whitespace should be trimmed from
- *   subelemeents. Defaults to TRUE.
+ *   subelements. Defaults to TRUE.
  *
  * For example, given the following cell contents:
  *
