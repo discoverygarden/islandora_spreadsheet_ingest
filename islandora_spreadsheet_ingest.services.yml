@@ -26,6 +26,7 @@ services:
       - '@entity_type.manager'
       - '@cache_tags.invalidator'
       - '@islandora_spreadsheet_ingest.migration_group_deriver'
+      - '@plugin.manager.migration'
   islandora_spreadsheet_ingest.deferred_ingest.queue:
     class: Drupal\Core\Queue\DatabaseQueue
     factory: ['@queue', 'get']
