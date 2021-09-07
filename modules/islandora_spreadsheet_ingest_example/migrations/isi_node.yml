@@ -2,6 +2,16 @@ id: isi_node
 label: Create nodes from rows in the csv.
 migration_group: isi
 source:
+  plugin: spreadsheet
+  source_module: migrate_spreadsheet
+  # Worksheet nonsensical but required.
+  worksheet: nada
+  track_changes: true
+  file: 'modules/contrib/islandora_spreadsheet_ingest/modules/islandora_spreadsheet_ingest_example/fixtures/migration_example.csv'
+  header_row: 1
+  keys:
+    'ID':
+      type: integer
   columns:
     - 'ID'
     - 'Title'
@@ -9,6 +19,7 @@ source:
     - 'Member_of'
     - 'Member_of_existing_entity'
     - 'Description'
+migration_tags: []
 process:
   field_model:
     - plugin: get

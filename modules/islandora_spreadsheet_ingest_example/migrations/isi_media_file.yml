@@ -2,11 +2,22 @@ id: isi_media_file
 label: Create file media from rows in the csv.
 migration_group: isi
 source:
+  plugin: spreadsheet
+  source_module: migrate_spreadsheet
+  # Worksheet nonsensical but required.
+  worksheet: nada
+  track_changes: true
+  file: 'modules/contrib/islandora_spreadsheet_ingest/modules/islandora_spreadsheet_ingest_example/fixtures/migration_example.csv'
+  header_row: 1
+  keys:
+    'ID':
+      type: integer
   columns:
     - 'ID'
     - 'Title'
     - 'Model'
     - 'Digital_File'
+migration_tags: []
 process:
   _file_exists:
     - plugin: get
