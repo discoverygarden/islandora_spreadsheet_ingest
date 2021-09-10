@@ -87,7 +87,7 @@ class IslandoraSpreadsheetIngestBatch extends IslandoraBatchPreprocessor {
           $this->total++;
 
           if ($row[$key_map['cmodel']] == 'islandora:rootSerialCModel') {
-            // part is IslandoraSpreadsheetIngestIntermediateBatchObject extends IslandoraBatchObject
+            // 'part' is IslandoraSpreadsheetIngestIntermediateBatchObject extends IslandoraBatchObject.
             foreach ($object->getSerialParts() as $part) {
               call_user_func_array(
                 array(
@@ -210,7 +210,8 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
       $this
         ->connection
         ->repository
-        ->getNextIdentifier($this->parameters['namespace'])
+        ->getNextIdentifier($this->parameters['namespace']
+      )
     );
     parent::__construct($this->pid, $connection->repository);
   }

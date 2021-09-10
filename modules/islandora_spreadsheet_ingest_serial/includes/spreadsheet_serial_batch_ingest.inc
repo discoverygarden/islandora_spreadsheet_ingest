@@ -11,7 +11,7 @@
 class IslandoraSpreadsheetIngestSerialBatchObject extends IslandoraSpreadsheetIngestBatchObject {
 
   /**
-   * An array of created IslandoraSpreadsheetIngestIntermediateBatchObjects
+   * An array of created IslandoraSpreadsheetIngestIntermediateBatchObjects.
    *
    * @var IslandoraSpreadsheetIngestIntermediateBatchObject[]
    *   These objects can be the intermediates, stubs and pdfs.
@@ -85,21 +85,22 @@ class IslandoraSpreadsheetIngestSerialBatchObject extends IslandoraSpreadsheetIn
    */
   function setSerialParts($namespace, $object_location) {
     // TODO wrap this in try catch.
-    // get dir structure as an array.
-    // intermediate_1_Drawer_1A (Array, 1 element)
-    //     section_1_Ecumenical China Study Reports and Minutes (1976 – 1980) (Array, 1 element)
-    //     pdf_1_Ecumenical China Study Liaison Group in Germany (Array, 2 elements)
-    //       0 (String, 8 characters ) MODS.xml
-    //       1 (String, 7 characters ) OBJ.pdf
+    // Get dir structure as an array:
+    // intermediate_1_{root_serial_object_label}
+    //     section_1_{section_object_label}
+    //     pdf_1_{pdf_object_label}
+    //       MODS.xml
+    //       OBJ.pdf.
     $serial_array = $this->dirStructureToArray($object_location);
 
     $this->serialParts = [];
     $current_intermediate = NULL;
     foreach ($serial_array as $intermediate_dir => $section_or_pdf_info) {
-      // explode the keys (names) with "_" as delimiter
+      // Explode the keys (names) with "_" as delimiter to get the following
+      // array structure:
       // 0 => intermediate
       // 1 => sequence to use (1)
-      // 2 => label
+      // 2 => label.
       if (!is_array($section_or_pdf_info)) {
         continue;
       }
@@ -112,7 +113,7 @@ class IslandoraSpreadsheetIngestSerialBatchObject extends IslandoraSpreadsheetIn
         try {
           $current_intermediate = new IslandoraSpreadsheetIngestIntermediateBatchObject(
             $this->connection,
-            $this->pid, // serial root's pid.
+            $this->pid,
             $namespace,
             $sequence,
             $label,
@@ -127,11 +128,7 @@ class IslandoraSpreadsheetIngestSerialBatchObject extends IslandoraSpreadsheetIn
       }
 
       // Iterate the intermediates.
-      // explode keys (names) with "_" as delimiter.
       foreach ($section_or_pdf_info as $part => $contents) {
-        // 0 (String, 7 characters ) section
-        // 1 (String, 1 characters ) 1
-        // 2 (String, 58 characters ) Ecumenical China Study Reports and Minutes (197...
         if (!is_array($contents)) {
           continue;
         }
@@ -141,13 +138,14 @@ class IslandoraSpreadsheetIngestSerialBatchObject extends IslandoraSpreadsheetIn
         $stub_label = $stub_or_pdf_array[2];
 
         $stub_or_pdf = strtolower($stub_type);
-        // each key that has "section" creates an "intermediate stub".
+        // Each key that has "section" creates an "intermediate stub".
         if ($stub_or_pdf === 'section') {
           try {
-            // create a stub. islandora:intermediateSerialCModelStub (ISLANDORA_SPREADSHEET_INGEST_SERIAL_STUB).
+            // Create a stub islandora:intermediateSerialCModelStub
+            // (ISLANDORA_SPREADSHEET_INGEST_SERIAL_STUB).
             $this->serialParts[] = new IslandoraSpreadsheetIngestIntermediateBatchObject(
               $this->connection,
-              $current_intermediate->getPid(), // the curent intermediate will be the parent.
+              $current_intermediate->getPid(),
               $namespace,
               $stub_sequence,
               $stub_label,
@@ -163,7 +161,7 @@ class IslandoraSpreadsheetIngestSerialBatchObject extends IslandoraSpreadsheetIn
           try {
             $this->serialParts[] = new IslandoraSpreadsheetIngestIntermediateBatchObject(
               $this->connection,
-              $current_intermediate->getPid(), // the curent intermediate will be the parent.
+              $current_intermediate->getPid(),
               $namespace,
               $stub_sequence,
               $stub_label,
