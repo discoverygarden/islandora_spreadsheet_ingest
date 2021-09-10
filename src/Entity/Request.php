@@ -158,8 +158,15 @@ class Request extends ConfigEntityBase implements RequestInterface {
   public function calculateDependencies() {
     parent::calculateDependencies();
 
+    $storage = $this->entityTypeManager()->getStorage('migration');
+
+    // XXX: We expect the module to be accounted for in the "migration_group"
+    // config entity, an so need need deal with it specifically for the
+    // migration plugin.
     foreach (array_column($this->getMappings(), 'original_migration_id') as $original_migration_id) {
-      $this->addDependency('config', "migrate_plus.migration.{$original_migration_id}");
+      if ($storage->load($original_migration_id)) {
+        $this->addDependency('config', "migrate_plus.migration.{$original_migration_id}");
+      }
     }
     list($type, $id) = explode(':', $this->getOriginalMapping());
     switch ($type) {

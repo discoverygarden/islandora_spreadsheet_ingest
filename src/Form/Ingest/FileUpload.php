@@ -300,8 +300,9 @@ class FileUpload extends EntityForm {
    */
   protected function mapMappingFromMigrationGroup($id) {
     $map_migrations = function ($etm, $mpm) use ($id) {
-      $storage = $etm->getStorage('migration');
-      $names = $storage->getQuery()->condition('migration_group', $id)->execute();
+      $names = array_keys(array_filter($mpm->getDefinitions(), function (array $def) use ($id) {
+        return ($def['migration_group'] ?? '') === $id;
+      }));
 
       $migrations = $mpm->createInstances($names);
 

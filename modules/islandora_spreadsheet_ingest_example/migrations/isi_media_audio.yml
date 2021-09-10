@@ -1,12 +1,23 @@
-id: isi_media_image
-label: Create image media from rows in the csv.
+id: isi_media_audio
+label: Create audio media from rows in the csv.
 migration_group: isi
 source:
+  plugin: spreadsheet
+  source_module: migrate_spreadsheet
+  # Worksheet nonsensical but required.
+  worksheet: nada
+  track_changes: true
+  file: 'modules/contrib/islandora_spreadsheet_ingest/modules/islandora_spreadsheet_ingest_example/fixtures/migration_example.csv'
+  header_row: 1
+  keys:
+    'ID':
+      type: integer
   columns:
     - 'ID'
     - 'Title'
     - 'Model'
     - 'Digital_File'
+migration_tags: []
 process:
   _file_exists:
     - plugin: get
@@ -20,20 +31,18 @@ process:
     - plugin: static_map
       bypass: false
       map:
-        'Image': 'image'
-        'Page': 'image'
+        'Audio': 'audio'
 
   name: Title
 
-  # XXX: Somewhat counter-intuitive, but it will just ignore those file field
-  # entries with which the target bundle does not deal.
-  field_media_image/target_id:
+  field_media_audio_file:
     - plugin: get
       source: ID
     - plugin: migration_lookup
       migration: isi_file
       no_stub: true
-  field_media_image/alt: '@name'
+    - plugin: dgi_migrate.load_entity
+      entity_type: entity:file
 
   field_media_use:
     - plugin: default_value
@@ -60,7 +69,7 @@ process:
 
 destination:
   plugin: entity:media
-  default_bundle: image
+  default_bundle: audio
 migration_dependencies:
   required:
     - isi_file
