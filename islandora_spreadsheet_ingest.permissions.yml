@@ -11,5 +11,5 @@
   title: 'View requests'
 'activate islandora_spreadsheet_ingest requests':
   title: 'Activate requests'
-'deleta islandora_spreadsheet_ingest requests':
+'delete islandora_spreadsheet_ingest requests':
   title: 'Delete requests'
