@@ -4,6 +4,5 @@ package = "Islandora Tools"
 dependencies[] = islandora_spreadsheet_ingest
 dependencies[] = islandora_serial_object
 files[] = includes/spreadsheet_serial_batch_ingest.inc
-version = 7.x-dev
 core = 7.x
 php = 5.5

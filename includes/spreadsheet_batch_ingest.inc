@@ -87,7 +87,7 @@ class IslandoraSpreadsheetIngestBatch extends IslandoraBatchPreprocessor {
           $this->total++;
 
           if ($row[$key_map['cmodel']] == 'islandora:rootSerialCModel') {
-            // 'part' is IslandoraSpreadsheetIngestIntermediateBatchObject extends IslandoraBatchObject.
+            // 'part' is IslandoraSpreadsheetIngestSerialIntermediateBatchObject extends IslandoraBatchObject.
             foreach ($object->getSerialParts() as $part) {
               call_user_func_array(
                 array(
