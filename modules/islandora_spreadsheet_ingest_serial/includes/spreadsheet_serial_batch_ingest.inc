@@ -123,12 +123,14 @@ class IslandoraSpreadsheetIngestSerialBatchObject extends IslandoraSpreadsheetIn
           try {
             $current_intermediate = new IslandoraSpreadsheetIngestSerialIntermediateBatchObject(
               $this->connection,
-              $this->pid,
-              $namespace,
-              $sequence,
-              $label,
-              $type,
-              "$object_location/$intermediate_dir"
+              [
+                'parentPid' => $this->pid,
+                'namespace' => $namespace,
+                'sequence' => $sequence,
+                'label' => $label,
+                'serialType' => $type,
+                'dsDir' => "$object_location/$intermediate_dir",
+              ]
             );
             $this->serialParts[] = $current_intermediate;
           }
