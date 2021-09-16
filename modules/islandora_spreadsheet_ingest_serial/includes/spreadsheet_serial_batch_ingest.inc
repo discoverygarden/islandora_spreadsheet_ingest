@@ -225,16 +225,6 @@ class IslandoraSpreadsheetIngestSerialBatchObject extends IslandoraSpreadsheetIn
     return (array) $this->serialParts;
   }
 
-  /**
-   * Returns a count of the array of serial parts.
-   *
-   * @return int
-   *   A count of the objects in the serialParts array.
-   */
-  public function countParts() {
-    return count($this->serialParts);
-  }
-
 }
 
 /**
