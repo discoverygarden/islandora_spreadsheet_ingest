@@ -95,22 +95,11 @@ class IslandoraSpreadsheetIngestSerialBatchObject extends IslandoraSpreadsheetIn
    */
   protected function setSerialParts($namespace, $object_location) {
     try {
-      // Get dir structure as an array:
-      // - intermediate_1_{root_serial_object_label}
-      //   - section_1_{section_object_label}
-      //   - pdf_1_{pdf_object_label}
-      //     - MODS.xml
-      //     - OBJ.pdf.
       $serial_array = $this->dirStructureToArray($object_location);
 
       $this->serialParts = [];
       $current_intermediate = NULL;
       foreach ($serial_array as $intermediate_dir => $section_or_pdf_info) {
-        // Explode the keys (names) with "_" as delimiter to get the following
-        // array structure:
-        // 0 => intermediate
-        // 1 => sequence to use
-        // 2 => label.
         if (!is_array($section_or_pdf_info)) {
           continue;
         }
@@ -150,11 +139,9 @@ class IslandoraSpreadsheetIngestSerialBatchObject extends IslandoraSpreadsheetIn
           $stub_label = $stub_or_pdf_array[2];
 
           $stub_or_pdf = strtolower($stub_type);
-          // Each key that has "section" creates an "intermediate stub".
           if ($stub_or_pdf === 'section') {
             try {
-              // Create a stub islandora:intermediateSerialCModelStub
-              // (ISLANDORA_SPREADSHEET_INGEST_SERIAL_STUB).
+              // Create an intermediate stub.
               $this->serialParts[] = new IslandoraSpreadsheetIngestSerialIntermediateBatchObject(
                 $this->connection,
                 [
