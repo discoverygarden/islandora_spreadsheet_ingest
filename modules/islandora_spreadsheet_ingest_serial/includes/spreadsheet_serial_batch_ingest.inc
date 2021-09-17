@@ -19,6 +19,14 @@ class IslandoraSpreadsheetIngestSerialBatchObject extends IslandoraSpreadsheetIn
   private $serialParts;
 
   /**
+   * The number of pids needed for the serial parts.
+   *
+   * @var int
+   *   The number of pids needed for the serial parts.
+   */
+  private $pidCount;
+
+  /**
    * Construction for serial root batch objects.
    *
    * @param IslandoraTuque $connection
@@ -32,6 +40,7 @@ class IslandoraSpreadsheetIngestSerialBatchObject extends IslandoraSpreadsheetIn
   public function __construct(IslandoraTuque $connection, array $parameters) {
     parent::__construct($connection, $parameters);
     module_load_include('inc', 'islandora_spreadsheet_ingest', 'includes/utilities');
+    $this->pidCount = 0;
 
     // Get the location of the absolute path of the serial directory object.
     $object_location = islandora_spreadsheet_ingest_normalize_binary_file_path(
@@ -95,14 +104,13 @@ class IslandoraSpreadsheetIngestSerialBatchObject extends IslandoraSpreadsheetIn
    */
   protected function setSerialParts($namespace, $object_location) {
     try {
-      $serial_array = $this->dirStructureToArray($object_location);
-
       $this->serialParts = [];
       $current_intermediate = NULL;
-      // Will be more pids than needed but no need to write a bunch of code to
-      // find addition files to exclude from the count.
-      $pid_count = count($serial_array, 1);
-      $available_pids = $this->connection->repository->getNextIdentifier($namespace, FALSE, $pid_count);
+      $serial_array = $this->dirStructureToArray($object_location);
+      $available_pids = $this->connection
+        ->repository
+        ->getNextIdentifier($namespace, FALSE, $this->pidCount);
+
       foreach ($serial_array as $intermediate_dir => $section_or_pdf_info) {
         if (!is_array($section_or_pdf_info)) {
           continue;
@@ -199,7 +207,9 @@ class IslandoraSpreadsheetIngestSerialBatchObject extends IslandoraSpreadsheetIn
   /**
    * Converts a serial directory structure to an array.
    *
-   * Adapted from https://stackoverflow.com/a/4987637.
+   * Adapted from https://stackoverflow.com/a/4987637. This function will also
+   * increment this object's pid count to predict how many pids are needed for
+   * the intermediate parts.
    *
    * @param string $dir
    *   The path to the directory to recursively convert an array.
@@ -214,9 +224,11 @@ class IslandoraSpreadsheetIngestSerialBatchObject extends IslandoraSpreadsheetIn
         if ($sub != "." && $sub != "..") {
           if (is_file("$dir/$sub")) {
             $listDir[] = $sub;
+            $this->pidCount++;
           }
           elseif (is_dir("$dir/$sub")) {
             $listDir[$sub] = $this->dirStructureToArray("$dir/$sub");
+            $this->pidCount++;
           }
         }
       }
