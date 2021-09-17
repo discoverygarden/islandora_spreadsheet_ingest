@@ -99,6 +99,10 @@ class IslandoraSpreadsheetIngestSerialBatchObject extends IslandoraSpreadsheetIn
 
       $this->serialParts = [];
       $current_intermediate = NULL;
+      // Will be more pids than needed but no need to write a bunch of code to
+      // find addition files to exclude from the count.
+      $pid_count = count($serial_array, 1);
+      $available_pids = $this->connection->repository->getNextIdentifier($namespace, FALSE, $pid_count);
       foreach ($serial_array as $intermediate_dir => $section_or_pdf_info) {
         if (!is_array($section_or_pdf_info)) {
           continue;
@@ -110,6 +114,7 @@ class IslandoraSpreadsheetIngestSerialBatchObject extends IslandoraSpreadsheetIn
 
         if (strtolower($type) === 'intermediate') {
           try {
+            $intermediate_pid = array_shift($available_pids);
             $current_intermediate = new IslandoraSpreadsheetIngestSerialIntermediateBatchObject(
               $this->connection,
               [
@@ -119,6 +124,7 @@ class IslandoraSpreadsheetIngestSerialBatchObject extends IslandoraSpreadsheetIn
                 'label' => $label,
                 'serialType' => $type,
                 'dsDir' => "$object_location/$intermediate_dir",
+                'available_pid' => $intermediate_pid,
               ]
             );
             $this->serialParts[] = $current_intermediate;
@@ -141,6 +147,7 @@ class IslandoraSpreadsheetIngestSerialBatchObject extends IslandoraSpreadsheetIn
           $stub_or_pdf = strtolower($stub_type);
           if ($stub_or_pdf === 'section') {
             try {
+              $stub_pid = array_shift($available_pids);
               // Create an intermediate stub.
               $this->serialParts[] = new IslandoraSpreadsheetIngestSerialIntermediateBatchObject(
                 $this->connection,
@@ -150,6 +157,7 @@ class IslandoraSpreadsheetIngestSerialBatchObject extends IslandoraSpreadsheetIn
                   'sequence' => $stub_sequence,
                   'label' => $stub_label,
                   'serialType' => $stub_type,
+                  'available_pid' => $stub_pid,
                 ]
               );
             }
@@ -160,6 +168,7 @@ class IslandoraSpreadsheetIngestSerialBatchObject extends IslandoraSpreadsheetIn
           elseif ($stub_or_pdf === 'pdf') {
             $pdf_path = "$object_location/$intermediate_dir/$part";
             try {
+              $pdf_pid = array_shift($available_pids);
               $this->serialParts[] = new IslandoraSpreadsheetIngestSerialIntermediateBatchObject(
                 $this->connection,
                 [
@@ -169,6 +178,7 @@ class IslandoraSpreadsheetIngestSerialBatchObject extends IslandoraSpreadsheetIn
                   'label' => $stub_label,
                   'serialType' => $stub_type,
                   'dsDir' => $pdf_path,
+                  'available_pid' => $pdf_pid,
                 ]
               );
             }
@@ -255,12 +265,13 @@ class IslandoraSpreadsheetIngestSerialIntermediateBatchObject extends IslandoraB
    *   - 'serialType': The serial part type (be it pdf, intermediate or stub).
    *   - 'dsDir': A path to a directory containing datastreams to add to the
    *     object. Optional.
+   *   - 'available_pid': A pid that should be assigned to this object.
    */
   public function __construct(IslandoraTuque $connection, array $parameters) {
     $this->parentPid = $parameters['parentPid'];
     $this->namespace = $parameters['namespace'];
     $this->sequence = $parameters['sequence'];
-    $this->pid = $connection->repository->getNextIdentifier($parameters['namespace']);
+    $this->pid = $parameters['available_pid'];
     $this->connection = $connection;
     $this->dsDir = !empty($parameters['dsDir']) ? $parameters['dsDir'] : NULL;
     $this->tmpLabel = $parameters['label'];
