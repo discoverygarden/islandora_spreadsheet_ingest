@@ -3,8 +3,8 @@
     "type": "drupal-module",
     "license": "GPL-3.0-only",
     "require": {
-      "drupal/migrate_plus": "^4.2",
+      "drupal/migrate_plus": "^4.2 || ^5.1",
       "drupal/migrate_spreadsheet": "^1",
-      "discoverygarden/dgi_migrate": "^1"
+      "discoverygarden/dgi_migrate": "^1 || ^2"
     }
 }
