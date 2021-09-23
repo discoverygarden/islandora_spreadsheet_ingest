@@ -1,0 +1,11 @@
+<?php
+
+/**
+ * @file
+ * General hook implementations.
+ */
+
+const ISLANDORA_SPREADSHEET_INGEST_SERIAL_ROOT = 'islandora:rootSerialCModel';
+const ISLANDORA_SPREADSHEET_INGEST_SERIAL_INTERMEDIATE = 'islandora:intermediateCModel';
+const ISLANDORA_SPREADSHEET_INGEST_SERIAL_STUB = 'islandora:intermediateSerialCModelStub';
+const ISLANDORA_SPREADSHEET_INGEST_SERIAL_PDF = 'islandora:sp_pdf';

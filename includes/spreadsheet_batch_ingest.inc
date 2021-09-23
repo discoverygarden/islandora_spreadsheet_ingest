@@ -74,6 +74,7 @@ class IslandoraSpreadsheetIngestBatch extends IslandoraBatchPreprocessor {
       $parameters = $base_parameters + array(
         'value_map' => $row,
         'dsid' => $this->parameters['dsid'],
+        'namespace' => $this->parameters['namespace'],
       );
       $object = IslandoraSpreadsheetIngestBatchObject::create($this->connection, $parameters);
       try {
@@ -84,6 +85,20 @@ class IslandoraSpreadsheetIngestBatch extends IslandoraBatchPreprocessor {
             'addToDatabase',
           ), $object->getInitialDatabaseInfo($this->getSetId()));
           $this->total++;
+
+          if ($row[$key_map['cmodel']] == 'islandora:rootSerialCModel') {
+            // 'part' is IslandoraSpreadsheetIngestSerialIntermediateBatchObject extends IslandoraBatchObject.
+            foreach ($object->getSerialParts() as $part) {
+              call_user_func_array(
+                array(
+                  $this,
+                  'addToDatabase',
+                ),
+                array($part)
+              );
+              $this->total++;
+            }
+          }
         }
         else {
           throw new IslandoraSpreadsheetIngestBatchException('Object already exists in Islandora.');
@@ -149,6 +164,7 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
 
   protected $connection;
   protected $parameters;
+  protected $pid;
 
   /**
    * Parameters to be imploded and passed on to Saxon.
@@ -189,8 +205,15 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
   public function __construct(IslandoraTuque $connection, array $parameters) {
     $this->connection = $connection;
     $this->parameters = $parameters;
-    $id = $this->getValue('pid', empty($this->parameters['namespace']) ? NULL : $this->parameters['namespace']);
-    parent::__construct($id, $connection->repository);
+    $this->pid = $this->getValue(
+      'pid',
+      $this
+        ->connection
+        ->repository
+        ->getNextIdentifier($this->parameters['namespace']
+      )
+    );
+    parent::__construct($this->pid, $connection->repository);
   }
 
   /**
@@ -233,7 +256,18 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
     elseif (isset($child_paged[$cmodel])) {
       return new IslandoraSpreadsheetIngestPagedContentChildBatchObject($connection, $parameters);
     }
+    elseif ($cmodel == 'islandora:rootSerialCModel' && module_exists('islandora_spreadsheet_ingest_serial')) {
+      return new IslandoraSpreadsheetIngestSerialBatchObject($connection, $parameters);
+    }
     else {
+      if ($cmodel == 'islandora:rootSerialCModel') {
+        watchdog(
+          'islandora_spreadsheet_ingest',
+          t("A serial object was provided but the module islandora_spreadsheet_ingest_serial is not enabled."),
+          array(),
+          WATCHDOG_NOTICE
+        );
+      }
       return new static($connection, $parameters);
     }
   }
@@ -517,17 +551,19 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
       '/.*/',
       array('recurse' => FALSE));
     foreach ($files as $file) {
-      if (!isset($this[$file->name])) {
-        $ds = $this->constructDatastream($file->name, 'M');
-      }
-      else {
-        $ds = $this[$file->name];
-      }
-      $ds->setContentFromFile($file->uri, FALSE);
-      $ds->mimetype = file_get_mimetype($file->uri);
-      $ds->label = "{$file->name} Datastream";
-      if (!isset($this[$file->name])) {
-        $this->ingestDatastream($ds);
+      if (!is_dir($file->uri)) {
+        if (!isset($this[$file->name])) {
+          $ds = $this->constructDatastream($file->name, 'M');
+        }
+        else {
+          $ds = $this[$file->name];
+        }
+        $ds->setContentFromFile($file->uri, FALSE);
+        $ds->mimetype = file_get_mimetype($file->uri);
+        $ds->label = "{$file->name} Datastream";
+        if (!isset($this[$file->name])) {
+          $this->ingestDatastream($ds);
+        }
       }
     }
   }
@@ -609,6 +645,10 @@ class IslandoraSpreadsheetIngestBatchObject extends IslandoraBatchObject {
       }
     }
     return $info;
+  }
+
+  public function getPid() {
+    return $this->pid;
   }
 
 }
