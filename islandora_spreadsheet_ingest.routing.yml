@@ -34,7 +34,7 @@ entity.isi_request.delete_form:
     _entity_form: 'isi_request.delete'
   requirements:
     _entity_access: 'isi_request.delete'
-entity.isi_request.view:
+entity.isi_request.canonical:
   path: '/admin/content/islandora_spreadsheet_ingest/{isi_request}'
   defaults:
     _entity_view: 'isi_request.full'

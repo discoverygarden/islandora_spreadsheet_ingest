@@ -1,17 +1,17 @@
 ---
-entity.isi_request.view:
-  route_name: entity.isi_request.view
+entity.isi_request.canonical:
+  route_name: entity.isi_request.canonical
   title: View
-  base_route: entity.isi_request.view
+  base_route: entity.isi_request.canonical
 entity.isi_request.edit_form:
   route_name: entity.isi_request.edit_form
   title: Edit
-  base_route: entity.isi_request.view
+  base_route: entity.isi_request.canonical
 entity.isi_request.map_form:
   route_name: entity.isi_request.map_form
   title: Map
-  base_route: entity.isi_request.view
+  base_route: entity.isi_request.canonical
 entity.isi_request.activate_form:
   route_name: entity.isi_request.activate_form
   title: Activate
-  base_route: entity.isi_request.view
+  base_route: entity.isi_request.canonical
