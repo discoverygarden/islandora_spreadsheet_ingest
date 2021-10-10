@@ -49,11 +49,7 @@ class MigrationMapping extends FormElement {
   public static function mapMigration(array &$element, FormStateInterface $form_state) {
     $element['#migration'] = \Drupal::service('plugin.manager.migration')
       ->createInstance(
-        $element['#original_migration'],
-        \Drupal::service('entity_type.manager')
-          ->getStorage('migration')
-          ->load($element['#original_migration'])
-          ->toArray()
+        $element['#original_migration']
       );
 
     return $element;
