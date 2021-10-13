@@ -130,7 +130,7 @@ class MigrationDeriver implements MigrationDeriverInterface {
    *   property.
    */
   protected function mapDependencies(MigrationInterface $migration, $new_mg) {
-    $original_deps = $migration->get('migration_dependencies') ?? [];
+    $original_deps = $migration->getMigrationDependencies() ?? [];
     $deps = [];
 
     foreach ($original_deps as $type => $mig_deps) {
@@ -176,8 +176,11 @@ class MigrationDeriver implements MigrationDeriverInterface {
    */
   protected function sameMigrationGroup(MigrationInterface $mig, $target) {
     $loaded_target = $this->migrationPluginManager->createInstance($target);
-    $mg = $loaded_target->get('migration_group');
-    return $mg && $mg == $mig->get('migration_group');
+    // XXX: General getters were deprecated and removed in:
+    // https://www.drupal.org/node/2873795. Given how migrate_plus injects
+    // the group need to get it without it.
+    $mg = $loaded_target->migration_group;
+    return $mg && $mg == $mig->migration_group;
   }
 
   /**
@@ -271,9 +274,9 @@ class MigrationDeriver implements MigrationDeriverInterface {
             $mg_name
           )
         ),
-        'destination' => $original_migration->get('destination'),
+        'destination' => $original_migration->getDestinationConfiguration(),
         'dependencies' => array_merge_recursive(
-          $original_migration->get('dependencies'),
+          $original_migration->getMigrationDependencies(),
           [
             'enforced' => [
               $request->getConfigDependencyKey() => [
