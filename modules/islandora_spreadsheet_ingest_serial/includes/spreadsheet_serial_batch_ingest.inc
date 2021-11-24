@@ -262,6 +262,7 @@ class IslandoraSpreadsheetIngestSerialIntermediateBatchObject extends IslandoraB
   protected $dsDir;
   protected $serialType;
   private $tmpLabel;
+  private $objectInfo;
 
   /**
    * Constructor.
@@ -286,6 +287,7 @@ class IslandoraSpreadsheetIngestSerialIntermediateBatchObject extends IslandoraB
     $this->pid = $parameters['available_pid'];
     $this->connection = $connection;
     $this->dsDir = !empty($parameters['dsDir']) ? $parameters['dsDir'] : NULL;
+    $this->objectInfo = !empty($parameters['object_info']) ? $parameters['object_info'] : NULL;
     $this->tmpLabel = $parameters['label'];
     $this->serialType = strtolower($parameters['serialType']);
     parent::__construct($this->pid, $this->connection->repository);
@@ -314,6 +316,9 @@ class IslandoraSpreadsheetIngestSerialIntermediateBatchObject extends IslandoraB
   public function batchProcess() {
     try {
       $this->label = $this->tmpLabel;
+      if ($this->serialType == 'intermediate') {
+        $this->addMods();
+      }
       if (!is_null($this->dsDir)) {
         $this->addDatastreams();
       }
@@ -365,6 +370,65 @@ class IslandoraSpreadsheetIngestSerialIntermediateBatchObject extends IslandoraB
           RELS_TYPE_INT
         );
         break;
+    }
+  }
+
+  /**
+   * Set up the MODS datastream for intermediate objects.
+   *
+   * @throws IslandoraSpreadsheetIngestBatchException
+   */
+  public function addMods() {
+    module_load_include('inc', 'islandora_serial_object', 'includes/utilities');
+    $object_info = $this->objectInfo;
+    $mods_datastream = $this->constructDatastream('MODS', 'M');
+    $special_type = htmlspecialchars($object_info['type']);
+
+    $mods_string = <<<EOXML
+<?xml version="1.0" encoding="UTF-8"?>
+<mods
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns="http://www.loc.gov/mods/v3"
+  xsi:schemaLocation="http://www.loc.gov/mods/v3 http://www.loc.gov/standards/mods/v3/mods-3-4.xsd"
+    version="3.4">
+  <relatedItem type="host">
+    <part>
+      <detail type="{$special_type}">
+         <caption/>
+         <number/>
+      </detail>
+     </part>
+  </relatedItem>
+</mods>
+EOXML;
+
+    try {
+      $mods_doc = new DOMDocument();
+      $mods_doc->loadXML($mods_string);
+      $mods_xpath = new DOMXPath($mods_doc);
+      $mods_xpath->registerNamespace('mods', 'http://www.loc.gov/mods/v3');
+      $caption_xpath = islandora_serial_object_replace_xpath(ISLANDORA_SERIAL_OBJECT_MODS_CAPTION_XPATH, htmlspecialchars($object_info['type']));
+      $mods_caption_xpath = $mods_xpath->query($caption_xpath);
+      if ($mods_caption_xpath->length) {
+        $mods_caption = $mods_caption_xpath->item(0);
+        $mods_caption->nodeValue = htmlspecialchars($object_info['caption']);
+      }
+      $number_xpath = islandora_serial_object_replace_xpath(ISLANDORA_SERIAL_OBJECT_MODS_NUMBER_XPATH, htmlspecialchars($object_info['type']));
+      $mods_number_xpath = $mods_xpath->query($number_xpath);
+      if ($mods_number_xpath->length && isset($object_info['number'])) {
+        $mods_number = $mods_number_xpath->item(0);
+        $mods_number->nodeValue = htmlspecialchars($object_info['number']);
+      }
+      $mods_datastream->content = $mods_doc->saveXML();
+      $mods_datastream->label = 'MODS Record';
+      $this->ingestDatastream($mods_datastream);
+    }
+    catch (Exception $e) {
+      throw new IslandoraSpreadsheetIngestBatchException(
+        t('Failed to construct MODS datastream for intermediate object with label @label', array(
+          '@label' => $this->tmpLabel,
+        ))
+      );
     }
   }
 
