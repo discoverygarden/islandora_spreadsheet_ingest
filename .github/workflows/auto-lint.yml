@@ -12,6 +12,6 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Run CodeSniffer
-        uses: discoverygarden/CodeSniffer@v1
+        uses: nchiasson-dgi/CodeSniffer@v1.0.2
         with:
           path: ./
