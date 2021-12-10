@@ -279,6 +279,10 @@ class IslandoraSpreadsheetIngestSerialIntermediateBatchObject extends IslandoraB
    *   - 'dsDir': A path to a directory containing datastreams to add to the
    *     object. Optional.
    *   - 'available_pid': A pid that should be assigned to this object.
+   *   - 'object_info': Information for the intermediate object includes:
+   *       * caption: the label for the caption of the intermediate
+   *       * number: the value used to sequence the caption
+   *       * type: the caption type.
    */
   public function __construct(IslandoraTuque $connection, array $parameters) {
     $this->parentPid = $parameters['parentPid'];
@@ -379,10 +383,8 @@ class IslandoraSpreadsheetIngestSerialIntermediateBatchObject extends IslandoraB
    * @throws IslandoraSpreadsheetIngestBatchException
    */
   public function addMods() {
-    module_load_include('inc', 'islandora_serial_object', 'includes/utilities');
-    $object_info = $this->objectInfo;
     $mods_datastream = $this->constructDatastream('MODS', 'M');
-    $special_type = htmlspecialchars($object_info['type']);
+    $special_type = htmlspecialchars($this->objectInfo['type']);
 
     $mods_string = <<<EOXML
 <?xml version="1.0" encoding="UTF-8"?>
@@ -390,6 +392,7 @@ class IslandoraSpreadsheetIngestSerialIntermediateBatchObject extends IslandoraB
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xmlns="http://www.loc.gov/mods/v3"
   xsi:schemaLocation="http://www.loc.gov/mods/v3 http://www.loc.gov/standards/mods/v3/mods-3-4.xsd"
+  xmlns:mods="http://www.loc.gov/mods/v3"
     version="3.4">
   <relatedItem type="host">
     <part>
@@ -403,23 +406,28 @@ class IslandoraSpreadsheetIngestSerialIntermediateBatchObject extends IslandoraB
 EOXML;
 
     try {
-      $mods_doc = new DOMDocument();
-      $mods_doc->loadXML($mods_string);
-      $mods_xpath = new DOMXPath($mods_doc);
-      $mods_xpath->registerNamespace('mods', 'http://www.loc.gov/mods/v3');
-      $caption_xpath = islandora_serial_object_replace_xpath(ISLANDORA_SERIAL_OBJECT_MODS_CAPTION_XPATH, htmlspecialchars($object_info['type']));
-      $mods_caption_xpath = $mods_xpath->query($caption_xpath);
-      if ($mods_caption_xpath->length) {
-        $mods_caption = $mods_caption_xpath->item(0);
-        $mods_caption->nodeValue = htmlspecialchars($object_info['caption']);
+      if (!empty($this->objectInfo)) {
+        module_load_include('inc', 'islandora_serial_object', 'includes/utilities');
+        $mods_doc = new DOMDocument();
+        $mods_doc->loadXML($mods_string);
+        $mods_xpath = new DOMXPath($mods_doc);
+        $caption_xpath = islandora_serial_object_replace_xpath(ISLANDORA_SERIAL_OBJECT_MODS_CAPTION_XPATH, htmlspecialchars($this->objectInfo['type']));
+        $mods_caption_xpath = $mods_xpath->query($caption_xpath);
+        if ($mods_caption_xpath->length) {
+          $mods_caption = $mods_caption_xpath->item(0);
+          $mods_caption->nodeValue = htmlspecialchars($this->objectInfo['caption']);
+        }
+        $number_xpath = islandora_serial_object_replace_xpath(ISLANDORA_SERIAL_OBJECT_MODS_NUMBER_XPATH, htmlspecialchars($this->objectInfo['type']));
+        $mods_number_xpath = $mods_xpath->query($number_xpath);
+        if ($mods_number_xpath->length && isset($this->objectInfo['number'])) {
+          $mods_number = $mods_number_xpath->item(0);
+          $mods_number->nodeValue = htmlspecialchars($this->objectInfo['number']);
+        }
+        $mods_datastream->content = $mods_doc->saveXML();
       }
-      $number_xpath = islandora_serial_object_replace_xpath(ISLANDORA_SERIAL_OBJECT_MODS_NUMBER_XPATH, htmlspecialchars($object_info['type']));
-      $mods_number_xpath = $mods_xpath->query($number_xpath);
-      if ($mods_number_xpath->length && isset($object_info['number'])) {
-        $mods_number = $mods_number_xpath->item(0);
-        $mods_number->nodeValue = htmlspecialchars($object_info['number']);
+      else {
+        $mods_datastream->content = $mods_string;
       }
-      $mods_datastream->content = $mods_doc->saveXML();
       $mods_datastream->label = 'MODS Record';
       $this->ingestDatastream($mods_datastream);
     }
