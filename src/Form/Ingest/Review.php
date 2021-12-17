@@ -219,6 +219,9 @@ class Review extends EntityForm {
    */
   protected function submitProcessImmediate(array &$form, FormStateInterface $form_state) {
     // Setup batch(es) to process the group.
+    // XXX: Clear the plugin manager's cache in case new things were derived
+    // in an entity hook (example: request being activated).
+    $this->migrationPluginManager->clearCachedDefinitions();
     $migrations = $this->migrationPluginManager->createInstancesByTag($this->migrationGroupDeriver->deriveTag($this->entity));
 
     try {
