@@ -33,8 +33,8 @@ entity.isi_request.canonical:
     _entity_view: 'isi_request.full'
   requirements:
     _entity_access: 'isi_request.view'
-entity.isi_request.activate_form:
-  path: '/admin/content/islandora_spreadsheet_ingest/{isi_request}/activate'
+entity.isi_request.process_form:
+  path: '/admin/content/islandora_spreadsheet_ingest/{isi_request}/process'
   defaults:
     _title: 'Activate'
     _entity_form: 'isi_request.activate'

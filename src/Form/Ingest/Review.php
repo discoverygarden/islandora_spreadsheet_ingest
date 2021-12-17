@@ -82,12 +82,6 @@ class Review extends EntityForm {
 
     $form = parent::form($form, $form_state);
 
-    $form['active'] = [
-      '#type' => 'checkbox',
-      '#title' => $this->t('Activate'),
-      '#description' => $this->t('Activate, and derive processable migrations for this request.'),
-      '#default_value' => $this->entity->getActive(),
-    ];
     $form['enqueue'] = [
       '#type' => 'radios',
       '#title' => $this->t('Processing'),
@@ -129,9 +123,16 @@ class Review extends EntityForm {
    * Submission handler; submit the "active" value.
    */
   public function submitActivation(array &$form, FormStateInterface $form_state) {
-    $this->entity
-      ->set('active', $form_state->getValue('active'))
-      ->save();
+    // XXX: Handle a scenario where a migration entity was somehow created
+    // where active wasn't set to TRUE initially.
+    if (!$this->entity->getActive()) {
+      $this->entity
+        ->set('active', TRUE)
+        ->save();
+      // XXX: Clear the plugin manager's cache in case new things were derived
+      // in an entity hook (example: request being activated).
+      $this->migrationPluginManager->clearCachedDefinitions();
+    }
   }
 
   /**
@@ -219,9 +220,6 @@ class Review extends EntityForm {
    */
   protected function submitProcessImmediate(array &$form, FormStateInterface $form_state) {
     // Setup batch(es) to process the group.
-    // XXX: Clear the plugin manager's cache in case new things were derived
-    // in an entity hook (example: request being activated).
-    $this->migrationPluginManager->clearCachedDefinitions();
     $migrations = $this->migrationPluginManager->createInstancesByTag($this->migrationGroupDeriver->deriveTag($this->entity));
 
     try {

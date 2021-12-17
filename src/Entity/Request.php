@@ -4,6 +4,7 @@ namespace Drupal\islandora_spreadsheet_ingest\Entity;
 
 use Drupal\Core\Config\Entity\ConfigEntityBase;
 
+use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\islandora_spreadsheet_ingest\RequestInterface;
 
 /**
@@ -42,7 +43,7 @@ use Drupal\islandora_spreadsheet_ingest\RequestInterface;
  *   },
  *   links = {
  *     "canonical" = "/admin/content/islandora_spreadsheet_ingest/{isi_request}",
- *     "activate-form" = "/admin/content/islandora_spreadsheet_ingest/{isi_request}/activate",
+ *     "process-form" = "/admin/content/islandora_spreadsheet_ingest/{isi_request}/process",
  *     "edit-form" = "/admin/content/islandora_spreadsheet_ingest/{isi_request}/edit",
  *     "map-form" = "/admin/content/islandora_spreadsheet_ingest/{isi_request}/mapping",
  *     "delete-form" = "/admin/content/islandora_spreadsheet_ingest/{isi_request}/delete",
@@ -168,7 +169,7 @@ class Request extends ConfigEntityBase implements RequestInterface {
         $this->addDependency('config', "migrate_plus.migration.{$original_migration_id}");
       }
     }
-    list($type, $id) = explode(':', $this->getOriginalMapping());
+    [$type, $id] = explode(':', $this->getOriginalMapping());
     switch ($type) {
       case 'migration_group':
         $this->addDependency('config', "migrate_plus.migration_group.{$id}");

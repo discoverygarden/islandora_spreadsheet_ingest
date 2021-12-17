@@ -7,7 +7,7 @@ entity.isi_request.edit_form:
   route_name: entity.isi_request.edit_form
   title: Edit
   base_route: entity.isi_request.canonical
-entity.isi_request.activate_form:
-  route_name: entity.isi_request.activate_form
-  title: Activate
+entity.isi_request.process_form:
+  route_name: entity.isi_request.process_form
+  title: Process
   base_route: entity.isi_request.canonical
