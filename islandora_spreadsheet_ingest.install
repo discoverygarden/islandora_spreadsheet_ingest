@@ -5,8 +5,6 @@
  * Installation hooks.
  */
 
-use Drupal\Core\Config\Entity\ConfigEntityType;
-
 /**
  * Drop old, disused tables.
  */
