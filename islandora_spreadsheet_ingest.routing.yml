@@ -36,8 +36,8 @@ entity.isi_request.canonical:
 entity.isi_request.process_form:
   path: '/admin/content/islandora_spreadsheet_ingest/{isi_request}/process'
   defaults:
-    _title: 'Activate'
-    _entity_form: 'isi_request.activate'
+    _title: 'Process'
+    _entity_form: 'isi_request.process'
   requirements:
     _entity_access: 'isi_request.activate'
 islandora_spreadsheet_ingest.admin:
