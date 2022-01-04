@@ -16,11 +16,10 @@ use Drupal\islandora_spreadsheet_ingest\RequestInterface;
  *   handlers = {
  *     "list_builder" = "Drupal\islandora_spreadsheet_ingest\Controller\RequestListBuilder",
  *     "form" = {
- *       "activate" = "Drupal\islandora_spreadsheet_ingest\Form\Ingest\Review",
+ *       "process" = "Drupal\islandora_spreadsheet_ingest\Form\Ingest\Review",
  *       "add" = "Drupal\islandora_spreadsheet_ingest\Form\Ingest\FileUpload",
  *       "delete" = "Drupal\islandora_spreadsheet_ingest\Form\RequestDeleteForm",
  *       "edit" = "Drupal\islandora_spreadsheet_ingest\Form\Ingest\FileUpload",
- *       "map" = "Drupal\islandora_spreadsheet_ingest\Form\Ingest\Mapping",
  *       "view" = "Drupal\islandora_spreadsheet_ingest\Form\Ingest\Review",
  *     },
  *     "access" = "Drupal\islandora_spreadsheet_ingest\RequestAccessControlHandler",

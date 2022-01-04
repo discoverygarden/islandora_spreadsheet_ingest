@@ -54,10 +54,10 @@ class RequestListBuilder extends ConfigEntityListBuilder {
       'entity.migration.list',
       ['migration_group' => $mg_name]
     );
-    $activate_link = $entity->toLink($entity->getActive() ? $this->t('Active') : $this->t('Inactive'), 'activate-form');
-    $row['active'] = $activate_link->getUrl()->access() ?
-      $activate_link :
-      $activate_link->getText();
+    $process_link = $entity->toLink($entity->getActive() ? $this->t('Active') : $this->t('Inactive'), 'process-form');
+    $row['process'] = $process_link->getUrl()->access() ?
+      $process_link :
+      $process_link->getText();
     $row['migration_group'] = $entity->getActive() ?
        ($mg_link->getUrl()->access() ?
         $mg_link :
