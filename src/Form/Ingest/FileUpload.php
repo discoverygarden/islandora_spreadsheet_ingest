@@ -52,6 +52,20 @@ class FileUpload extends EntityForm {
   protected $systemFileConfig;
 
   /**
+   * The migration deriver.
+   *
+   * @var \Drupal\islandora_spreadsheet_ingest\MigrationDeriverInterface
+   */
+  protected $migrationDeriver;
+
+  /**
+   * The migration group deriver.
+   *
+   * @var \Drupal\islandora_spreadsheet_ingest\MigrationGroupDeriverInterface
+   */
+  protected $migrationGroupDeriver;
+
+  /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
@@ -62,6 +76,8 @@ class FileUpload extends EntityForm {
     $instance->spreadsheetService = $container->get('islandora_spreadsheet_ingest.spreadsheet_service');
     $instance->migrationPluginManager = $container->get('plugin.manager.migration');
     $instance->systemFileConfig = $container->get('config.factory')->get('system.file');
+    $instance->migrationDeriver = $container->get('islandora_spreadsheet_ingest.migration_deriver');
+    $instance->migrationGroupDeriver = $container->get('islandora_spreadsheet_ingest.migration_group_deriver');
 
     return $instance;
   }
@@ -258,7 +274,7 @@ class FileUpload extends EntityForm {
    */
   protected function builder($entity_type_id, RequestInterface $request, array &$form, FormStateInterface &$form_state) {
     // Copy/transform the info from the target.
-    list($original, $mapped) = $this->mapMappings($request->getOriginalMapping());
+    [$original, $mapped] = $this->mapMappings($request->getOriginalMapping());
     $request->set('mappings', $mapped);
     $request->set('originalMapping', $original);
     $request->set('sheet', [
@@ -267,6 +283,7 @@ class FileUpload extends EntityForm {
       'sheet' => $form_state->getValue(['sheet', 'sheet']),
     ]);
     $request->set('owner', $this->currentUser()->id());
+    $request->set('active', TRUE);
   }
 
   /**
@@ -279,7 +296,7 @@ class FileUpload extends EntityForm {
    *   The mapped mapping.
    */
   protected function mapMappings($mapping) {
-    list($type, $id) = explode(':', $mapping);
+    [$type, $id] = explode(':', $mapping);
 
     $map = [
       'isi_request' => 'getMappingFromRequest',
@@ -352,10 +369,12 @@ class FileUpload extends EntityForm {
    */
   public function save(array $form, FormStateInterface $form_state) {
     $request = $this->entity;
-
     try {
       $request->save();
-
+      if ($request->getActive()) {
+        $this->migrationGroupDeriver->create($request);
+        $this->migrationDeriver->createAll($request);
+      }
       $form_state->setRedirect('entity.isi_request.canonical', [
         'isi_request' => $request->id(),
       ]);
