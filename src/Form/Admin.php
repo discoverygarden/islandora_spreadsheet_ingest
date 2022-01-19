@@ -86,7 +86,7 @@ class Admin extends ConfigFormBase {
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $config = $this->config('islandora_spreadsheet_ingest.settings');
-    $whitelist = explode(',', $form_state->getValue('paths'));
+    $whitelist = array_filter(explode(',', $form_state->getValue('paths')));
     $config->set('binary_directory_whitelist', $whitelist);
     $config->set('schemes', array_filter($form_state->getValue('schemes')));
     $config->save();
