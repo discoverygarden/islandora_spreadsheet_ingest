@@ -79,7 +79,7 @@ process:
     - plugin: migration_lookup
       migration: isi_node
 
-  _member_of_existing_entity:
+  _member_of_existing_entity_title:
     - plugin: skip_on_empty
       method: process
       source: 'Member_of_existing_entity'
@@ -89,14 +89,36 @@ process:
       value_key: title
       entity_type: node
 
+  _member_of_existing_entity_title_nid:
+    - plugin: skip_on_empty
+      method: process
+      source: 'Member_of_existing_entity_id'
+    - plugin: entity_exists
+      entity_type: node
+    - plugin: skip_on_empty
+      method: process
+
   field_member_of:
     - plugin: get
       source:
         - '@_member_of_csv_id'
-        - '@_member_of_existing_entity'
+        - '@_member_of_existing_entity_title'
+        - '@_member_of_existing_entity_title_nid'
     - plugin: skip_on_empty
       method: process
     - plugin: get
+
+  field_resource_type:
+    - plugin: skip_on_empty
+      source: resource_type
+      method: row
+      message: "Missing 'resource_type'."
+    - plugin: entity_lookup
+      bundle: resource_types
+      bundle_key: vid
+      entity_type: taxonomy_term
+      value_key: name
+      ignore_case: true
 
 destination:
   plugin: entity:node

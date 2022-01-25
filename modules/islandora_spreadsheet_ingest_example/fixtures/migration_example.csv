@@ -1,9 +1,9 @@
-ID,Member_of,Member_of_existing_entity,Model,Digital_File,Title,Description,Mime,Date_created
-1,,,Collection,,Collection 1,desc 1,,
-2,1,,Image,public://isifixturefiles/fixtures/images/dg1.png,title 1,desc 1,image/png,
-3,1,,Image,public://isifixturefiles/fixtures/images/dg2.png,title 2,desc 2,image/png,4/18/2008
-4,1,,Image,public://isifixturefiles/fixtures/images/dg3.png,title 3,desc 3,image/png,4/18/2008
-5,1,,Audio,public://isifixturefiles/fixtures/audio/tailtoddle_lo.mp3,title 4,desc 4,audio/mpeg,
-6,1,,Video,public://isifixturefiles/fixtures/video/video_countdown.mp4,title 5,desc 5,video/mp4,4/18/2008
-7,1,,Digital Document,public://isifixturefiles/fixtures/docs/embeded_text.pdf,title 6,desc 6,application/pdf,4/18/2008
-8,1,,Binary,public://isifixturefiles/fixtures/binary/bin.bin,title 7,desc 7,application/octet-stream,4/18/2008
+ID,Member_of,Member_of_existing_entity,Member_of_existing_entity_id,Model,Digital_File,Title,Description,Mime,Date_created,resource_type
+1,,,,Collection,,Collection 1,desc 1,,,Collection
+2,1,,,Image,public://isifixturefiles/fixtures/images/dg1.png,title 1,desc 1,image/png,,Still Image
+3,1,,,Image,public://isifixturefiles/fixtures/images/dg2.png,title 2,desc 2,image/png,4/18/2008,Still Image
+4,1,,,Image,public://isifixturefiles/fixtures/images/dg3.png,title 3,desc 3,image/png,4/18/2008,Still Image
+5,1,,,Audio,public://isifixturefiles/fixtures/audio/tailtoddle_lo.mp3,title 4,desc 4,audio/mpeg,,Sound
+6,1,,,Video,public://isifixturefiles/fixtures/video/video_countdown.mp4,title 5,desc 5,video/mp4,4/18/2008,Moving Image
+7,1,,,Digital Document,public://isifixturefiles/fixtures/docs/embeded_text.pdf,title 6,desc 6,application/pdf,4/18/2008,Text
+8,1,,,Binary,public://isifixturefiles/fixtures/binary/bin.bin,title 7,desc 7,application/octet-stream,4/18/2008,Dataset
