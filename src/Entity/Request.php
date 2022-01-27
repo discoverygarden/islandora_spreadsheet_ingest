@@ -3,8 +3,6 @@
 namespace Drupal\islandora_spreadsheet_ingest\Entity;
 
 use Drupal\Core\Config\Entity\ConfigEntityBase;
-
-use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\islandora_spreadsheet_ingest\RequestInterface;
 
 /**
