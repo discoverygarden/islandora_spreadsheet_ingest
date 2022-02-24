@@ -97,7 +97,7 @@ class MigrationGroupDeriver implements MigrationGroupDeriverInterface {
     $mg = $this->migrationGroupStorage->load($name);
 
     if (!$mg) {
-      list(, $original) = explode(':', $request->getOriginalMapping());
+      [, $original] = explode(':', $request->getOriginalMapping());
       $original_mg = $this->migrationGroupStorage->load($original);
       if ($original_mg) {
         $mg = $original_mg->createDuplicate()

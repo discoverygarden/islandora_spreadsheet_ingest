@@ -76,7 +76,7 @@ class MappingSource extends FormElement {
       return;
     }
     try {
-      list(, $prop) = static::getSelectedProperty($element, $form_state);
+      [, $prop] = static::getSelectedProperty($element, $form_state);
       $form_state->setValueForElement($element, $prop);
     }
     catch (\Exception $e) {
@@ -127,7 +127,7 @@ class MappingSource extends FormElement {
       // Get the property for the thing that was selected, do its form
       // handling, and return it.
       try {
-        list($name, $prop) = static::getSelectedProperty($element, $form_state);
+        [$name, $prop] = static::getSelectedProperty($element, $form_state);
         if ($prop instanceof ConfiguredSourceInterface) {
           $prop->submitFormValues($form_state->getValue(array_merge(
             $element['#parents'],
