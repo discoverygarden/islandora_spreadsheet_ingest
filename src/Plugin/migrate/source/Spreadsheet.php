@@ -19,11 +19,13 @@ use Drupal\migrate_spreadsheet\SpreadsheetIteratorInterface;
  */
 class Spreadsheet extends UpstreamSpreadsheet {
 
+  protected WeakReference $weakIterator = NULL;
+
   /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition, MigrationInterface $migration = NULL): self {
-    return new static(
+    $instance = new static(
       $configuration,
       $plugin_id,
       $plugin_definition,
@@ -31,6 +33,11 @@ class Spreadsheet extends UpstreamSpreadsheet {
       $container->get('file_system'),
       NULL
     );
+
+    // Create an empty WeakReference thing for consistent handling later.
+    $instance->weakIterator = \WeakReference::create(NULL);
+
+    return $instance;
   }
 
   /**
@@ -51,7 +58,7 @@ class Spreadsheet extends UpstreamSpreadsheet {
   /**
    * {@inheritdoc}
    */
-  public function initializeIterator(): SpreadsheetIteratorInterface {
+  protected function initializeIterator(): SpreadsheetIteratorInterface {
     $configuration = $this->getConfiguration();
     $configuration['worksheet'] = $this->loadWorksheet();
     $configuration['keys'] = array_keys($configuration['keys']);
@@ -61,6 +68,20 @@ class Spreadsheet extends UpstreamSpreadsheet {
 
     $iterator = new SpreadsheetIterator();
     $iterator->setConfiguration($configuration);
+    return $iterator;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function getIterator() : \Traversable {
+    $iterator = $this->weakIterator->get();
+
+    if ($iterator === NULL) {
+      $iterator = $this->initializeIterator();
+      $this->weakIterator = \WeakReference::create($iterator);
+    }
+
     return $iterator;
   }
 
