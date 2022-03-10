@@ -14,7 +14,6 @@ This module requires the following modules/libraries:
 
 * [migrate_plus](https://www.drupal.org/project/migrate_plus)
 * [dgi_migrate](https://github.com/discoverygarden/dgi_migrate)
-* [migrate_spreadsheet](https://www.drupal.org/project/migrate_spreadsheet)
 * [islandora](https://github.com/Islandora/islandora/tree/8.x-1.x)
 * [Spout](https://github.com/box/spout)
 
