@@ -37,7 +37,9 @@ The ingest proper can be kicked off in various ways from the given request's
 "Process" task page. Most users should submit as "Deferred", which submits the
 request to be processed in by a daemon process. "Immediate" runs as a batch
 directly in the browser. "Manual" is intended more for developer use (or those
-with CLI access), to run the requests by other means.
+with CLI access), to run the requests by other means (it is not necessary to
+explicitly submit the request for processing in "Manual" mode; it is the
+default state when a request is added to the system).
 
 ### Building migration templates
 
