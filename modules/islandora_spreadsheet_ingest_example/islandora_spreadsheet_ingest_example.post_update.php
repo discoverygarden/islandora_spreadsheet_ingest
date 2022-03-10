@@ -60,8 +60,10 @@ function islandora_spreadsheet_ingest_example_post_update_move_group_to_spout() 
     $entity->set('shared_configuration', NestedArray::mergeDeep(
       $entity->get('shared_configuration'),
       [
-        'plugin' => 'isi_spreadsheet',
-        'source_module' => 'islandora_spreadsheet_ingest',
+        'source' => [
+          'plugin' => 'isi_spreadsheet',
+          'source_module' => 'islandora_spreadsheet_ingest',
+        ],
       ]
     ))
       ->save();
