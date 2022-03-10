@@ -12,30 +12,32 @@ tooling.
 
 This module requires the following modules/libraries:
 
-* [migrate_plus](https://www.drupal.org/project/migrate_plus)
 * [dgi_migrate](https://github.com/discoverygarden/dgi_migrate)
 * [islandora](https://github.com/Islandora/islandora/tree/8.x-1.x)
+* [migrate_plus](https://www.drupal.org/project/migrate_plus)
 * [Spout](https://github.com/box/spout)
 
 ## Usage
 
-Migration templates can be uploaded at `admin/structure/migrate_templates`.
-Migrate source CSVs can be uploaded and associated with templates at
-`admin/structure/islandora_spreadsheet_ingest`.
+Template migrations can be implemented in either modules or config. An example
+migration is implemented in the
+[`islandora_spreadsheet_ingest` submodule](modules/islandora_spreadsheet_ingest_example).
 
-An example migration that can be used as a starting point is part of this
-module's config.
+To make use of templates to ingest, you can go to your site's
+`admin/content/islandora_spreadsheet_ingest` endpoint and hitting the "Add
+request" endpoint, and:
 
-Use short migraiton names as generated names over 63 bytes will be truncated.
-A tag `isimd` is added to all derived migrations so they can be operated on
-with a single command.
+1. Naming your request.
+2. Uploading your CSV/Spreadsheet file
+3. Entering the name of the worksheet (if applicable)
+4. Selecting the template to use; and,
+5. Submitting the form.
 
-Automatic scheduling of ingests is recommended:
-`sudo -u www-data drush migrate:batch-import -u 1 -v --uri=http://localhost --execute-dependencies --tag=isimd`
-
-A helper command for generating CSV headers and partial migration template yaml
-for a given bundle is provided.
-`islandora_spreadsheet_ingest:generate-bundle-info`
+The ingest proper can be kicked off in various ways from the given request's
+"Process" task page. Most users should submit as "Deferred", which submits the
+request to be processed in by a daemon process. "Immediate" runs as a batch
+directly in the browser. "Manual" is intended more for developer use (or those
+with CLI access), to run the requests by other means.
 
 ### Building migration templates
 
