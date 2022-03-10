@@ -7,6 +7,7 @@ use Drupal\migrate_spreadsheet\Plugin\migrate\source\Spreadsheet as UpstreamSpre
 use Drupal\migrate_spreadsheet\SpreadsheetIterator;
 use Drupal\migrate_spreadsheet\SpreadsheetIteratorInterface;
 
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Provides a source plugin that migrate from spreadsheet files.
@@ -19,25 +20,20 @@ use Drupal\migrate_spreadsheet\SpreadsheetIteratorInterface;
  */
 class Spreadsheet extends UpstreamSpreadsheet {
 
-  protected WeakReference $weakIterator = NULL;
+  protected ?\WeakReference $weakIterator = NULL;
 
   /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition, MigrationInterface $migration = NULL): self {
-    $instance = new static(
+    return new static(
       $configuration,
       $plugin_id,
       $plugin_definition,
       $migration,
       $container->get('file_system'),
-      NULL
+      new SpreadsheetIterator()
     );
-
-    // Create an empty WeakReference thing for consistent handling later.
-    $instance->weakIterator = \WeakReference::create(NULL);
-
-    return $instance;
   }
 
   /**
@@ -58,7 +54,7 @@ class Spreadsheet extends UpstreamSpreadsheet {
   /**
    * {@inheritdoc}
    */
-  protected function initializeIterator(): SpreadsheetIteratorInterface {
+  public function initializeIterator(): SpreadsheetIteratorInterface {
     $configuration = $this->getConfiguration();
     $configuration['worksheet'] = $this->loadWorksheet();
     $configuration['keys'] = array_keys($configuration['keys']);
@@ -75,9 +71,7 @@ class Spreadsheet extends UpstreamSpreadsheet {
    * {@inheritdoc}
    */
   protected function getIterator() : \Traversable {
-    $iterator = $this->weakIterator->get();
-
-    if ($iterator === NULL) {
+    if ($this->weakIterator === NULL || ($iterator = $this->weakIterator->get()) === NULL) {
       $iterator = $this->initializeIterator();
       $this->weakIterator = \WeakReference::create($iterator);
     }

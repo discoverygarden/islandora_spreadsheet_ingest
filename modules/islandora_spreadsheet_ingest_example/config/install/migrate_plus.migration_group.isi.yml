@@ -4,7 +4,8 @@ description: Mapping from CSV to I8.
 source_type: CSV
 shared_configuration:
   source:
-    plugin: spreadsheet
+    plugin: isi_spreadsheet
+    source_module: islandora_spreadsheet_ingest
     # Worksheet nonsensical but required.
     worksheet: nada
     track_changes: true
