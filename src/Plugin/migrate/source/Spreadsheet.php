@@ -2,19 +2,16 @@
 
 namespace Drupal\islandora_spreadsheet_ingest\Plugin\migrate\source;
 
-use Drupal\migrate\Plugin\MigrationInterface;
 use Drupal\migrate\Plugin\migrate\source\SourcePluginBase;
 
 use Drupal\Component\Plugin\ConfigurableInterface;
 use Drupal\Component\Utility\NestedArray;
-use Drupal\Core\File\FileSystemInterface;
-use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 
 use Box\Spout\Common\Entity\Cell;
 use Box\Spout\Reader\Common\Creator\ReaderEntityFactory;
 use Box\Spout\Reader\CSV\Reader as CSVReader;
 use Box\Spout\Reader\ReaderInterface;
-use Symfony\Component\DependencyInjection\ContainerInterface;
+use Box\Spout\Reader\SheetInterface;
 
 /**
  * Provides a source plugin that migrates from spreadsheet files.
@@ -23,16 +20,25 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  *   id = "isi_spreadsheet",
  * )
  */
-class Spreadsheet extends SourcePluginBase implements ConfigurableInterface, ContainerFactoryPluginInterface {
+class Spreadsheet extends SourcePluginBase implements ConfigurableInterface {
 
-  protected FileSystemInterface $fileSystem;
+  /**
+   * The reader for the spreadsheet when open.
+   *
+   * @var \Box\Spout\Reader\ReaderInterface
+   */
+  protected ?ReaderInterface $reader = NULL;
 
-  public function __construct(array $configuration, $plugin_id, $plugin_def, MigrationInterface $migration, FileSystemInterface $file_system) {
-    parent::__construct($configuration, $plugin_id, $plugin_def, $migration);
+  /**
+   * Memoized column names in the spreadsheet.
+   *
+   * @var string[]
+   */
+  protected ?array $columns = NULL;
 
-    $this->fileSystem = $file_system;
-  }
-
+  /**
+   * Destructor.
+   */
   public function __destruct() {
     $this->closeReader();
   }
@@ -45,20 +51,6 @@ class Spreadsheet extends SourcePluginBase implements ConfigurableInterface, Con
     // use of the generator business.
     unset($this->iterator);
     $this->next();
-  }
-
-
-  /**
-   * {@inheritdoc}
-   */
-  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition, MigrationInterface $migration = NULL): self {
-    return new static(
-      $configuration,
-      $plugin_id,
-      $plugin_definition,
-      $migration,
-      $container->get('file_system')
-    );
   }
 
   /**
@@ -120,8 +112,6 @@ class Spreadsheet extends SourcePluginBase implements ConfigurableInterface, Con
     return $config['keys'];
   }
 
-  protected ?array $columns = NULL;
-
   /**
    * {@inheritdoc}
    */
@@ -141,8 +131,12 @@ class Spreadsheet extends SourcePluginBase implements ConfigurableInterface, Con
     return $this->columns;
   }
 
-  protected ?ReaderInterface $reader = NULL;
-
+  /**
+   * Helper; open the spreadsheet reader.
+   *
+   * @return \Box\Spout\Reader\ReaderInterface
+   *   The opened reader.
+   */
   protected function openReader() {
     if ($this->reader === NULL) {
       $path = $this->getConfiguration()['file'];
@@ -154,6 +148,9 @@ class Spreadsheet extends SourcePluginBase implements ConfigurableInterface, Con
     return $this->reader;
   }
 
+  /**
+   * Helper; close the spreadsheet reader.
+   */
   protected function closeReader() {
     if ($this->reader !== NULL) {
       $this->reader->close();
@@ -161,11 +158,29 @@ class Spreadsheet extends SourcePluginBase implements ConfigurableInterface, Con
     }
   }
 
+  /**
+   * Helper; map a cell to its value.
+   *
+   * @param \Box\Spout\Common\Entity\Cell $cell
+   *   The cell of which to get the value.
+   *
+   * @return mixed
+   *   The value of the cell.
+   */
   protected static function toValues(Cell $cell) {
     return $cell->getValue();
   }
 
-  protected function getWorksheet() {
+  /**
+   * Helper; fetch the target worksheet.
+   *
+   * @return \Box\Spout\Reader\SheetInterface
+   *   The target sheet.
+   *
+   * @throws \LogicException
+   *   If the sheet could not be found.
+   */
+  protected function getWorksheet() : SheetInterface {
     $reader = $this->openReader();
 
     if ($reader instanceof CSVReader) {
@@ -185,7 +200,18 @@ class Spreadsheet extends SourcePluginBase implements ConfigurableInterface, Con
     throw new \LogicException("Failed to find worksheet of the name '$name'.");
   }
 
-  protected function getHeaders() {
+  /**
+   * Helper; get the header row for the given sheet.
+   *
+   * @return string[]
+   *   The array of headers.
+   *
+   * @throws \LogicException
+   *   If the header row could not be found... either trying to do something
+   *   with an empty sheet (or not enough rows), or "header_row" being
+   *   negative?
+   */
+  protected function getHeaders() : array {
     foreach ($this->getWorksheet()->getRowIterator() as $index => $row) {
       if ($index === $this->getConfiguration()['header_row']) {
         return array_map([static::class, 'toValues'], $row->getCells());
