@@ -3,15 +3,19 @@
 namespace Drupal\islandora_spreadsheet_ingest\Plugin\migrate\source;
 
 use Drupal\migrate\Plugin\migrate\source\SourcePluginBase;
+use Drupal\migrate\Plugin\MigrationInterface;
 
 use Drupal\Component\Plugin\ConfigurableInterface;
 use Drupal\Component\Utility\NestedArray;
+use Drupal\Core\File\FileSystemInterface;
+use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 
 use Box\Spout\Common\Entity\Cell;
 use Box\Spout\Reader\Common\Creator\ReaderEntityFactory;
 use Box\Spout\Reader\CSV\Reader as CSVReader;
 use Box\Spout\Reader\ReaderInterface;
 use Box\Spout\Reader\SheetInterface;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Provides a source plugin that migrates from spreadsheet files.
@@ -20,7 +24,7 @@ use Box\Spout\Reader\SheetInterface;
  *   id = "isi_spreadsheet",
  * )
  */
-class Spreadsheet extends SourcePluginBase implements ConfigurableInterface {
+class Spreadsheet extends SourcePluginBase implements ConfigurableInterface, ContainerFactoryPluginInterface {
 
   /**
    * The reader for the spreadsheet when open.
@@ -35,6 +39,36 @@ class Spreadsheet extends SourcePluginBase implements ConfigurableInterface {
    * @var string[]
    */
   protected ?array $columns = NULL;
+
+  /**
+   * Filesystem service.
+   *
+   * @var
+   */
+  protected FileSystemInterface $fileSystem;
+
+  /**
+   * Constructor.
+   */
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, MigrationInterface $migration, FileSystemInterface $file_system) {
+    parent::__construct($configuration, $plugin_id, $plugin_definition, $migration);
+
+    $this->fileSystem = $file_system;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition, MigrationInterface $migration = NULL): self {
+    return new static(
+      $configuration,
+      $plugin_id,
+      $plugin_definition,
+      $migration,
+      $container->get('file_system')
+    );
+  }
+
 
   /**
    * Destructor.
@@ -140,8 +174,9 @@ class Spreadsheet extends SourcePluginBase implements ConfigurableInterface {
   protected function openReader() {
     if ($this->reader === NULL) {
       $path = $this->getConfiguration()['file'];
-      $reader = ReaderEntityFactory::createReaderFromFile($path);
-      $reader->open($path);
+      $realpath = $this->fileSystem->realpath($path);
+      $reader = ReaderEntityFactory::createReaderFromFile($realpath);
+      $reader->open($realpath);
       $this->reader = $reader;
     }
 
@@ -225,13 +260,25 @@ class Spreadsheet extends SourcePluginBase implements ConfigurableInterface {
    * {@inheritdoc}
    */
   public function initializeIterator(): \Traversable {
+    $row_index_column = $this->getConfiguration()['row_index_column'];
+    $field_count_less_index = count($this->fields()) - ($row_index_column ? 1 : 0);
+
     foreach ($this->getWorksheet()->getRowIterator() as $index => $row) {
       if ($index <= $this->getConfiguration()['header_row']) {
         continue;
       }
 
       $cells = array_map([static::class, 'toValues'], $row->getCells());
-      if ($this->getConfiguration()['row_index_column']) {
+
+      $cell_count = count($cells);
+      if ($cell_count > $field_count_less_index) {
+        $cells = array_slice($cells, 0, $field_count_less_index);
+      }
+      elseif ($cell_count < $field_count_less_index) {
+        $cells = array_pad($cells, $field_count_less_index, '');
+      }
+
+      if ($row_index_column) {
         $cells[] = $index;
       }
 
