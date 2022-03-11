@@ -43,7 +43,7 @@ class Spreadsheet extends SourcePluginBase implements ConfigurableInterface, Con
   /**
    * Filesystem service.
    *
-   * @var
+   * @var \Drupal\Core\File\FileSystemInterface
    */
   protected FileSystemInterface $fileSystem;
 
@@ -68,7 +68,6 @@ class Spreadsheet extends SourcePluginBase implements ConfigurableInterface, Con
       $container->get('file_system')
     );
   }
-
 
   /**
    * Destructor.
