@@ -211,7 +211,7 @@ class Spreadsheet extends SourcePluginBase implements ConfigurableInterface, Con
    * @return \Box\Spout\Reader\SheetInterface
    *   The target sheet.
    *
-   * @throws \LogicException
+   * @throws \OutOfBoundsException
    *   If the sheet could not be found.
    */
   protected function getWorksheet() : SheetInterface {
@@ -231,7 +231,7 @@ class Spreadsheet extends SourcePluginBase implements ConfigurableInterface, Con
       }
     }
 
-    throw new \LogicException("Failed to find worksheet of the name '$name'.");
+    throw new \OutOfBoundsException("Failed to find worksheet of the name '$name'.");
   }
 
   /**
@@ -240,7 +240,7 @@ class Spreadsheet extends SourcePluginBase implements ConfigurableInterface, Con
    * @return string[]
    *   The array of headers.
    *
-   * @throws \LogicException
+   * @throws \RangeException
    *   If the header row could not be found... either trying to do something
    *   with an empty sheet (or not enough rows), or "header_row" being
    *   negative?
@@ -252,7 +252,7 @@ class Spreadsheet extends SourcePluginBase implements ConfigurableInterface, Con
       }
     }
 
-    throw new \LogicException("Failed to find header row.");
+    throw new \RangeException("Failed to find header row.");
   }
 
   /**
