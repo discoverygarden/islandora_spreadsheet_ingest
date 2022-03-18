@@ -20,6 +20,43 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 /**
  * Provides a source plugin that migrates from spreadsheet files.
  *
+ * Largely drop-in replacement for migrate_spreadsheet's source; with many of
+ * the same available configuration keys:
+ * - file: The path to the source file. The path can be either relative to
+ *   Drupal root but it can be a also an absolute reference such as a stream
+ *   wrapper; however, a .ods or .xlsx _must_ be able to be realpath'd to a
+ *   real location, at present.
+ * - worksheet: The name of the worksheet to read from.
+ * - header_row: The row where the header is placed. If the table header is on
+ *   the first row, this configuration should be 1. The header cell values will
+ *   act as column names. The value of 2 means that the table header is on the
+ *   second row.
+ * - columns: The list of columns to be returned. Is basically a list of table
+ *   header cell values, if a header has been defined with `header_row`. If
+ *   there's no table header (i.e. `header_row` is missing), it should contain a
+ *   list/sequence of column letters (A, B, C, ...). If this configuration is
+ *   missed, all columns that contain data will be be returned (not
+ *   recommended).
+ * - row_index_column: The name to be given to the column containing the row
+ *   index. If this setting is specified, the source will return also a pseudo-
+ *   column, with this name, containing the row index. The value here can/should
+ *   be used later in `keys` list to make this column a primary key column. This
+ *   name doesn't need to be appended to the `columns` list, it will be added
+ *   automatically.
+ * - keys: The primary key as a list of keys. It's a list of source columns that
+ *   are composing the primary key. The list is keyed by column name and has the
+ *   field storage definition as value. If the table have a header (i.e.
+ *   `header_row` is set) the keys will be set as the name of header cells
+ *   acting as primary index. Otherwise the column letters (A, B, C, ...) can be
+ *   used. If no keys are defined here, the current row position will be
+ *   returned as primary key, but in this case, `row_index_column` must have a
+ *   value.
+ *
+ * NOTE: The one unimplemented value, which is `origin`... instead, we expect
+ * that the data proper starts on the row following the header (or on the very
+ * first line, if there's no applicable `header_row` (and `columns` is being
+ * used to provide the mapping.
+ *
  * @MigrateSource(
  *   id = "isi_spreadsheet",
  * )
