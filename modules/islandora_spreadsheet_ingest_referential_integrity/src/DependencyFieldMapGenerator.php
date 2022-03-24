@@ -49,7 +49,7 @@ class DependencyFieldMapGenerator implements DependencyFieldMapGeneratorInterfac
    *
    * @var array
    */
-  protected array $referentialFieldMap = NULL;
+  protected ?array $referentialFieldMap = NULL;
 
   /**
    * Constructor.
@@ -98,7 +98,7 @@ class DependencyFieldMapGenerator implements DependencyFieldMapGeneratorInterfac
     if ($this->referentialFieldMap === NULL) {
       $referential_field_map = $this->inner->getReferentialFieldMap();
 
-      foreach ($this->generateReferenceFields() as $plugin_id => $generator) {
+      foreach ($this->generateReferenceFields() as $generator) {
         $referential_field_map = NestedArray::mergeDeep(
           $referential_field_map,
           $generator->getReferentialFieldMap()
