@@ -1,0 +1,10 @@
+---
+services:
+  islandora_spreadsheet_ingest_referential_integrity.field_map:
+    class: \Drupal\islandora_spreadsheet_ingest_referential_integrity\DependencyFieldMapGenerator
+    decorates: entity_reference_integrity.field_map
+    arguments:
+      - '@islandora_spreadsheet_ingest_referential_integrity.field_map.inner'
+      - '@plugin.manager.field.field_type'
+      - '@entity_field.manager'
+      - '@entity_type.manager'

@@ -1,0 +1,7 @@
+name: 'ISI Referential Integrity'
+description: "More referential integrity."
+type: module
+package: DGI
+core_version_requirement: ^8 || ^9
+dependencies:
+  - entity_reference_integrity:entity_reference_integrity
