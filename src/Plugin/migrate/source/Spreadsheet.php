@@ -230,19 +230,6 @@ class Spreadsheet extends SourcePluginBase implements ConfigurableInterface, Con
   }
 
   /**
-   * Helper; map a cell to its value.
-   *
-   * @param \Box\Spout\Common\Entity\Cell $cell
-   *   The cell of which to get the value.
-   *
-   * @return mixed
-   *   The value of the cell.
-   */
-  protected static function toValues(Cell $cell) {
-    return $cell->getValue();
-  }
-
-  /**
    * Helper; fetch the target worksheet.
    *
    * @return \Box\Spout\Reader\SheetInterface
@@ -285,7 +272,7 @@ class Spreadsheet extends SourcePluginBase implements ConfigurableInterface, Con
   protected function getHeaders() : array {
     foreach ($this->getWorksheet()->getRowIterator() as $index => $row) {
       if ($index === $this->getConfiguration()['header_row']) {
-        return array_map([static::class, 'toValues'], $row->getCells());
+        return $row->toArray();
       }
     }
 
@@ -304,7 +291,7 @@ class Spreadsheet extends SourcePluginBase implements ConfigurableInterface, Con
         continue;
       }
 
-      $cells = array_map([static::class, 'toValues'], $row->getCells());
+      $cells = $row->toArray();
 
       $cell_count = count($cells);
       if ($cell_count > $field_count_less_index) {
