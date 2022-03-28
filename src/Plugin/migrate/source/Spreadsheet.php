@@ -10,7 +10,6 @@ use Drupal\Component\Utility\NestedArray;
 use Drupal\Core\File\FileSystemInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 
-use Box\Spout\Common\Entity\Cell;
 use Box\Spout\Reader\Common\Creator\ReaderEntityFactory;
 use Box\Spout\Reader\CSV\Reader as CSVReader;
 use Box\Spout\Reader\ReaderInterface;
