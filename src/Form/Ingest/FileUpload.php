@@ -203,7 +203,7 @@ class FileUpload extends EntityForm {
         '#default_value' => $form_state->getValue(['sheet', 'file', 'fids'], $entity->getSheet()['file'] ?? NULL),
         '#required' => TRUE,
         '#upload_validators' => [
-          'file_validate_extensions' => ['xlsx xlsm xltx xltm xls xlt ods ots slk xml gnumeric htm html csv'],
+          'file_validate_extensions' => ['xlsx ods csv'],
         ],
         '#upload_location' => "{$this->systemFileConfig->get('default_scheme')}://",
         'sheets' => [
@@ -250,7 +250,6 @@ class FileUpload extends EntityForm {
             in_array('isi_template', $config['migration_tags']) &&
             !in_array('isi_derived_migration', $config['migration_tags']);
         })),
-        "{$this->t('Ingest Requests')}" => iterator_to_array($map_to_labels($this->entityTypeManager, 'isi_request')),
       ]),
     ];
     $form['#entity_builders'] = [
@@ -299,7 +298,6 @@ class FileUpload extends EntityForm {
     [$type, $id] = explode(':', $mapping);
 
     $map = [
-      'isi_request' => 'getMappingFromRequest',
       'migration_group' => 'mapMappingFromMigrationGroup',
     ];
 
@@ -348,20 +346,6 @@ class FileUpload extends EntityForm {
         $this->migrationPluginManager
       )),
     ];
-  }
-
-  /**
-   * Copy the mapping from another request.
-   *
-   * @param string $id
-   *   The other request from which to copy the mapping.
-   *
-   * @return array
-   *   The mapping to assign.
-   */
-  protected function getMappingFromRequest($id) {
-    $original = $this->entityTypeManager->getStorage('isi_request')->load($id);
-    return [$original->getOriginalMapping(), $original->getMappings()];
   }
 
   /**

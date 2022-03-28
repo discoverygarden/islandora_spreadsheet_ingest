@@ -2,8 +2,8 @@ id: isi_media_video
 label: Create video media from rows in the csv.
 migration_group: isi
 source:
-  plugin: spreadsheet
-  source_module: migrate_spreadsheet
+  plugin: isi_spreadsheet
+  source_module: islandora_spreadsheet_ingest
   # Worksheet nonsensical but required.
   worksheet: nada
   track_changes: true
