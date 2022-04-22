@@ -2,6 +2,7 @@
 
 namespace Drupal\islandora_spreadsheet_ingest;
 
+use Drupal\Component\Utility\NestedArray;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Cache\CacheTagsInvalidatorInterface;
 use Psr\Log\LoggerInterface;
@@ -183,6 +184,18 @@ class MigrationDeriver implements MigrationDeriverInterface {
     return $mg && $mg == $mig->migration_group;
   }
 
+  const SUBPROCESSING_PLUGINS = [
+    'sub_process' => [
+      'child_steps' => ['process'],
+    ],
+    'dgi_migrate.sub_process' => [
+      'child_steps' => ['values'],
+    ],
+    'dgi_paragraph_generate' => [
+      'child_steps' => ['values'],
+    ],
+  ];
+
   /**
    * Generate steps with referenced migration names mapped.
    *
@@ -217,6 +230,16 @@ class MigrationDeriver implements MigrationDeriverInterface {
             $step['migration'] = $this->deriveMigrationName($mg_name, $step['migration']);
           }
         }
+
+        if (isset($step['stub_id']) && is_string($step['stub_id']) && $this->sameMigrationGroup($mig, $step['stub_id'])) {
+          $step['stub_id'] = $this->deriveMigrationName($mg_name, $step['stub_id']);
+        }
+      }
+      elseif (isset(static::SUBPROCESSING_PLUGINS[$plugin])) {
+        foreach (NestedArray::getValue($step, static::SUBPROCESSING_PLUGINS[$plugin]['child_steps']) as &$child_steps) {
+          $child_steps = iterator_to_array($this->mapStepMigrations($child_steps, $mig, $mg_name));
+        }
+        unset($child_steps);
       }
       yield $step;
     }
@@ -254,19 +277,14 @@ class MigrationDeriver implements MigrationDeriverInterface {
     foreach ($request->getMappings() as $name => $info) {
       $original_migration = $this->migrationPluginManager->createInstance($info['original_migration_id']);
       $derived_name = $this->deriveMigrationName($mg_name, $name);
+      $source_config = $original_migration->getSourceConfiguration();
       $info = [
         'id' => $derived_name,
         'label' => $original_migration->label(),
         'migration_group' => $mg_name,
-        'source' => [
-        /* XXX: Doesn't appear necessary to specify the columns?
-         *   'columns' => array_unique(iterator_to_array($this->getUsedColumns($info['mappings']))),
-         *
-         * @note: Constants and other things defined in the source on
-         * individual migrations will not be passed through. This is a design
-         * choice. If needed specify them on the group itself.
-         */
-        ],
+        'source' => ((isset($source_config['isi_keep_source']) && $source_config['isi_keep_source']) ?
+          $source_config :
+          []),
         'process' => iterator_to_array(
           $this->mapPipelineMigrations(
             $info['mappings'],
@@ -286,6 +304,11 @@ class MigrationDeriver implements MigrationDeriverInterface {
           ]
         ),
         'migration_dependencies' => $this->mapDependencies($original_migration, $mg_name),
+        // XXX: It seems like "idMap" is not presently handled by the
+        // migrate_plus.migration entity.
+        // @see https://www.drupal.org/project/migrate_plus/issues/2944627
+        'idMap' => $original_migration->getPluginDefinition()['idMap'] ?? [],
+        'migration_tags' => $original_migration->getMigrationTags(),
       ];
 
       $migration = $this->migrationStorage->load($derived_name) ?? $this->migrationStorage->create();
@@ -303,11 +326,16 @@ class MigrationDeriver implements MigrationDeriverInterface {
    */
   public function deleteAll(RequestInterface $request) {
     // Nuke the storage for the given mgiration group.
-    $this->migrationStorage->delete(
-      $this->migrationStorage->loadByProperties([
-        'migration_group' => $this->migrationGroupDeriver->deriveName($request),
-      ])
-    );
+    $migrations = $this->migrationStorage->loadByProperties([
+      'migration_group' => $this->migrationGroupDeriver->deriveName($request),
+    ]);
+
+    // Nuke the message and map tables for the given migrations.
+    foreach ($migrations as $migration) {
+      $migration->getIdMap()->destroy();
+    }
+
+    $this->migrationStorage->delete($migrations);
 
     $this->invalidateTags();
   }
