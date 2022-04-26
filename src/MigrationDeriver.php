@@ -241,7 +241,10 @@ class MigrationDeriver implements MigrationDeriverInterface {
             $child_steps = iterator_to_array($this->mapStepMigrations($child_steps, $mig, $mg_name));
           }
           else {
-            $this->logger->error('child_steps is not an array: "{child_steps}"', ['child_steps' => $child_steps]);
+            // Whatever bare string, probably? Will probably be handled as a
+            // 'get' later... should probably more explicitly be an actual
+            // 'get'.
+            $this->logger->warning('child_steps is not an array: "{child_steps}"', ['child_steps' => $child_steps]);
           }
         }
         unset($child_steps);
