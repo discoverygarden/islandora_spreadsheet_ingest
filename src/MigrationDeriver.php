@@ -237,7 +237,14 @@ class MigrationDeriver implements MigrationDeriverInterface {
       }
       elseif (isset(static::SUBPROCESSING_PLUGINS[$plugin])) {
         foreach (NestedArray::getValue($step, static::SUBPROCESSING_PLUGINS[$plugin]['child_steps']) as &$child_steps) {
-          $child_steps = iterator_to_array($this->mapStepMigrations($child_steps, $mig, $mg_name));
+          if (is_array($child_steps)) {
+            $child_steps = iterator_to_array($this->mapStepMigrations($child_steps, $mig, $mg_name));
+          }
+          else {
+            // Whatever bare string, probably? Will probably be handled as a
+            // 'get' later... should probably more explicitly be an actual
+            // 'get'.
+          }
         }
         unset($child_steps);
       }
