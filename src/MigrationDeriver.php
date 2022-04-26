@@ -244,7 +244,10 @@ class MigrationDeriver implements MigrationDeriverInterface {
             // Whatever bare string, probably? Will probably be handled as a
             // 'get' later... should probably more explicitly be an actual
             // 'get'.
-            $this->logger->warning('child_steps is not an array: "{child_steps}"', ['child_steps' => $child_steps]);
+            $this->logger->warning('Encountered implicit “get” process reference to "{child_steps}" in migration {id}.“', [
+              'child_steps' => $child_steps,
+              'id' => $mig->id(),
+            ]);
           }
         }
         unset($child_steps);
