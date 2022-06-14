@@ -25,7 +25,12 @@ islandora_spreadsheet_ingest.request.*:
       type: mapping
       mapping:
         file:
-          type: entity:file
+          # XXX: Really... kind of indicative that these should be pulled out
+          # to content entities instead of being config entities... the whole
+          # having-to-reference a file thing... because the "entity:file"
+          # thing does not appear to work...
+          #type: entity:file
+          type: ignore
           label: The spreadsheet file to process.
         sheet:
           type: string
@@ -35,8 +40,15 @@ islandora_spreadsheet_ingest.request.*:
       sequence:
         type: islandora_spreadsheet_ingest.migration_structure
     owner:
+      # XXX: Further reinforcement that these should be pulled out to content
+      # entities instead of config, because we are relating to the user here.
+      #type: entity:user
       type: ignore
       label: The owner's ID; should be either an int or a string.
+    originalMapping:
+      type: string
+      label: |
+        Reference to the original mapping from which this request was derived.
 
 islandora_spreadsheet_ingest.migration_structure:
   type: mapping
@@ -49,9 +61,14 @@ islandora_spreadsheet_ingest.migration_structure:
       sequence:
         type: mapping
         mapping:
-          type: mapping
-          mapping:
-            pipeline:
-              type: sequence
-              sequence:
-                type: ignore
+          weight:
+            type: integer
+          pipeline:
+            type: sequence
+            sequence:
+              # XXX: The migrate plugin does not define schemas for its plugins,
+              # nor any obvious mechanism by which to make reference to them...
+              # migrate_plus _does_ roll a handful, describing the things from
+              # migrate; however, it is not complete, nor necessarily desirable.
+              # ... so let's just ignore, for now at least.
+              type: ignore
