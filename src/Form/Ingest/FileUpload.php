@@ -319,6 +319,12 @@ class FileUpload extends EntityForm {
         return ($def['migration_group'] ?? '') === $id;
       }));
 
+      if (empty($names)) {
+        // XXX: Avoids behaviour of ::createInstances() when passed an empty
+        // array, where it would load _all_ instances.
+        return;
+      }
+
       $migrations = $mpm->createInstances($names);
 
       $start = 0;
