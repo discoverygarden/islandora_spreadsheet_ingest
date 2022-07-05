@@ -319,6 +319,15 @@ class FileUpload extends EntityForm {
         return ($def['migration_group'] ?? '') === $id;
       }));
 
+      if (empty($names)) {
+        // XXX: Avoids behaviour of ::createInstances() when passed an empty
+        // array, where it would load _all_ instances.
+        // XXX: Bad sniff is bad, and does not detect this being inside of a
+        // generator.
+        // phpcs:ignore Drupal.Commenting.FunctionComment.InvalidReturnNotVoid
+        return;
+      }
+
       $migrations = $mpm->createInstances($names);
 
       $start = 0;
