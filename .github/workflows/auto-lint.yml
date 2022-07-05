@@ -12,6 +12,6 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v2
       - name: Run CodeSniffer
-        uses: discoverygarden/CodeSniffer@fix/composer-loud
+        uses: discoverygarden/CodeSniffer@v1
         with:
           path: ./
