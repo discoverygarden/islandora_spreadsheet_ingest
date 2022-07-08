@@ -10,10 +10,10 @@ use Drupal\Component\Utility\NestedArray;
 use Drupal\Core\File\FileSystemInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 
-use Box\Spout\Reader\Common\Creator\ReaderEntityFactory;
-use Box\Spout\Reader\CSV\Reader as CSVReader;
-use Box\Spout\Reader\ReaderInterface;
-use Box\Spout\Reader\SheetInterface;
+use OpenSpout\Reader\Common\Creator\ReaderEntityFactory;
+use OpenSpout\Reader\CSV\Reader as CSVReader;
+use OpenSpout\Reader\ReaderInterface;
+use OpenSpout\Reader\SheetInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -65,7 +65,7 @@ class Spreadsheet extends SourcePluginBase implements ConfigurableInterface, Con
   /**
    * The reader for the spreadsheet when open.
    *
-   * @var \Box\Spout\Reader\ReaderInterface
+   * @var \OpenSpout\Reader\ReaderInterface
    */
   protected ?ReaderInterface $reader = NULL;
 
@@ -203,7 +203,7 @@ class Spreadsheet extends SourcePluginBase implements ConfigurableInterface, Con
   /**
    * Helper; open the spreadsheet reader.
    *
-   * @return \Box\Spout\Reader\ReaderInterface
+   * @return \OpenSpout\Reader\ReaderInterface
    *   The opened reader.
    */
   protected function openReader() {
@@ -231,7 +231,7 @@ class Spreadsheet extends SourcePluginBase implements ConfigurableInterface, Con
   /**
    * Helper; fetch the target worksheet.
    *
-   * @return \Box\Spout\Reader\SheetInterface
+   * @return \OpenSpout\Reader\SheetInterface
    *   The target sheet.
    *
    * @throws \OutOfBoundsException
