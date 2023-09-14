@@ -2,7 +2,7 @@ name: 'Islandora Spreadsheet Ingest Example'
 description: "Example CSV import of Islandora content."
 type: module
 package: DGI
-core_version_requirement: ^8 || ^9
+core_version_requirement: ^9 || ^10
 dependencies:
   - dgi_migrate:dgi_migrate
   - drupal:media

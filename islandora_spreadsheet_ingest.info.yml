@@ -2,7 +2,7 @@ name: 'Islandora Spreadsheet Ingest'
 description: "Support for CSV import of Islandora content."
 type: module
 package: DGI
-core_version_requirement: ^8 || ^9
+core_version_requirement: ^9 || ^10
 dependencies:
   # We implement a plugin making use of their base class.
   - drupal:migrate
