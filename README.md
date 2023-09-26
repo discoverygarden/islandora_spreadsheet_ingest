@@ -54,7 +54,7 @@ https://www.drupal.org/docs/8/api/migrate-api/migrate-process-plugins/list-of-pr
 ## Installation
 
 Install as usual, see
-[this](https://drupal.org/documentation/install/modules-themes/modules-8) for
+[this](https://www.drupal.org/docs/extending-drupal/installing-modules) for
 further information.
 Configure allowed binary paths at `/admin/config/islandora_spreadsheet_ingest`.
 

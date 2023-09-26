@@ -388,6 +388,10 @@ class FileUpload extends EntityForm {
    */
   public function exist($id) {
     $entity = $this->entityTypeManager->getStorage('isi_request')->getQuery()
+      // XXX: Strictly, this _could_ allow the leak of information regarding the
+      // existence of other requests; however, unsure if we are particularly
+      // concerned.
+      ->accessCheck(FALSE)
       ->condition('id', $id)
       ->execute();
     return (bool) $entity;
