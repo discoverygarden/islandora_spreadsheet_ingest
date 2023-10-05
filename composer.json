@@ -4,7 +4,7 @@
     "license": "GPL-3.0-only",
     "require": {
       "openspout/openspout": "^3",
-      "discoverygarden/dgi_migrate": "^1 || ^2",
+      "discoverygarden/dgi_migrate": "^1 || ^2 || ^3",
       "drupal/migrate_plus": "^4.2 || ^5.1 || ^6",
       "phpoffice/phpspreadsheet": "^1"
     }
