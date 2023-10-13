@@ -10,7 +10,7 @@ use Drupal\Component\Utility\NestedArray;
 use Drupal\Core\File\FileSystemInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 
-use OpenSpout\Reader\Common\Creator\ReaderEntityFactory;
+use OpenSpout\Reader\Common\Creator\ReaderFactory;
 use OpenSpout\Reader\CSV\Reader as CSVReader;
 use OpenSpout\Reader\ReaderInterface;
 use OpenSpout\Reader\SheetInterface;
@@ -210,7 +210,7 @@ class Spreadsheet extends SourcePluginBase implements ConfigurableInterface, Con
     if ($this->reader === NULL) {
       $path = $this->getConfiguration()['file'];
       $realpath = $this->fileSystem->realpath($path);
-      $reader = ReaderEntityFactory::createReaderFromFile($realpath);
+      $reader = ReaderFactory::createFromFile($realpath);
       $reader->open($realpath);
       $this->reader = $reader;
     }
