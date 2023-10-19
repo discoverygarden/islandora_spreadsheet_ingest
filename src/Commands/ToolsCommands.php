@@ -19,12 +19,20 @@ class ToolsCommands extends DrushCommands {
   protected $cacheKey;
 
   /**
+   * The entity field manager service.
+   *
+   * @var \Drupal\Core\Entity\EntityFieldManagerInterface
+   */
+  protected EntityFieldManagerInterface $entityFieldManager;
+
+  /**
    * Constructor.
    *
    * @param \Drupal\Core\Entity\EntityFieldManagerInterface $entity_field_manager
    *   The entity field manager service.
    */
   public function __construct(EntityFieldManagerInterface $entity_field_manager) {
+    parent::__construct();
     $this->entityFieldManager = $entity_field_manager;
   }
 
