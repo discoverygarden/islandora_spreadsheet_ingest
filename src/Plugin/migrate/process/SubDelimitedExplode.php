@@ -143,7 +143,7 @@ class SubDelimitedExplode extends ProcessPluginBase {
    *
    * @var string
    */
-  protected $sublimiter;
+  protected $subdelimiter;
 
   /**
    * Indicate if each top-level element should have its space trimmed.
