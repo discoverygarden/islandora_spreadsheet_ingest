@@ -10,3 +10,5 @@ dependencies:
   - migrate_plus:migrate_plus
   # We generate links to endpoints migrate_tools defines.
   - migrate_plus:migrate_tools
+  # Currently need to access dgi_migrate drush commands
+  - dgi_migrate:dgi_migrate

@@ -193,6 +193,10 @@ class Review extends EntityForm {
         'label' => $this->t('Immediate'),
         'callable' => [$this, 'submitProcessImmediate'],
       ],
+      'rollback_migration_group' => [
+        'label' => $this->t('Rollback Migration Group'),
+        'callable' => [$this, 'submitProcessRollbackMigrationGroup'],
+      ],
     ];
   }
 
@@ -247,6 +251,28 @@ class Review extends EntityForm {
         'backtrace' => $e->getTraceAsString(),
       ]);
       $this->messenger->addError($this->t('Failed to enqueue batch.'));
+    }
+  }
+
+  /**
+   * Callback for the "rollback_migration_group" method.
+   */
+  protected function submitProcessRollbackMigrationGroup(): void
+  {
+    $migration_group_name = $this->migrationGroupDeriver->deriveName($this->entity);
+
+    $command = sprintf('drush dgi-migrate:rollback --group=%s', escapeshellarg($migration_group_name));
+    exec($command, $output, $return_var);
+
+    if($return_var === 0) {
+      $this->messenger->addMessage($this->t('Migration group @group has been rolled back.', ['@group' => $migration_group_name]));
+    } else {
+      \Drupal::logger('isi.review')
+        ->error(
+          "Failed to rollback migration group {$migration_group_name}. Command output: @output",
+          ['@output' => implode("\n", $output)]
+        );
+      $this->messenger->addError($this->t("Failed to rollback migration group {$migration_group_name}."));
     }
   }
 
