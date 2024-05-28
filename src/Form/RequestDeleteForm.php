@@ -3,8 +3,8 @@
 namespace Drupal\islandora_spreadsheet_ingest\Form;
 
 use Drupal\Core\Entity\EntityConfirmFormBase;
-use Drupal\Core\Url;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Url;
 
 /**
  * Request deletion form.

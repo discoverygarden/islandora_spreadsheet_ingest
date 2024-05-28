@@ -2,9 +2,9 @@
 
 namespace Drupal\islandora_spreadsheet_ingest\Form\Ingest;
 
-use Drupal\migrate\Plugin\MigrationInterface;
-use Drupal\Core\Form\FormStateInterface;
 use Drupal\Component\Utility\NestedArray;
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\migrate\Plugin\MigrationInterface;
 
 /**
  * Helpers for dealing with migration info in form state.

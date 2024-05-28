@@ -2,14 +2,12 @@
 
 namespace Drupal\islandora_spreadsheet_ingest\Form\Ingest;
 
-use Drupal\Core\Entity\EntityForm;
-use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Component\Utility\NestedArray;
-
-use Symfony\Component\DependencyInjection\ContainerInterface;
-
+use Drupal\Core\Entity\EntityForm;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Form\FormStateInterface;
 use Drupal\islandora_spreadsheet_ingest\RequestInterface;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Form for setting up ingests.

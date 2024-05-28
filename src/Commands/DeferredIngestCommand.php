@@ -6,10 +6,9 @@ use Consolidation\SiteAlias\SiteAliasManagerAwareInterface;
 use Consolidation\SiteAlias\SiteAliasManagerAwareTrait;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Queue\QueueInterface;
+use Drupal\islandora_spreadsheet_ingest\MigrationGroupDeriverInterface;
 use Drush\Commands\DrushCommands;
 use Symfony\Component\Process\Process;
-
-use Drupal\islandora_spreadsheet_ingest\MigrationGroupDeriverInterface;
 
 /**
  * Deferred ingest command.

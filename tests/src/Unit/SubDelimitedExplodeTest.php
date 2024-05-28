@@ -2,11 +2,10 @@
 
 namespace Drupal\Tests\islandora_spreadsheet_ingest\Unit;
 
-use Drupal\Tests\UnitTestCase;
-
 use Drupal\islandora_spreadsheet_ingest\Plugin\migrate\process\SubDelimitedExplode;
 use Drupal\migrate\MigrateExecutableInterface;
 use Drupal\migrate\Row;
+use Drupal\Tests\UnitTestCase;
 
 /**
  * Test exploding subdelimiter strings.

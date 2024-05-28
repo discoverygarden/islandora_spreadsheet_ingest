@@ -2,9 +2,9 @@
 
 namespace Drupal\islandora_spreadsheet_ingest;
 
+use Drupal\Core\Cache\CacheTagsInvalidatorInterface;
 use Drupal\Core\Entity\EntityStorageException;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
-use Drupal\Core\Cache\CacheTagsInvalidatorInterface;
 use Psr\Log\LoggerInterface;
 
 /**
