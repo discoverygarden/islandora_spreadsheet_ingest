@@ -5,12 +5,10 @@ namespace Drupal\islandora_spreadsheet_ingest\Form\Ingest;
 use Drupal\Core\Entity\EntityForm;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
-
-use Symfony\Component\DependencyInjection\ContainerInterface;
-
-use Drupal\migrate\Plugin\MigrationInterface;
-use Drupal\migrate\MigrateMessage;
 use Drupal\dgi_migrate\MigrateBatchExecutable;
+use Drupal\migrate\MigrateMessage;
+use Drupal\migrate\Plugin\MigrationInterface;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Form for setting up ingests.
