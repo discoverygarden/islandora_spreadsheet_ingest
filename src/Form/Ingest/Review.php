@@ -289,29 +289,6 @@ class Review extends EntityForm {
   }
 
   /**
-   * Finish callback for the rollback batch process.
-   */
-  private function finishRollbackBatchCallback($success, $results, $operations): void {
-    if ($success) {
-      // Assuming $results['processed'] contains the list of processed migrations
-      foreach ($results['processed'] as $migration_id) {
-        $this->messenger->addMessage(
-          $this->t('Migration @migration_id has been rolled back.', ['@migration_id' => $migration_id])
-        );
-      }
-      \Drupal::logger('isi.review')->info('All migrations have been rolled back successfully.');
-    } else {
-      $this->messenger->addError($this->t('One or more migrations failed to roll back.'));
-      if (!empty($results['errors'])) {
-        foreach ($results['errors'] as $error) {
-          $this->logger('isi.review')->error('Migration rollback failed with exception: {exc}', ['exc' => $error]);
-        }
-      }
-    }
-  }
-
-
-  /**
    * Submission handler; route to selected processing method.
    */
   public function submitProcessing(array &$form, FormStateInterface $form_state) {
