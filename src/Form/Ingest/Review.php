@@ -6,6 +6,8 @@ use Drupal\Core\Entity\EntityForm;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
 
+use Drupal\islandora_spreadsheet_ingest\Util\MigrationRollbackBatch;
+use Drupal\migrate_tools\MigrateExecutable;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 use Drupal\migrate\Plugin\MigrationInterface;
@@ -145,7 +147,7 @@ class Review extends EntityForm {
    * @param mixed $context
    *   A reference to the batch context.
    */
-  public function runBatchOp(MigrationInterface $migration, MigrateBatchExecutable $e, &$context) {
+  public function runBatchOp(MigrationInterface $migration, MigrateExecutable $e, &$context) {
     $sandbox =& $context['sandbox'];
 
     if (!isset($sandbox['prepped'])) {
@@ -257,24 +259,57 @@ class Review extends EntityForm {
   /**
    * Callback for the "rollback_migration_group" method.
    */
-  protected function submitProcessRollbackMigrationGroup(): void
-  {
-    $migration_group_name = $this->migrationGroupDeriver->deriveName($this->entity);
+  protected function submitProcessRollbackMigrationGroup(): void {
+    try {
+      $migrations = $this->migrationPluginManager->createInstancesByTag($this->migrationGroupDeriver->deriveTag($this->entity));
+      $batch = [
+        'operations' => [],
+      ];
 
-    $command = sprintf('drush dgi-migrate:rollback --group=%s', escapeshellarg($migration_group_name));
-    exec($command, $output, $return_var);
+      foreach ($migrations as $migration) {
+        $executable = new MigrationRollbackBatch($migration, $this->messenger, [
+          'limit' => 0,
+          'update' => 0,
+          'force' => 0,
+        ]);
+        $batch['operations'][] = [
+          [$this, 'runBatchOp'],
+          [$migration, $executable],
+        ];
+      }
 
-    if($return_var === 0) {
-      $this->messenger->addMessage($this->t('Migration group @group has been rolled back.', ['@group' => $migration_group_name]));
-    } else {
-      \Drupal::logger('isi.review')
-        ->error(
-          "Failed to rollback migration group {$migration_group_name}. Command output: @output",
-          ['@output' => implode("\n", $output)]
-        );
-      $this->messenger->addError($this->t("Failed to rollback migration group {$migration_group_name}."));
+      batch_set($batch);
+    } catch (\Exception $e) {
+      $this->logger('isi.review')->error("Failed to roll back migration: {exc}\n{backtrace}", [
+        'exc' => $e->getMessage(),
+        'backtrace' => $e->getTraceAsString(),
+      ]);
+      $this->messenger->addError($this->t("Failed to rollback migration."));
     }
   }
+
+  /**
+   * Finish callback for the rollback batch process.
+   */
+  private function finishRollbackBatchCallback($success, $results, $operations): void {
+    if ($success) {
+      // Assuming $results['processed'] contains the list of processed migrations
+      foreach ($results['processed'] as $migration_id) {
+        $this->messenger->addMessage(
+          $this->t('Migration @migration_id has been rolled back.', ['@migration_id' => $migration_id])
+        );
+      }
+      \Drupal::logger('isi.review')->info('All migrations have been rolled back successfully.');
+    } else {
+      $this->messenger->addError($this->t('One or more migrations failed to roll back.'));
+      if (!empty($results['errors'])) {
+        foreach ($results['errors'] as $error) {
+          $this->logger('isi.review')->error('Migration rollback failed with exception: {exc}', ['exc' => $error]);
+        }
+      }
+    }
+  }
+
 
   /**
    * Submission handler; route to selected processing method.
