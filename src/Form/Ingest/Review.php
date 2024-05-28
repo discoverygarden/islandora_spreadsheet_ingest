@@ -5,14 +5,12 @@ namespace Drupal\islandora_spreadsheet_ingest\Form\Ingest;
 use Drupal\Core\Entity\EntityForm;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
-
+use Drupal\dgi_migrate\MigrateBatchExecutable;
 use Drupal\islandora_spreadsheet_ingest\Util\MigrationRollbackBatch;
+use Drupal\migrate\MigrateMessage;
+use Drupal\migrate\Plugin\MigrationInterface;
 use Drupal\migrate_tools\MigrateExecutable;
 use Symfony\Component\DependencyInjection\ContainerInterface;
-
-use Drupal\migrate\Plugin\MigrationInterface;
-use Drupal\migrate\MigrateMessage;
-use Drupal\dgi_migrate\MigrateBatchExecutable;
 
 /**
  * Form for setting up ingests.
@@ -279,7 +277,8 @@ class Review extends EntityForm {
       }
 
       batch_set($batch);
-    } catch (\Exception $e) {
+    }
+    catch (\Exception $e) {
       $this->logger('isi.review')->error("Failed to roll back migration: {exc}\n{backtrace}", [
         'exc' => $e->getMessage(),
         'backtrace' => $e->getTraceAsString(),
