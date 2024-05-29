@@ -8,7 +8,6 @@ use Drupal\Core\File\FileSystemInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\migrate\Plugin\migrate\source\SourcePluginBase;
 use Drupal\migrate\Plugin\MigrationInterface;
-use OpenSpout\Common\Exception\UnsupportedTypeException;
 use OpenSpout\Reader\Common\Creator\ReaderFactory;
 use OpenSpout\Reader\CSV\Reader as CSVReader;
 use OpenSpout\Reader\ReaderInterface;
@@ -209,7 +208,7 @@ class Spreadsheet extends SourcePluginBase implements ConfigurableInterface, Con
     if ($this->reader === NULL) {
       $path = $this->getConfiguration()['file'];
       $realpath = $this->fileSystem->realpath($path);
-      if ($realpath !== '') {
+      if ($realpath !== FALSE) {
         $reader = ReaderFactory::createFromFile($realpath);
         $reader->open($realpath);
       }
