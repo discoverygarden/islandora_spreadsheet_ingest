@@ -5,11 +5,11 @@ namespace Drupal\islandora_spreadsheet_ingest\Util;
 use Drupal\Core\DependencyInjection\DependencySerializationTrait;
 use Drupal\Core\Messenger\MessengerInterface;
 use Drupal\Core\Queue\QueueInterface;
+use Drupal\dgi_migrate\MigrationIterator;
 use Drupal\migrate\Event\MigrateEvents;
 use Drupal\migrate\Event\MigrateRollbackEvent;
 use Drupal\migrate\Event\MigrateRowDeleteEvent;
 use Drupal\migrate\MigrateMessage;
-use Drupal\migrate\Plugin\MigrateIdMapInterface;
 use Drupal\migrate\Plugin\MigrationInterface;
 use Drupal\migrate_tools\MigrateExecutable;
 
@@ -17,8 +17,6 @@ use Drupal\migrate_tools\MigrateExecutable;
  * Class responsible for rolling back a migration in batches.
  */
 class MigrationRollbackBatch extends MigrateExecutable {
-
-  const MAX_RESCHEDULES = 3;
 
   use DependencySerializationTrait {
     __sleep as traitSleep;
@@ -33,12 +31,15 @@ class MigrationRollbackBatch extends MigrateExecutable {
   protected MessengerInterface $messenger;
 
   /**
-   * Queue instance.
+   * Iterates through migration rows
    *
-   * @var \Drupal\Core\Queue\QueueInterface
+   * @var MigrationIterator
    */
-  protected $queue;
+  protected MigrationIterator $iterator;
 
+  /**
+   * @throws \Exception
+   */
   public function __construct(
     MigrationInterface $migration,
     MessengerInterface $messenger,
@@ -46,7 +47,6 @@ class MigrationRollbackBatch extends MigrateExecutable {
   ) {
     parent::__construct($migration, new MigrateMessage(), $options);
     $this->messenger = $messenger;
-    $this->queue = $this->getQueue();
   }
 
   /**
@@ -59,53 +59,18 @@ class MigrationRollbackBatch extends MigrateExecutable {
    *   If the migration could not be enqueued successfully.
    */
   public function prepareBatch(): array {
-    $result = $this->enqueueRollbackItems();
-    if ($result === MigrationInterface::RESULT_COMPLETED) {
-      return [
-        'title' => $this->t('Rolling back migration: @migration', [
-          '@migration' => $this->migration->id(),
-        ]),
-        'operations' => [
-          [[$this, 'processBatch'], []],
-        ],
-        'finished' => [$this, 'finishBatch'],
-      ];
-    }
-    else {
-      throw new \Exception('Migration rollback failed.');
-    }
-  }
-
-  /**
-   * Enqueue each item for rollback.
-   */
-  protected function enqueueRollbackItems(): int {
-    $queue = $this->getQueue();
     $id_map = $this->getIdMap();
-    $id_map->rewind();
+    $this->iterator = new MigrationIterator($id_map, 'currentDestination');
 
-    while ($id_map->valid()) {
-      $destination_key = $id_map->currentDestination();
-      if ($destination_key) {
-        $map_row = $id_map->getRowByDestination($destination_key);
-        if (!isset($map_row['rollback_action']) || $map_row['rollback_action'] == MigrateIdMapInterface::ROLLBACK_DELETE) {
-          $queue->createItem([
-            'migration_id' => $this->migration->id(),
-            'destination_key' => $destination_key,
-          ]);
-        }
-        else {
-          $id_map->deleteDestination($destination_key);
-        }
-      }
-      else {
-        $source_key = $id_map->currentSource();
-        $id_map->delete($source_key);
-      }
-      $id_map->next();
-    }
-
-    return MigrationInterface::RESULT_COMPLETED;
+    return [
+      'title' => $this->t('Rolling back migration: @migration', [
+        '@migration' => $this->migration->id(),
+      ]),
+      'operations' => [
+        [[$this, 'processBatch'], []],
+      ],
+      'finished' => [$this, 'finishBatch'],
+    ];
   }
 
   /**
@@ -118,32 +83,35 @@ class MigrationRollbackBatch extends MigrateExecutable {
    *   MigrationInterface result constant
    */
   public function processBatch(array &$context): int {
-    $context['message'] = $this->t('Processing of "@migration_id"', ['@migration_id' => $this->migration->id()]);
+    try {
+      // Announce that rollback is about to happen.
+      $this->getEventDispatcher()->dispatch(new MigrateRollbackEvent($this->migration), MigrateEvents::PRE_ROLLBACK);
 
-    // Initialize the rescheduling counter if it doesn't exist.
-    if (!isset($context['sandbox']['reschedule_count'])) {
-      $context['sandbox']['reschedule_count'] = 0;
-    }
+      $context['message'] = $this->t('Processing of "@migration_id"', ['@migration_id' => $this->migration->id()]);
 
-    $result = $this->rollback();
+      $result = $this->rollback();
 
-    if ($result === MigrationInterface::RESULT_INCOMPLETE && $context['sandbox']['reschedule_count'] < static::MAX_RESCHEDULES) {
-
-      // Increment the rescheduling counter.
-      $context['sandbox']['reschedule_count']++;
-      $context['finished'] = 0;
-    }
-    else {
-      $context['finished'] = 1;
       $context['message'] = $this->t('"@migration_id" has been processed', ['@migration_id' => $this->migration->id()]);
+      $this->messenger->addMessage(
+        $this->t('"@migration_id" has been processed', ['@migration_id' => $this->migration->id()])
+      );
 
-      // If the maximum number of reschedules is reached, mark the process as finished.
-      if ($context['sandbox']['reschedule_count'] >= static::MAX_RESCHEDULES) {
-        $this->messenger->addError($this->t('The rollback process has reached the maximum number of reschedules.'));
-      }
+      $context['results']['status'] = MigrationInterface::RESULT_COMPLETED;
+      $context['sandbox']['total'] = 0;
+      $context['finished'] = 1;
+
+      return $result;
     }
+    catch (\Exception $e) {
+      $this->handleException($e, FALSE);
+      $this->messenger->addError(
+        $this->t(
+          'Rollback encountered error while processing batch: @e.', ['@e' => $e]
+        )
+      );
 
-    return $result;
+      return MigrationInterface::RESULT_FAILED;
+    }
   }
 
   /**
@@ -158,37 +126,29 @@ class MigrationRollbackBatch extends MigrateExecutable {
       return MigrationInterface::RESULT_FAILED;
     }
 
-    // Announce that rollback is about to happen.
-    $this->getEventDispatcher()->dispatch(new MigrateRollbackEvent($this->migration), MigrateEvents::PRE_ROLLBACK);
-
     // Set the migration status to rolling back.
     $this->migration->setStatus(MigrationInterface::STATUS_ROLLING_BACK);
 
-    // Process items in the queue.
-    $queue = $this->getQueue();
     $id_map = $this->getIdMap();
     $destination = $this->migration->getDestinationPlugin();
     $return = MigrationInterface::RESULT_COMPLETED;
 
-    while ($item = $queue->claimItem()) {
-      $destination_key = $item->data['destination_key'];
-      if ($destination_key === NULL) {
+    $this->iterator->rewind();
+
+    while ($this->iterator->valid()) {
+      if ($this->iterator->current() === NULL) {
         $this->message->display($this->t('Skipped processing due to null destination identifier.'));
-        $queue->deleteItem($item);
+        $source_key = $id_map->currentSource();
+        $id_map->delete($source_key);
         continue;
-      }
-      try {
+      }else{
         $this->getEventDispatcher()
-          ->dispatch(new MigrateRowDeleteEvent($this->migration, $destination_key), MigrateEvents::PRE_ROW_DELETE);
-        $destination->rollback($destination_key);
+          ->dispatch(new MigrateRowDeleteEvent($this->migration, $this->iterator->current()), MigrateEvents::PRE_ROW_DELETE);
+        $destination->rollback($this->iterator->current());
         $this->getEventDispatcher()
-          ->dispatch(new MigrateRowDeleteEvent($this->migration, $destination_key), MigrateEvents::POST_ROW_DELETE);
-        $id_map->deleteDestination($destination_key);
+          ->dispatch(new MigrateRowDeleteEvent($this->migration, $this->iterator->current()), MigrateEvents::POST_ROW_DELETE);
+        $id_map->deleteDestination($this->iterator->current());
       }
-      catch (\Exception $e) {
-        $this->handleException($e, FALSE);
-      }
-      $queue->deleteItem($item);
 
       // Check for memory exhaustion.
       if (($return = $this->checkStatus()) != MigrationInterface::RESULT_COMPLETED) {
@@ -201,16 +161,8 @@ class MigrationRollbackBatch extends MigrateExecutable {
         $this->migration->clearInterruptionResult();
         break;
       }
-    }
 
-    // Ensure that all items have been processed.
-    if ($queue->numberOfItems() == 0) {
-      // Notify modules that rollback attempt was complete.
-      $this->getEventDispatcher()->dispatch(new MigrateRollbackEvent($this->migration), MigrateEvents::POST_ROLLBACK);
-      $this->migration->setStatus(MigrationInterface::STATUS_IDLE);
-    }
-    else {
-      $return = MigrationInterface::RESULT_INCOMPLETE;
+      $this->iterator->next();
     }
 
     return $return;
@@ -232,47 +184,15 @@ class MigrationRollbackBatch extends MigrateExecutable {
    *   void
    */
   public function finishBatch($success, $results, $ops, $interval): void {
-    if (!$success || empty($results['errors'])) {
-      $this->messenger->addError(
-        $this->t(
-          'Rollback encountered errors.'
-        )
-      );
-
+    if (isset($results['errors']) && !empty($results['errors'])) {
+      $this->messenger->addError($this->t('Rollback encountered errors.'));
       foreach ($results['errors'] as $e) {
-        $this->messenger->addError(
-          $this->t('Migration group rollback failed with exception: @e', ['@e' => $e]));
+        $error_message = is_object($e) ? json_encode($e) : (string) $e;
+        $this->messenger->addError($this->t('Migration group rollback failed with exception: @e', ['@e' => $error_message]));
       }
-    } else {
-      $this->messenger->addMessage(
-        $this->t(
-          'Migration @migration rolled back successfully.', ['migration' => $this->migration->id()]
-        )
-      );
     }
-  }
 
-  /**
-   * Helper; build out the name of the queue.
-   *
-   * @return string
-   *   The name of the queue.
-   */
-  public function getQueueName(): string {
-    return "migration_rollback_queue__{$this->migration->id()}";
+    $this->getEventDispatcher()->dispatch(new MigrateRollbackEvent($this->migration), MigrateEvents::POST_ROLLBACK);
+    $this->migration->setStatus(MigrationInterface::STATUS_IDLE);
   }
-
-  /**
-   * Lazy-load the queue.
-   *
-   * @return \Drupal\Core\Queue\QueueInterface
-   *   The queue implementation to use.
-   */
-  protected function getQueue(): QueueInterface {
-    if (!isset($this->queue)) {
-      $this->queue = \Drupal::queue($this->getQueueName(), TRUE);
-    }
-    return $this->queue;
-  }
-
 }
