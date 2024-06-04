@@ -58,65 +58,19 @@ class MigrationRollbackBatch extends MigrateExecutable {
    * @throws \Exception
    *   If the migration could not be enqueued successfully.
    */
-  public function prepareBatch() {
-    // Start by resetting the migration status.
-    $this->migration->setStatus(MigrationInterface::STATUS_IDLE);
+  public function prepareBatch(): array {
+    $id_map = $this->getIdMap();
+    $this->iterator = new MigrationIterator($id_map, 'currentDestination');
 
-    // Prepare the initial batch structure.
-    $batch = [
+    return [
       'title' => $this->t('Rolling back migration: @migration', [
         '@migration' => $this->migration->id(),
       ]),
-      'operations' => [],
+      'operations' => [
+        [[$this, 'processBatch'], []],
+      ],
       'finished' => [$this, 'finishBatch'],
     ];
-
-    // Get the ID map for the migration.
-    $id_map = $this->getIdMap();
-
-    // Initialize the iterator.
-    $this->iterator = new MigrationIterator($id_map, 'currentDestination');
-
-    // Iterate over each row and add a rollback operation to the batch.
-    while ($this->iterator->valid()) {
-      $operation = [
-        [$this, 'processRowRollback'],
-        [$this->iterator->current()],
-      ];
-      $batch['operations'][] = $operation;
-      $this->iterator->next();
-    }
-
-    return $batch;
-  }
-
-  /**
-   * Process rollback of a single row.
-   *
-   * @param mixed $row
-   *   The row to rollback.
-   * @param array $context
-   *   The batch context.
-   */
-  public function processRowRollback($row, array &$context) {
-    try {
-      // Perform the rollback for the current row.
-      $this->getEventDispatcher()->dispatch(new MigrateRowDeleteEvent($this->migration, $row), MigrateEvents::PRE_ROW_DELETE);
-      $destination = $this->migration->getDestinationPlugin();
-      $destination->rollback($row);
-      $this->getEventDispatcher()->dispatch(new MigrateRowDeleteEvent($this->migration, $row), MigrateEvents::POST_ROW_DELETE);
-
-      // Delete the row from the ID map.
-      $id_map = $this->getIdMap();
-      $id_map->deleteDestination($row);
-
-      // Increment the processed row count.
-      $context['results']['processed']++;
-    } catch (\Exception $e) {
-      // Handle any exceptions that occur during rollback.
-      $this->handleException($e, FALSE);
-      $context['results']['errors'][] = $e;
-    }
   }
 
   /**
