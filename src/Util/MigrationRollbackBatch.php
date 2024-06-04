@@ -4,6 +4,7 @@ namespace Drupal\islandora_spreadsheet_ingest\Util;
 
 use Drupal\Core\DependencyInjection\DependencySerializationTrait;
 use Drupal\Core\Messenger\MessengerInterface;
+use Drupal\Core\Queue\QueueFactory;
 use Drupal\Core\Queue\QueueInterface;
 use Drupal\dgi_migrate\MigrationIterator;
 use Drupal\migrate\Event\MigrateEvents;
@@ -26,27 +27,47 @@ class MigrationRollbackBatch extends MigrateExecutable {
   /**
    * Messenger service to display messages.
    *
-   * @var Drupal\Core\Messenger\MessengerInterface
+   * @var MessengerInterface
    */
   protected MessengerInterface $messenger;
 
   /**
-   * Iterates through migration rows
+   * Queue service.
+   *
+   * @var QueueInterface
+   */
+  protected QueueInterface $queue;
+
+  /**
+   * Iterates through migration rows.
    *
    * @var MigrationIterator
    */
   protected MigrationIterator $iterator;
 
   /**
+   * Constructs a MigrationRollbackBatch object.
+   *
+   * @param MigrationInterface $migration
+   *   The migration plugin instance.
+   * @param MessengerInterface $messenger
+   *   The messenger service.
+   * @param QueueFactory $queue_factory
+   *   The queue factory service.
+   * @param array $options
+   *   Additional options for the migration executable.
+   *
    * @throws \Exception
    */
   public function __construct(
     MigrationInterface $migration,
     MessengerInterface $messenger,
+    QueueFactory $queue_factory,
     array $options,
   ) {
     parent::__construct($migration, new MigrateMessage(), $options);
     $this->messenger = $messenger;
+    $this->queue = $queue_factory->get('migration_rollback_queue');
   }
 
   /**
@@ -62,101 +83,61 @@ class MigrationRollbackBatch extends MigrateExecutable {
     // Start by resetting the migration status.
     $this->migration->setStatus(MigrationInterface::STATUS_IDLE);
 
-    // Prepare the initial batch structure.
+    // Initialize the iterator.
+    $this->iterator = new MigrationIterator($this->getIdMap(), 'currentDestination');
+
+    // Add each row to the queue.
+    foreach ($this->iterator as $row) {
+      $this->queue->createItem($row);
+    }
+
+    // Prepare the batch structure.
     $batch = [
       'title' => $this->t('Rolling back migration: @migration', [
         '@migration' => $this->migration->id(),
       ]),
-      'operations' => [],
+      'operations' => [
+        [[$this, 'processQueue'], []],
+      ],
       'finished' => [$this, 'finishBatch'],
     ];
-
-    // Get the ID map for the migration.
-    $id_map = $this->getIdMap();
-
-    // Initialize the iterator.
-    $this->iterator = new MigrationIterator($id_map, 'currentDestination');
-
-    // Iterate over each row and add a rollback operation to the batch.
-    while ($this->iterator->valid()) {
-      $operation = [
-        [$this, 'processRowRollback'],
-        [$this->iterator->current()],
-      ];
-      $batch['operations'][] = $operation;
-      $this->iterator->next();
-    }
 
     return $batch;
   }
 
   /**
-   * Process rollback of a single row.
+   * Process items from the queue.
    *
-   * @param mixed $row
-   *   The row to rollback.
    * @param array $context
    *   The batch context.
    */
-  public function processRowRollback($row, array &$context) {
+  public function processQueue(array &$context) {
     try {
-      // Perform the rollback for the current row.
-      $this->getEventDispatcher()->dispatch(new MigrateRowDeleteEvent($this->migration, $row), MigrateEvents::PRE_ROW_DELETE);
-      $destination = $this->migration->getDestinationPlugin();
-      $destination->rollback($row);
-      $this->getEventDispatcher()->dispatch(new MigrateRowDeleteEvent($this->migration, $row), MigrateEvents::POST_ROW_DELETE);
+      if ($item = $this->queue->claimItem()) {
+        // Perform the rollback for the current row.
+        $row = $item->data;
+        $this->getEventDispatcher()->dispatch(new MigrateRowDeleteEvent($this->migration, $row), MigrateEvents::PRE_ROW_DELETE);
+        $destination = $this->migration->getDestinationPlugin();
+        $destination->rollback($row);
+        $this->getEventDispatcher()->dispatch(new MigrateRowDeleteEvent($this->migration, $row), MigrateEvents::POST_ROW_DELETE);
 
-      // Delete the row from the ID map.
-      $id_map = $this->getIdMap();
-      $id_map->deleteDestination($row);
+        // Delete the row from the ID map.
+        $id_map = $this->getIdMap();
+        $id_map->deleteDestination($row);
 
-      // Increment the processed row count.
-      $context['results']['processed']++;
+        // Increment the processed row count.
+        $context['results']['processed']++;
+
+        // Release the item.
+        $this->queue->deleteItem($item);
+      } else {
+        // If the queue is empty, mark the batch as finished.
+        $context['finished'] = 1;
+      }
     } catch (\Exception $e) {
       // Handle any exceptions that occur during rollback.
       $this->handleException($e, FALSE);
       $context['results']['errors'][] = $e;
-    }
-  }
-
-  /**
-   * Process each batch to roll back all contained rows.
-   *
-   * @param array $context
-   *   The batch context.
-   *
-   * @return int
-   *   MigrationInterface result constant
-   */
-  public function processBatch(array &$context): int {
-    try {
-      // Announce that rollback is about to happen.
-      $this->getEventDispatcher()->dispatch(new MigrateRollbackEvent($this->migration), MigrateEvents::PRE_ROLLBACK);
-
-      $context['message'] = $this->t('Processing of "@migration_id"', ['@migration_id' => $this->migration->id()]);
-
-      $result = $this->rollback();
-
-      $context['message'] = $this->t('"@migration_id" has been processed', ['@migration_id' => $this->migration->id()]);
-      $this->messenger->addMessage(
-        $this->t('"@migration_id" has been processed', ['@migration_id' => $this->migration->id()])
-      );
-
-      $context['results']['status'] = MigrationInterface::RESULT_COMPLETED;
-      $context['sandbox']['total'] = 0;
-      $context['finished'] = 1;
-
-      return $result;
-    }
-    catch (\Exception $e) {
-      $this->handleException($e, FALSE);
-      $this->messenger->addError(
-        $this->t(
-          'Rollback encountered error while processing batch: @e.', ['@e' => $e]
-        )
-      );
-
-      return MigrationInterface::RESULT_FAILED;
     }
   }
 
@@ -187,7 +168,7 @@ class MigrationRollbackBatch extends MigrateExecutable {
         $source_key = $id_map->currentSource();
         $id_map->delete($source_key);
         continue;
-      }else{
+      } else {
         $this->getEventDispatcher()
           ->dispatch(new MigrateRowDeleteEvent($this->migration, $this->iterator->current()), MigrateEvents::PRE_ROW_DELETE);
         $destination->rollback($this->iterator->current());
