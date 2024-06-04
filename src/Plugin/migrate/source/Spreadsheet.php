@@ -2,14 +2,12 @@
 
 namespace Drupal\islandora_spreadsheet_ingest\Plugin\migrate\source;
 
-use Drupal\migrate\Plugin\migrate\source\SourcePluginBase;
-use Drupal\migrate\Plugin\MigrationInterface;
-
 use Drupal\Component\Plugin\ConfigurableInterface;
 use Drupal\Component\Utility\NestedArray;
 use Drupal\Core\File\FileSystemInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
-
+use Drupal\migrate\Plugin\migrate\source\SourcePluginBase;
+use Drupal\migrate\Plugin\MigrationInterface;
 use OpenSpout\Reader\Common\Creator\ReaderFactory;
 use OpenSpout\Reader\CSV\Reader as CSVReader;
 use OpenSpout\Reader\ReaderInterface;
@@ -210,8 +208,16 @@ class Spreadsheet extends SourcePluginBase implements ConfigurableInterface, Con
     if ($this->reader === NULL) {
       $path = $this->getConfiguration()['file'];
       $realpath = $this->fileSystem->realpath($path);
-      $reader = ReaderFactory::createFromFile($realpath);
-      $reader->open($realpath);
+      if ($realpath !== FALSE) {
+        $reader = ReaderFactory::createFromFile($realpath);
+        $reader->open($realpath);
+      }
+      else {
+        // Real-path of stream wrappers does not quite make sense, so allow
+        // an opportunity for files from stream wrappers to be processed.
+        $reader = ReaderFactory::createFromFile($path);
+        $reader->open($path);
+      }
       $this->reader = $reader;
     }
 

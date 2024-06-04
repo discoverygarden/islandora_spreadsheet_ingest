@@ -2,10 +2,10 @@
 
 namespace Drupal\islandora_spreadsheet_ingest\Spreadsheet;
 
-use PhpOffice\PhpSpreadsheet\IOFactory;
-use PhpOffice\PhpSpreadsheet\Cell\Cell;
-use Drupal\file\FileInterface;
 use Drupal\Core\File\FileSystemInterface;
+use Drupal\file\FileInterface;
+use PhpOffice\PhpSpreadsheet\Cell\Cell;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 
 /**
  * Spreadsheet service.

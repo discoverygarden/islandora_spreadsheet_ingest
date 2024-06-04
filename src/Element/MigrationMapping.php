@@ -2,18 +2,17 @@
 
 namespace Drupal\islandora_spreadsheet_ingest\Element;
 
+use Drupal\Component\Utility\NestedArray;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Element\FormElement;
-use Drupal\Component\Utility\NestedArray;
-
-use Drupal\migrate\Row;
-use Drupal\migrate\Plugin\migrate\destination\Entity;
-use Drupal\migrate\Plugin\MigrationInterface;
 use Drupal\islandora_spreadsheet_ingest\Form\Ingest\MigrationTrait;
-use Drupal\islandora_spreadsheet_ingest\Model\SourceInterface;
 use Drupal\islandora_spreadsheet_ingest\Model\Pipeline;
 use Drupal\islandora_spreadsheet_ingest\Model\PipelineInterface;
 use Drupal\islandora_spreadsheet_ingest\Model\ProcessPluginWrapper;
+use Drupal\islandora_spreadsheet_ingest\Model\SourceInterface;
+use Drupal\migrate\Plugin\migrate\destination\Entity;
+use Drupal\migrate\Plugin\MigrationInterface;
+use Drupal\migrate\Row;
 
 /**
  * Migration mapping element.

@@ -2,10 +2,10 @@
 
 namespace Drupal\islandora_spreadsheet_ingest\Plugin;
 
-use Drupal\Core\Plugin\DefaultPluginManager;
+use Drupal\Component\Plugin\FallbackPluginManagerInterface;
 use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
-use Drupal\Component\Plugin\FallbackPluginManagerInterface;
+use Drupal\Core\Plugin\DefaultPluginManager;
 
 /**
  * Provides the Pipeline Source Plugin plugin manager.

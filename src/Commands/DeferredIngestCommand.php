@@ -6,10 +6,9 @@ use Consolidation\SiteAlias\SiteAliasManagerAwareInterface;
 use Consolidation\SiteAlias\SiteAliasManagerAwareTrait;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Queue\QueueInterface;
+use Drupal\islandora_spreadsheet_ingest\MigrationGroupDeriverInterface;
 use Drush\Commands\DrushCommands;
 use Symfony\Component\Process\Process;
-
-use Drupal\islandora_spreadsheet_ingest\MigrationGroupDeriverInterface;
 
 /**
  * Deferred ingest command.
@@ -66,6 +65,13 @@ class DeferredIngestCommand extends DrushCommands implements SiteAliasManagerAwa
         $this->queue->deleteItem($item);
 
         $request = $request_storage->load($item->data);
+
+        if (!$request) {
+          $this->logger()->debug('Failed to load request {id}; skipping.', [
+            'id' => $item->data,
+          ]);
+          continue;
+        }
 
         $process = $this->processManager()->drush(
           $this->siteAliasmanager()->getSelf(),
