@@ -4,8 +4,8 @@ namespace Drupal\islandora_spreadsheet_ingest\Util;
 
 use Drupal\Core\DependencyInjection\DependencySerializationTrait;
 use Drupal\Core\Messenger\MessengerInterface;
-use Drupal\Core\Queue\QueueInterface;
 use Drupal\dgi_migrate\MigrationIterator;
+use Drupal\dgi_migrate\StatusFilter;
 use Drupal\migrate\Event\MigrateEvents;
 use Drupal\migrate\Event\MigrateRollbackEvent;
 use Drupal\migrate\Event\MigrateRowDeleteEvent;
@@ -38,6 +38,11 @@ class MigrationRollbackBatch extends MigrateExecutable {
   protected MigrationIterator $iterator;
 
   /**
+   * Options
+   */
+  private array $options;
+
+  /**
    * @throws \Exception
    */
   public function __construct(
@@ -46,6 +51,7 @@ class MigrationRollbackBatch extends MigrateExecutable {
     array $options,
   ) {
     parent::__construct($migration, new MigrateMessage(), $options);
+    $this->options = $options;
     $this->messenger = $messenger;
   }
 
@@ -60,7 +66,16 @@ class MigrationRollbackBatch extends MigrateExecutable {
    */
   public function prepareBatch(): array {
     $id_map = $this->getIdMap();
-    $this->iterator = new MigrationIterator($id_map, 'currentDestination');
+
+    if (isset($this->options['checkStatus']) && $this->options['checkStatus'] == 1) {
+      // Filter for failed rows.
+      $failedStatuses = StatusFilter::mapStatuses('failed');
+      $filteredIdMap = new StatusFilter($id_map, $failedStatuses);
+      $this->iterator = new MigrationIterator($filteredIdMap, 'currentDestination');
+    }
+    else {
+      $this->iterator = new MigrationIterator($id_map, 'currentDestination');
+    }
 
     return [
       'title' => $this->t('Rolling back migration: @migration', [

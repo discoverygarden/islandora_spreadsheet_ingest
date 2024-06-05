@@ -197,6 +197,10 @@ class Review extends EntityForm {
         'label' => $this->t('Rollback Migration Group'),
         'callable' => [$this, 'submitProcessRollbackMigrationGroup'],
       ],
+      'rollback_migration_failed_group' => [
+        'label' => $this->t('Rollback Migration Failed Group'),
+        'callable' => [$this, 'submitProcessRollbackMigrationGroup'],
+      ],
     ];
   }
 
@@ -257,7 +261,7 @@ class Review extends EntityForm {
   /**
    * Callback for the "rollback_migration_group" method.
    */
-  protected function submitProcessRollbackMigrationGroup(): void {
+  protected function submitProcessRollbackMigrationGroup(array &$form, FormStateInterface $form_state, array $params): void {
     try {
       $migrations = $this->migrationPluginManager->createInstancesByTag($this->migrationGroupDeriver->deriveTag($this->entity));
       $batch = [
@@ -269,6 +273,7 @@ class Review extends EntityForm {
           'limit' => 0,
           'update' => 0,
           'force' => 0,
+          'checkStatus' => $params['checkStatus'] ?? 0,
         ]);
         $batch['operations'][] = [
           [$this, 'runBatchOp'],
@@ -294,9 +299,17 @@ class Review extends EntityForm {
     if ($this->entity->getActive()) {
       $mode = $form_state->getValue('enqueue');
 
+      $params = [];
+
+      // If the mode is 'rollback_migration_failed_group', set checkStatus to 1.
+      if ($mode == '4') {
+        $params = ['checkStatus' => '1'];
+      }
+
       call_user_func_array(array_column($this->processingMethods(), 'callable')[$mode], [
         &$form,
         $form_state,
+        $params,
       ]);
     }
   }
