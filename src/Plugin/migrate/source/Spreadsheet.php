@@ -208,8 +208,16 @@ class Spreadsheet extends SourcePluginBase implements ConfigurableInterface, Con
     if ($this->reader === NULL) {
       $path = $this->getConfiguration()['file'];
       $realpath = $this->fileSystem->realpath($path);
-      $reader = ReaderFactory::createFromFile($realpath);
-      $reader->open($realpath);
+      if ($realpath !== FALSE) {
+        $reader = ReaderFactory::createFromFile($realpath);
+        $reader->open($realpath);
+      }
+      else {
+        // Real-path of stream wrappers does not quite make sense, so allow
+        // an opportunity for files from stream wrappers to be processed.
+        $reader = ReaderFactory::createFromFile($path);
+        $reader->open($path);
+      }
       $this->reader = $reader;
     }
 

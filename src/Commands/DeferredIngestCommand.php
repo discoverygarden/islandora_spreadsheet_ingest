@@ -66,6 +66,13 @@ class DeferredIngestCommand extends DrushCommands implements SiteAliasManagerAwa
 
         $request = $request_storage->load($item->data);
 
+        if (!$request) {
+          $this->logger()->debug('Failed to load request {id}; skipping.', [
+            'id' => $item->data,
+          ]);
+          continue;
+        }
+
         $process = $this->processManager()->drush(
           $this->siteAliasmanager()->getSelf(),
           'migrate:batch-import',
