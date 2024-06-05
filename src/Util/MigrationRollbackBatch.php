@@ -47,10 +47,8 @@ class MigrationRollbackBatch extends MigrateExecutable {
    *
    * @param \MigrationInterface $migration
    *   The migration interface.
-   *
    * @param \MessengerInterface $messenger
    *   The messenger service.
-   *
    * @param array $options
    *   An array of options.
    */
