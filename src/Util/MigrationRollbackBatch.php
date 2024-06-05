@@ -164,7 +164,7 @@ class MigrationRollbackBatch extends MigrateExecutable {
         $id_map->delete($source_key);
         continue;
       }
-      else{
+      else {
         $this->getEventDispatcher()
           ->dispatch(new MigrateRowDeleteEvent($this->migration, $this->iterator->current()), MigrateEvents::PRE_ROW_DELETE);
         $destination->rollback($this->iterator->current());
@@ -218,5 +218,5 @@ class MigrationRollbackBatch extends MigrateExecutable {
     $this->getEventDispatcher()->dispatch(new MigrateRollbackEvent($this->migration), MigrateEvents::POST_ROLLBACK);
     $this->migration->setStatus(MigrationInterface::STATUS_IDLE);
   }
-  
+
 }
