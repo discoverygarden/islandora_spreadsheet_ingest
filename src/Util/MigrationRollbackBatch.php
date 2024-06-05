@@ -31,19 +31,28 @@ class MigrationRollbackBatch extends MigrateExecutable {
   protected MessengerInterface $messenger;
 
   /**
-   * Iterates through migration rows
+   * Iterates through migration rows.
    *
-   * @var MigrationIterator
+   * @var Drupal\dgi_migrate\MigrationIteratorMigrationIterator
    */
   protected MigrationIterator $iterator;
 
   /**
-   * Options
+   * Options.
    */
   private array $options;
 
   /**
-   * @throws \Exception
+   * Constructs a new MigrationRollbackBatch instance.
+   *
+   * @param \MigrationInterface $migration
+   *   The migration interface.
+   *
+   * @param \MessengerInterface $messenger
+   *   The messenger service.
+   *
+   * @param array $options
+   *   An array of options.
    */
   public function __construct(
     MigrationInterface $migration,
@@ -137,7 +146,7 @@ class MigrationRollbackBatch extends MigrateExecutable {
     if ($this->migration->getStatus() !== MigrationInterface::STATUS_IDLE) {
       $this->message->display($this->t(
         'Migration @id is busy with another operation: @status',
-        ['@id' => $this->migration->id(), '@status' => $this->t($this->migration->getStatusLabel())]), 'error');
+        ['@id' => $this->migration->id(), '@status' => $this->migration->getStatusLabel()]), 'error');
       return MigrationInterface::RESULT_FAILED;
     }
 
@@ -156,7 +165,8 @@ class MigrationRollbackBatch extends MigrateExecutable {
         $source_key = $id_map->currentSource();
         $id_map->delete($source_key);
         continue;
-      }else{
+      }
+      else{
         $this->getEventDispatcher()
           ->dispatch(new MigrateRowDeleteEvent($this->migration, $this->iterator->current()), MigrateEvents::PRE_ROW_DELETE);
         $destination->rollback($this->iterator->current());
@@ -210,4 +220,5 @@ class MigrationRollbackBatch extends MigrateExecutable {
     $this->getEventDispatcher()->dispatch(new MigrateRollbackEvent($this->migration), MigrateEvents::POST_ROLLBACK);
     $this->migration->setStatus(MigrationInterface::STATUS_IDLE);
   }
+  
 }
