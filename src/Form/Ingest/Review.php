@@ -193,9 +193,13 @@ class Review extends EntityForm {
         'label' => $this->t('Immediate'),
         'callable' => [$this, 'submitProcessImmediate'],
       ],
-      'rollback_migration_group' => [
-        'label' => $this->t('Rollback Migration Group'),
+      'full_rollback_migration_group' => [
+        'label' => $this->t('Fully Rollback Migration Group'),
         'callable' => [$this, 'submitProcessRollbackMigrationGroup'],
+      ],
+      'failed_rollback_migration_group' => [
+        'label' => $this->t('Rollback Failed and Ignored Items in Migration Group'),
+        'callable' => [$this, 'submitProcessRollbackFailedMigrationGroup'],
       ],
     ];
   }
@@ -255,7 +259,7 @@ class Review extends EntityForm {
   }
 
   /**
-   * Callback for the "rollback_migration_group" method.
+   * Callback for the "full_rollback_migration_group" method.
    */
   protected function submitProcessRollbackMigrationGroup(array &$form, FormStateInterface $form_state, array $params): void {
     try {
@@ -269,7 +273,40 @@ class Review extends EntityForm {
           'limit' => 0,
           'update' => 0,
           'force' => 0,
-          'checkStatus' => $params['checkStatus'] ?? 0,
+          'checkStatus' => FALSE,
+        ]);
+        $batch['operations'][] = [
+          [$this, 'runBatchOp'],
+          [$migration, $executable],
+        ];
+      }
+
+      batch_set($batch);
+    }
+    catch (\Exception $e) {
+      $this->logger('isi.review')->error("Failed to roll back migration: {exc}\n{backtrace}", [
+        'exc' => $e->getMessage(),
+        'backtrace' => $e->getTraceAsString(),
+      ]);
+      $this->messenger->addError($this->t("Failed to rollback migration."));
+    }
+  }
+  /**
+   * Callback for the "failed_rollback_migration_group" method.
+   */
+  protected function submitProcessRollbackFailedMigrationGroup(array &$form, FormStateInterface $form_state, array $params): void {
+    try {
+      $migrations = $this->migrationPluginManager->createInstancesByTag($this->migrationGroupDeriver->deriveTag($this->entity));
+      $batch = [
+        'operations' => [],
+      ];
+
+      foreach ($migrations as $migration) {
+        $executable = new MigrationRollbackBatch($migration, $this->messenger, [
+          'limit' => 0,
+          'update' => 0,
+          'force' => 0,
+          'checkStatus' => TRUE,
         ]);
         $batch['operations'][] = [
           [$this, 'runBatchOp'],
@@ -295,17 +332,9 @@ class Review extends EntityForm {
     if ($this->entity->getActive()) {
       $mode = $form_state->getValue('enqueue');
 
-      $params = [];
-
-      // If the mode is 'rollback_migration_failed_group', set checkStatus to 1.
-      if ($mode == '4') {
-        $params = ['checkStatus' => '1'];
-      }
-
       call_user_func_array(array_column($this->processingMethods(), 'callable')[$mode], [
         &$form,
         $form_state,
-        $params,
       ]);
     }
   }
