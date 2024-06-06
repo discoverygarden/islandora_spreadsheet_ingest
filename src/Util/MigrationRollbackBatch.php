@@ -30,6 +30,11 @@ class MigrationRollbackBatch extends MigrateExecutable {
    */
   protected QueueInterface $queue;
 
+  /**
+   * Flag if we should exclusively consider failed and ignored rows to rollback.
+   *
+   * @var bool
+   */
   protected bool $checkStatus;
 
   /**
@@ -48,7 +53,7 @@ class MigrationRollbackBatch extends MigrateExecutable {
     array $options,
   ) {
     parent::__construct($migration, $messenger, $options);
-    $this->checkStatus = $options['checkStatus'] ?? FALSE;
+    $this->checkStatus = (bool) ($options['checkStatus'] ?? FALSE);
   }
 
   /**
@@ -107,8 +112,9 @@ class MigrationRollbackBatch extends MigrateExecutable {
     $iterator = $this->checkStatus ?
       new StatusFilter($id_map, StatusFilter::mapStatuses('failed,ignored')) :
       $id_map;
-    foreach ($iterator as $_) {
+    foreach ($iterator as $row) {
       $this->queue->createItem([
+        'iterator_value' => $row,
         'destination' => $id_map->currentDestination(),
         'source' => $id_map->currentSource(),
       ]);
