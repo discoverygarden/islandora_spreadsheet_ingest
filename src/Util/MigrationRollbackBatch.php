@@ -7,7 +7,6 @@ use Drupal\Core\Queue\QueueInterface;
 use Drupal\dgi_migrate\MigrateBatchException;
 use Drupal\dgi_migrate\StatusFilter;
 use Drupal\migrate\Event\MigrateEvents;
-use Drupal\migrate\Event\MigrateImportEvent;
 use Drupal\migrate\Event\MigrateRollbackEvent;
 use Drupal\migrate\Event\MigrateRowDeleteEvent;
 use Drupal\migrate\MigrateMessageInterface;
@@ -25,16 +24,13 @@ class MigrationRollbackBatch extends MigrateExecutable {
   }
 
   /**
-   * Options.
-   */
-  protected array $options;
-
-  /**
    * Stores the migration rows.
    *
    * @var \Drupal\Core\Queue\QueueInterface
    */
   protected QueueInterface $queue;
+
+  protected bool $checkStatus;
 
   /**
    * Constructs a new MigrationRollbackBatch instance.
@@ -52,8 +48,7 @@ class MigrationRollbackBatch extends MigrateExecutable {
     array $options,
   ) {
     parent::__construct($migration, $messenger, $options);
-    $this->options = $options;
-    $this->messenger = $messenger;
+    $this->checkStatus = $options['checkStatus'] ?? FALSE;
   }
 
   /**
@@ -103,18 +98,18 @@ class MigrationRollbackBatch extends MigrateExecutable {
         ]), 'error');
       return MigrationInterface::RESULT_FAILED;
     }
-    $this->getEventDispatcher()->dispatch(new MigrateImportEvent($this->migration, $this->message), MigrateEvents::PRE_ROLLBACK);
+    $this->getEventDispatcher()->dispatch(new MigrateRollbackEvent($this->migration, $this->message), MigrateEvents::PRE_ROLLBACK);
     $this->migration->setStatus(MigrationInterface::STATUS_ROLLING_BACK);
     $queue = $this->getQueue();
     $queue->deleteQueue();
 
     $id_map = $this->getIdMap();
-    $iterator = $this->options['checkStatus'] ?
+    $iterator = $this->checkStatus ?
       new StatusFilter($id_map, StatusFilter::mapStatuses('failed,ignored')) :
       $id_map;
-    foreach ($iterator as $row) {
+    foreach ($iterator as $_) {
       $this->queue->createItem([
-        'destination' => $row,
+        'destination' => $id_map->currentDestination(),
         'source' => $id_map->currentSource(),
       ]);
     }

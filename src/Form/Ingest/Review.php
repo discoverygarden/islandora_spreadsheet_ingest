@@ -261,15 +261,20 @@ class Review extends EntityForm {
   /**
    * Callback for the "full_rollback_migration_group" method.
    */
-  protected function submitProcessRollbackMigrationGroup(array &$form, FormStateInterface $form_state, array $params): void {
+  protected function submitProcessRollbackMigrationGroup(array &$form, FormStateInterface $form_state): void {
     try {
       $migrations = $this->migrationPluginManager->createInstancesByTag($this->migrationGroupDeriver->deriveTag($this->entity));
+
+      $migrations = array_reverse($migrations);
+
       $batch = [
         'operations' => [],
       ];
 
+      $messenger = new MigrateMessage();
+
       foreach ($migrations as $migration) {
-        $executable = new MigrationRollbackBatch($migration, $this->messenger, [
+        $executable = new MigrationRollbackBatch($migration, $messenger, [
           'limit' => 0,
           'update' => 0,
           'force' => 0,
@@ -295,15 +300,18 @@ class Review extends EntityForm {
   /**
    * Callback for the "failed_rollback_migration_group" method.
    */
-  protected function submitProcessRollbackFailedMigrationGroup(array &$form, FormStateInterface $form_state, array $params): void {
+  protected function submitProcessRollbackFailedMigrationGroup(array &$form, FormStateInterface $form_state): void {
     try {
       $migrations = $this->migrationPluginManager->createInstancesByTag($this->migrationGroupDeriver->deriveTag($this->entity));
+      $migrations = array_reverse($migrations);
       $batch = [
         'operations' => [],
       ];
 
+      $messenger = new MigrateMessage();
+
       foreach ($migrations as $migration) {
-        $executable = new MigrationRollbackBatch($migration, $this->messenger, [
+        $executable = new MigrationRollbackBatch($migration, $messenger, [
           'limit' => 0,
           'update' => 0,
           'force' => 0,
