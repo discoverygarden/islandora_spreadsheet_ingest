@@ -197,10 +197,6 @@ class Review extends EntityForm {
         'label' => $this->t('Rollback Migration Group'),
         'callable' => [$this, 'submitProcessRollbackMigrationGroup'],
       ],
-      'rollback_migration_failed_group' => [
-        'label' => $this->t('Rollback Migration Failed Group'),
-        'callable' => [$this, 'submitProcessRollbackMigrationGroup'],
-      ],
     ];
   }
 
