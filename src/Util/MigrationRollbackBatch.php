@@ -3,7 +3,6 @@
 namespace Drupal\islandora_spreadsheet_ingest\Util;
 
 use Drupal\Core\DependencyInjection\DependencySerializationTrait;
-use Drupal\Core\Messenger\MessengerInterface;
 use Drupal\Core\Queue\QueueInterface;
 use Drupal\dgi_migrate\MigrateBatchException;
 use Drupal\dgi_migrate\StatusFilter;
@@ -11,7 +10,7 @@ use Drupal\migrate\Event\MigrateEvents;
 use Drupal\migrate\Event\MigrateImportEvent;
 use Drupal\migrate\Event\MigrateRollbackEvent;
 use Drupal\migrate\Event\MigrateRowDeleteEvent;
-use Drupal\migrate\MigrateMessage;
+use Drupal\migrate\MigrateMessageInterface;
 use Drupal\migrate\Plugin\MigrationInterface;
 use Drupal\migrate_tools\MigrateExecutable;
 
@@ -26,47 +25,33 @@ class MigrationRollbackBatch extends MigrateExecutable {
   }
 
   /**
-   * Messenger service to display messages.
-   *
-   * @var \Drupal\Core\Messenger\MessengerInterface
-   */
-  protected MessengerInterface $messenger;
-
-  /**
    * Options.
    */
-  private array $options;
+  protected array $options;
 
   /**
-   * Stores the migration rows
+   * Stores the migration rows.
    *
-   * @var QueueInterface
+   * @var \Drupal\Core\Queue\QueueInterface
    */
   protected QueueInterface $queue;
-
-  /**
-   * Batch context
-   *
-   * @var array
-   */
-  protected array $context;
 
   /**
    * Constructs a new MigrationRollbackBatch instance.
    *
    * @param \Drupal\migrate\Plugin\MigrationInterface $migration
    *   The migration interface.
-   * @param \Drupal\Core\Messenger\MessengerInterface $messenger
+   * @param \Drupal\migrate\MigrateMessageInterface $messenger
    *   The messenger service.
    * @param array $options
    *   An array of options.
    */
   public function __construct(
     MigrationInterface $migration,
-    MessengerInterface $messenger,
+    MigrateMessageInterface $messenger,
     array $options,
   ) {
-    parent::__construct($migration, new MigrateMessage(), $options);
+    parent::__construct($migration, $messenger, $options);
     $this->options = $options;
     $this->messenger = $messenger;
   }
@@ -99,9 +84,11 @@ class MigrationRollbackBatch extends MigrateExecutable {
   }
 
   /**
-   * Adds the migration rows to a queue
+   * Adds the migration rows to a queue.
    *
    * @return int
+   *   One of the MigrationInterface::RESULT_* constants representing the state
+   *   of queueing.
    */
   private function enqueue(): int {
     // Only begin the import operation if the migration is currently idle.
@@ -322,4 +309,5 @@ class MigrationRollbackBatch extends MigrateExecutable {
 
     return $this->queue;
   }
+
 }

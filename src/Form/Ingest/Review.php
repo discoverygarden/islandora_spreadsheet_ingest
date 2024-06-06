@@ -291,6 +291,7 @@ class Review extends EntityForm {
       $this->messenger->addError($this->t("Failed to rollback migration."));
     }
   }
+
   /**
    * Callback for the "failed_rollback_migration_group" method.
    */
