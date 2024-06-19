@@ -113,7 +113,7 @@ class MigrationRollbackBatch extends MigrateExecutable {
       new StatusFilter($id_map, StatusFilter::mapStatuses('failed,ignored')) :
       $id_map;
     foreach ($iterator as $row) {
-      $this->queue->createItem([
+      $queue->createItem([
         'iterator_value' => $row,
         'destination' => $id_map->currentDestination(),
         'source' => $id_map->currentSource(),
@@ -132,8 +132,10 @@ class MigrationRollbackBatch extends MigrateExecutable {
   public function processBatch(&$context) : void {
     $sandbox =& $context['sandbox'];
 
+    $queue = $this->getQueue();
+
     if (!isset($sandbox['total'])) {
-      $sandbox['total'] = $this->queue->numberOfItems();
+      $sandbox['total'] = $queue->numberOfItems();
       if ($sandbox['total'] === 0) {
         $context['message'] = $this->t('Queue empty.');
         $context['finished'] = 1;
@@ -141,7 +143,6 @@ class MigrationRollbackBatch extends MigrateExecutable {
       }
     }
 
-    $queue = $this->getQueue();
     $get_current = function (bool $pre_delete = FALSE) use (&$sandbox, $queue) {
       return $sandbox['total'] - $queue->numberOfItems() + ($pre_delete ? 1 : 0);
     };
