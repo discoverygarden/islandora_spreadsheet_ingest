@@ -8,6 +8,7 @@ use Drupal\Core\File\FileSystemInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\migrate\Plugin\migrate\source\SourcePluginBase;
 use Drupal\migrate\Plugin\MigrationInterface;
+use OpenSpout\Common\Exception\IOException;
 use OpenSpout\Reader\Common\Creator\ReaderFactory;
 use OpenSpout\Reader\CSV\Reader as CSVReader;
 use OpenSpout\Reader\ReaderInterface;
@@ -21,8 +22,8 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * the same available configuration keys:
  * - file: The path to the source file. The path can be either relative to
  *   Drupal root but it can be a also an absolute reference such as a stream
- *   wrapper; however, a .ods or .xlsx _must_ be able to be realpath'd to a
- *   real location, at present.
+ *   wrapper. If an .ods or .xlsx can not be realpath'd, we will handle spooling
+ *   to a temp file.
  * - worksheet: The name of the worksheet to read from.
  * - header_row: The row where the header is placed. If the table header is on
  *   the first row, this configuration should be 1. The header cell values will
@@ -80,6 +81,13 @@ class Spreadsheet extends SourcePluginBase implements ConfigurableInterface, Con
    * @var \Drupal\Core\File\FileSystemInterface
    */
   protected FileSystemInterface $fileSystem;
+
+  /**
+   * File path under which non-realpath-able URIs might be spooled for use.
+   *
+   * @var string
+   */
+  protected string $spoolFile;
 
   /**
    * Constructor.
@@ -213,10 +221,24 @@ class Spreadsheet extends SourcePluginBase implements ConfigurableInterface, Con
         $reader->open($realpath);
       }
       else {
-        // Real-path of stream wrappers does not quite make sense, so allow
-        // an opportunity for files from stream wrappers to be processed.
-        $reader = ReaderFactory::createFromFile($path);
-        $reader->open($path);
+        try {
+          // Real-path of stream wrappers does not quite make sense, so allow
+          // an opportunity for files from stream wrappers to be processed.
+          $reader = ReaderFactory::createFromFile($path);
+          $reader->open($path);
+        }
+        catch (IOException $e) {
+          // Possibly an exception such as:
+          // "OpenSpout\Common\Exception\IOException: Could not open
+          // {scheme}://{filename}.ods for reading! Stream wrapper used is not
+          // supported for this type of file."
+          // So let's try to spool to a temp file to remove the stream wrapper
+          // from the equation.
+          $spooled = $this->fileSystem->copy($path, sys_get_temp_dir());
+          $this->spoolFile = $this->fileSystem->realpath($spooled);
+          $reader = ReaderFactory::createFromFile($this->spoolFile);
+          $reader->open($this->spoolFile);
+        }
       }
       $this->reader = $reader;
     }
@@ -231,6 +253,10 @@ class Spreadsheet extends SourcePluginBase implements ConfigurableInterface, Con
     if ($this->reader !== NULL) {
       $this->reader->close();
       unset($this->reader);
+      if (isset($this->spoolFile)) {
+        $this->fileSystem->unlink($this->spoolFile);
+        unset($this->spoolFile);
+      }
     }
   }
 
