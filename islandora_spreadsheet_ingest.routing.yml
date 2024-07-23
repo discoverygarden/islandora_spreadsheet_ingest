@@ -20,6 +20,10 @@ entity.isi_request.edit_form:
     _entity_form: 'isi_request.edit'
   requirements:
     _entity_access: 'isi_request.update'
+  options:
+    parameters:
+      isi_request:
+        type: islandora_spreadsheet_ingest_request
 entity.isi_request.delete_form:
   path: '/admin/content/islandora_spreadsheet_ingest/{isi_request}/delete'
   defaults:
@@ -27,12 +31,20 @@ entity.isi_request.delete_form:
     _entity_form: 'isi_request.delete'
   requirements:
     _entity_access: 'isi_request.delete'
+  options:
+    parameters:
+      isi_request:
+        type: islandora_spreadsheet_ingest_request
 entity.isi_request.canonical:
   path: '/admin/content/islandora_spreadsheet_ingest/{isi_request}'
   defaults:
     _entity_view: 'isi_request.full'
   requirements:
     _entity_access: 'isi_request.view'
+  options:
+    parameters:
+      isi_request:
+        type: islandora_spreadsheet_ingest_request
 entity.isi_request.process_form:
   path: '/admin/content/islandora_spreadsheet_ingest/{isi_request}/process'
   defaults:
@@ -40,6 +52,10 @@ entity.isi_request.process_form:
     _entity_form: 'isi_request.process'
   requirements:
     _entity_access: 'isi_request.activate'
+  options:
+    parameters:
+      isi_request:
+        type: islandora_spreadsheet_ingest_request
 islandora_spreadsheet_ingest.admin:
   path: '/admin/config/islandora_spreadsheet_ingest'
   defaults:

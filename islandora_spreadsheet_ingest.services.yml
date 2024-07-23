@@ -33,3 +33,10 @@ services:
     arguments:
       - isi_deferred_ingest
       - true
+  islandora_spreadsheet_ingest.param_converter.request:
+    class: Drupal\islandora_spreadsheet_ingest\Routing\RequestParamConverter
+    factory: [null, 'create']
+    arguments:
+      - '@service_container'
+    tags:
+      - { name: paramconverter }

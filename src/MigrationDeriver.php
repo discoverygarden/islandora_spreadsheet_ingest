@@ -71,7 +71,7 @@ class MigrationDeriver implements MigrationDeriverInterface {
     EntityTypeManagerInterface $entity_type_manager,
     CacheTagsInvalidatorInterface $invalidator,
     MigrationGroupDeriverInterface $migration_group_deriver,
-    MigrationPluginManagerInterface $migration_plugin_manager
+    MigrationPluginManagerInterface $migration_plugin_manager,
   ) {
     $this->logger = $logger;
     $this->entityTypeManager = $entity_type_manager;
@@ -275,7 +275,7 @@ class MigrationDeriver implements MigrationDeriverInterface {
    * {@inheritdoc}
    */
   public function createAll(RequestInterface $request) {
-    if (!$request->status() || !$request->getActive()) {
+    if (!$request->getActive()) {
       $this->logger->info('Call to create on non-active request {id}.', ['id' => $request->id()]);
       return;
     }
@@ -336,12 +336,15 @@ class MigrationDeriver implements MigrationDeriverInterface {
    */
   public function deleteAll(RequestInterface $request) {
     // Nuke the storage for the given mgiration group.
+    /** @var \Drupal\migrate_plus\Entity\MigrationInterface[] $migrations */
     $migrations = $this->migrationStorage->loadByProperties([
       'migration_group' => $this->migrationGroupDeriver->deriveName($request),
     ]);
 
     // Nuke the message and map tables for the given migrations.
-    foreach ($migrations as $migration) {
+    foreach ($migrations as $migration_entity) {
+      /** @var \Drupal\migrate\Plugin\MigrationInterface $migration */
+      $migration = $this->migrationPluginManager->createInstance($migration_entity->id());
       $migration->getIdMap()->destroy();
     }
 

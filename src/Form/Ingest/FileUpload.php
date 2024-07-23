@@ -174,9 +174,9 @@ class FileUpload extends EntityForm {
       '#description' => $this->t("Label for the Example."),
       '#required' => TRUE,
     ];
-    $form['id'] = [
+    $form['machine_name'] = [
       '#type' => 'machine_name',
-      '#default_value' => $entity->id(),
+      '#default_value' => $entity->get('machine_name')->getString(),
       '#disabled' => !$entity->isNew(),
       '#machine_name' => [
         'exists' => [$this, 'exist'],
@@ -261,14 +261,15 @@ class FileUpload extends EntityForm {
     // Copy/transform the info from the target.
     [$original, $mapped] = $this->mapMappings($request->getOriginalMapping());
     $request->set('mappings', $mapped);
-    $request->set('originalMapping', $original);
-    $request->set('sheet', [
-      'file' => ($form_state->getValue(['sheet', 'file', 'fids']) ??
-        $form_state->getValue(['sheet', 'file'])),
-      'sheet' => $form_state->getValue(['sheet', 'sheet']),
-    ]);
+    $request->set('original_mapping', $original);
+    $request->set(
+      'sheet_file',
+      $form_state->getValue(['sheet', 'file', 'fids']) ?? $form_state->getValue(['sheet', 'file']),
+    );
+    $request->set('sheet_sheet', $form_state->getValue(['sheet', 'sheet']));
     $request->set('owner', $this->currentUser()->id());
     $request->set('active', TRUE);
+    $request->set('machine_name', $form_state->getValue('machine_name'));
   }
 
   /**
@@ -306,7 +307,7 @@ class FileUpload extends EntityForm {
       // existence of other requests; however, unsure if we are particularly
       // concerned.
       ->accessCheck(FALSE)
-      ->condition('id', $id)
+      ->condition('machine_name', $id)
       ->execute();
     return (bool) $entity;
   }

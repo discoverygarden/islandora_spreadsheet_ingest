@@ -55,14 +55,14 @@ class Request extends ContentEntityBase implements EntityOwnerInterface, Request
    * {@inheritdoc}
    */
   public function getOriginalMapping() {
-    return $this->get('original_mapping')->getValue();
+    return $this->get('original_mapping')->getString();
   }
 
   /**
    * {@inheritdoc}
    */
   public function getActive() {
-    return $this->get('active')->getValue();
+    return $this->get('active')->first()->getValue()['value'];
   }
 
   /**
@@ -70,8 +70,8 @@ class Request extends ContentEntityBase implements EntityOwnerInterface, Request
    */
   public function getSheet() {
     return [
-      'file' => $this->get('sheet_file')->getValue(),
-      'sheet' => $this->get('sheet_sheet')->getValue(),
+      'file' => [$this->get('sheet_file')->first()->getString()],
+      'sheet' => $this->get('sheet_sheet')->first()->getString(),
     ];
   }
 
@@ -79,7 +79,7 @@ class Request extends ContentEntityBase implements EntityOwnerInterface, Request
    * {@inheritdoc}
    */
   public function getMappings() {
-    return $this->get('mappings')->getValue();
+    return $this->get('mappings')->first()->getValue();
   }
 
   /**
