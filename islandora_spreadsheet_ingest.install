@@ -47,47 +47,12 @@ function islandora_spreadsheet_ingest_update_9001() {
 function islandora_spreadsheet_ingest_update_9002() {
   $etm = \Drupal::entityTypeManager();
   $upm = \Drupal::entityDefinitionUpdateManager();
-  $config_entity_base_definition = [
-    "label" => \t("Islandora Spreadsheet Ingest Request"),
-    "handlers" => [
-      "list_builder" => "Drupal\islandora_spreadsheet_ingest\Controller\RequestListBuilder",
-      "form" => [
-        "process" => "Drupal\islandora_spreadsheet_ingest\Form\Ingest\Review",
-        "add" => "Drupal\islandora_spreadsheet_ingest\Form\Ingest\FileUpload",
-        "delete" => "Drupal\islandora_spreadsheet_ingest\Form\RequestDeleteForm",
-        "edit" => "Drupal\islandora_spreadsheet_ingest\Form\Ingest\FileUpload",
-        "view" => "Drupal\islandora_spreadsheet_ingest\Form\Ingest\Review",
-      ],
-      "access" => "Drupal\islandora_spreadsheet_ingest\RequestAccessControlHandler",
-      "view_builder" => "Drupal\islandora_spreadsheet_ingest\RequestViewBuilder",
-    ],
-    "config_prefix" => "request",
-    "admin_permission" => "administer islandora_spreadsheet_ingest requests",
-    "entity_keys" => [
-      "id" => "id",
-      "label" => "label",
-    ],
-    "config_export" => [
-      "id",
-      "label",
-      "sheet",
-      "originalMapping",
-      "mappings",
-      "active",
-      "owner",
-    ],
-    "links" => [
-      "canonical" => "/admin/content/islandora_spreadsheet_ingest/{isi_request}",
-      "process-form" => "/admin/content/islandora_spreadsheet_ingest/{isi_request}/process",
-      "edit-form" => "/admin/content/islandora_spreadsheet_ingest/{isi_request}/edit",
-      "map-form" => "/admin/content/islandora_spreadsheet_ingest/{isi_request}/mapping",
-      "delete-form" => "/admin/content/islandora_spreadsheet_ingest/{isi_request}/delete",
-    ],
-  ];
-  $upm->uninstallEntityType(new class(['id' => 'isi_request'] + $config_entity_base_definition) extends ConfigEntityType {
 
-    // All from the extended class.
-  });
+  $upm->uninstallEntityType($upm->getEntityType('isi_request'));
+
+  // XXX: This should probably be including the definition inline to be
+  // installed, including field definitions, instead of dynamically lifting the
+  // definitions from the entity type manager.
   $definition = $etm->getDefinition('isi_request');
   $upm->installFieldableEntityType($definition, Request::baseFieldDefinitions($definition));
 }

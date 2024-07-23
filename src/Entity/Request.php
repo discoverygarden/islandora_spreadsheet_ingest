@@ -16,9 +16,9 @@ use Drupal\user\EntityOwnerTrait;
  *   id = "isi_request",
  *   label = @Translation("Islandora Spreadsheet Ingest Request"),
  *   handlers = {
+ *     "storage_schema" = "Drupal\islandora_spreadsheet_ingest\RequestStorageSchema",
  *     "list_builder" = "Drupal\islandora_spreadsheet_ingest\Controller\RequestListBuilder",
  *     "form" = {
- *       "storage" = "Drupal\islandora_spreadsheet_ingest\RequestStorage",
  *       "process" = "Drupal\islandora_spreadsheet_ingest\Form\Ingest\Review",
  *       "add" = "Drupal\islandora_spreadsheet_ingest\Form\Ingest\FileUpload",
  *       "delete" = "Drupal\islandora_spreadsheet_ingest\Form\RequestDeleteForm",
@@ -33,6 +33,7 @@ use Drupal\user\EntityOwnerTrait;
  *   data_table = "islandora_spreadsheet_ingest_request_data",
  *   entity_keys = {
  *     "id" = "id",
+ *     "uuid" = "uuid",
  *     "label" = "label",
  *     "owner" = "owner",
  *   },
@@ -166,7 +167,10 @@ class Request extends ContentEntityBase implements EntityOwnerInterface, Request
       ->setRequired(TRUE)
       ->setTranslatable(FALSE)
       ->setRevisionable(FALSE)
-      ->setCardinality(1);
+      ->setCardinality(1)
+      ->addConstraint('UniqueField', [
+        'message' => 'The machine_name %value is already in use.',
+      ]);
     $fields['active'] = BaseFieldDefinition::create('boolean')
       ->setLabel(\t('Label'))
       ->setRequired(TRUE)
