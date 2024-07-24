@@ -91,13 +91,6 @@ class Admin extends ConfigFormBase {
       '#default_value' => $current_whitelist ? implode(',', $current_whitelist) : '',
       '#description' => $this->t('A comma separated list of local locations from which spreadsheet ingests can use binaries.'),
     ];
-    $form['config_ignore_integration'] = [
-      '#type' => 'checkbox',
-      '#title' => $this->t('Enable config_ignore integration?'),
-      '#default_value' => $config->get('enable_config_ignore_integration'),
-      '#description' => $this->t('This module results in many "migrate_plus" config entities being created; however, these config entities should not typically be synchronized between systems. Therefore, we integrate with "config_ignore" to ignore the given entities.'),
-      '#disabled' => !$this->moduleHandler->moduleExists('config_ignore'),
-    ];
     $form['submit'] = [
       '#type' => 'submit',
       '#value' => $this->t('Save'),
@@ -121,7 +114,6 @@ class Admin extends ConfigFormBase {
     $whitelist = array_filter(explode(',', $form_state->getValue('paths')));
     $config->set('binary_directory_whitelist', $whitelist);
     $config->set('schemes', array_filter($form_state->getValue('schemes')));
-    $config->set('enable_config_ignore_integration', $form_state->getValue('config_ignore_integration'));
     $config->save();
     parent::submitForm($form, $form_state);
   }

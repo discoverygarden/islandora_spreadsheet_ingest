@@ -7,8 +7,5 @@
         "discoverygarden/dgi_migrate": "^1 || ^2 || ^3",
         "drupal/migrate_plus": "^4.2 || ^5.1 || ^6",
         "phpoffice/phpspreadsheet": "^1"
-    },
-    "suggest": {
-        "drupal/config_ignore": "We integrate with it to allow our specific drupal/migrate_plus entities to be ignored by config operations."
     }
 }

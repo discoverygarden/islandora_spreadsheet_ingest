@@ -6,7 +6,6 @@
  */
 
 use Drupal\Component\Utility\NestedArray;
-use Drupal\config_ignore\ConfigIgnoreConfig;
 use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Access\AccessResultInterface;
 use Drupal\Core\Entity\EntityInterface;
@@ -197,20 +196,4 @@ function islandora_spreadsheet_ingest_migration_plugins_alter(&$definitions) : v
   unset($def);
 
   $logger->debug('Altered.');
-}
-
-/**
- * Implements hook_config_ignore_ignored_alter().
- */
-function islandora_spreadsheet_ingest_config_ignore_ignored_alter(ConfigIgnoreConfig $ignored) : void {
-  if (!\Drupal::config('islandora_spreadsheet_ingest.settings')->get('enable_config_ignore_integration')) {
-    return;
-  }
-
-  $list = $ignored->getList('import', 'create');
-
-  $list[] = "migrate_plus.migration_group.isi__*";
-  $list[] = "migrate_plus.migration.isi__*";
-
-  $ignored->setList('import', 'create', $list);
 }
