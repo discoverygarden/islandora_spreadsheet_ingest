@@ -2,7 +2,7 @@
 
 namespace Drupal\islandora_spreadsheet_ingest\Form;
 
-use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\StreamWrapper\StreamWrapperInterface;
@@ -15,28 +15,54 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class Admin extends ConfigFormBase {
 
   /**
-   * The StreamWrapperManager.
+   * Drupal's stream wrapper manager service..
    *
    * @var \Drupal\Core\StreamWrapper\StreamWrapperManagerInterface
    */
-  protected $streamWrapperManager;
+  protected StreamWrapperManagerInterface $streamWrapperManager;
 
   /**
-   * {@inheritdoc}
+   * Drupal's module handler service.
+   *
+   * @var \Drupal\Core\Extension\ModuleHandlerInterface
    */
-  public function __construct(ConfigFactoryInterface $config_factory, StreamWrapperManagerInterface $stream_wrapper_manager) {
-    parent::__construct($config_factory);
-    $this->streamWrapperManager = $stream_wrapper_manager;
-  }
+  protected ModuleHandlerInterface $moduleHandler;
 
   /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
-    return new static(
-      $container->get('config.factory'),
-      $container->get('stream_wrapper_manager')
-    );
+    return parent::create($container)
+      ->setStreamWrapperManager($container->get('stream_wrapper_manager'))
+      ->setModuleHandler($container->get('module_handler'));
+  }
+
+  /**
+   * Setter for the stream wrapper manager service.
+   *
+   * @param \Drupal\Core\StreamWrapper\StreamWrapperManagerInterface $streamWrapperManager
+   *   The stream wrapper manager service to set.
+   *
+   * @return $this
+   *   Fluent interface.
+   */
+  public function setStreamWrapperManager(StreamWrapperManagerInterface $streamWrapperManager) : static {
+    $this->streamWrapperManager = $streamWrapperManager;
+    return $this;
+  }
+
+  /**
+   * Setter for the module handler service.
+   *
+   * @param \Drupal\Core\Extension\ModuleHandlerInterface $moduleHandler
+   *   The module handler service to set.
+   *
+   * @return $this
+   *   Fluent interface.
+   */
+  public function setModuleHandler(ModuleHandlerInterface $moduleHandler) : static {
+    $this->moduleHandler = $moduleHandler;
+    return $this;
   }
 
   /**
@@ -65,6 +91,13 @@ class Admin extends ConfigFormBase {
       '#default_value' => $current_whitelist ? implode(',', $current_whitelist) : '',
       '#description' => $this->t('A comma separated list of local locations from which spreadsheet ingests can use binaries.'),
     ];
+    $form['config_ignore_integration'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Enable config_ignore integration?'),
+      '#default_value' => $config->get('enable_config_ignore_integration'),
+      '#description' => $this->t('This module results in many "migrate_plus" config entities being created; however, these config entities should typically be synchronized between systems. Therefore, we integrate with "config_ignore" to ignore the given entities.'),
+      '#disabled' => !$this->moduleHandler->moduleExists('config_ignore'),
+    ];
     $form['submit'] = [
       '#type' => 'submit',
       '#value' => $this->t('Save'),
@@ -88,6 +121,7 @@ class Admin extends ConfigFormBase {
     $whitelist = array_filter(explode(',', $form_state->getValue('paths')));
     $config->set('binary_directory_whitelist', $whitelist);
     $config->set('schemes', array_filter($form_state->getValue('schemes')));
+    $config->set('enable_config_ignore_integration', $form_state->getValue('config_ignore_integration'));
     $config->save();
     parent::submitForm($form, $form_state);
   }
