@@ -134,5 +134,20 @@ function islandora_spreadsheet_ingest_post_update_migrate_requests_from_config_t
  * Set the default value for enable_config_ignore_integration.
  */
 function islandora_spreadsheet_ingest_post_update_set_default_config_ignore_status() {
-  \Drupal::configFactory()->getEditable('islandora_spreadsheet_ingest.settings')->set('enable_config_ignore_integration', TRUE);
+  \Drupal::configFactory()
+    ->getEditable('islandora_spreadsheet_ingest.settings')
+    ->set('enable_config_ignore_integration', TRUE)
+    ->save();
+}
+
+/**
+ * Set a value for islandora_spreadsheet_ingest.settings:schemes, if unset.
+ */
+function islandora_spreadsheet_ingest_post_update_set_default_schemes(&$sandbox) {
+  $config = \Drupal::configFactory()->getEditable('islandora_spreadsheet_ingest.settings');
+  if ($config->get('schemes') === NULL) {
+    $config->set('schemes', [])->save();
+    return \t('Set default value of an empty array for islandora_spreadsheet_ingest.settings:schemes.');
+  }
+  return \t('A value is already present for islandora_spreadsheet_ingest.settings:schemes.');
 }
