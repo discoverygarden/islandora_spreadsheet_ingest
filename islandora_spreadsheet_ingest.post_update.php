@@ -116,6 +116,15 @@ function islandora_spreadsheet_ingest_post_update_migrate_requests_from_config_t
       $config->get('id'),
     );
   }
+  $source_mg_name = "isi__{$config->get('id')}";
+  /** @var \Drupal\migrate\Plugin\MigrationPluginManagerInterface $migration_plugin_manager */
+  $migration_plugin_manager = \Drupal::service('plugin.manager.migration');
+  foreach (array_keys($config->get('mappings')) as $name) {
+    $source_migration_id = "{$source_mg_name}_{$name}";
+    /** @var \Drupal\migrate\Plugin\MigrationInterface $source_migration */
+    $source_migration = $migration_plugin_manager->createInstance($source_migration_id);
+    $source_migration->getIdMap()->destroy();
+  }
 
   $config->delete();
   $sandbox['#finished'] = ++$sandbox['current'] / $sandbox['count'];
