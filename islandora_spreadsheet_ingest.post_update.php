@@ -129,3 +129,10 @@ function islandora_spreadsheet_ingest_post_update_migrate_requests_from_config_t
   $config->delete();
   $sandbox['#finished'] = ++$sandbox['current'] / $sandbox['count'];
 }
+
+/**
+ * Set the default value for enable_config_ignore_integration.
+ */
+function islandora_spreadsheet_ingest_post_update_set_default_config_ignore_status() {
+  \Drupal::configFactory()->getEditable('islandora_spreadsheet_ingest.settings')->set('enable_config_ignore_integration', TRUE);
+}
