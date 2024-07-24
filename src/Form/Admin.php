@@ -95,7 +95,7 @@ class Admin extends ConfigFormBase {
       '#type' => 'checkbox',
       '#title' => $this->t('Enable config_ignore integration?'),
       '#default_value' => $config->get('enable_config_ignore_integration'),
-      '#description' => $this->t('This module results in many "migrate_plus" config entities being created; however, these config entities should typically be synchronized between systems. Therefore, we integrate with "config_ignore" to ignore the given entities.'),
+      '#description' => $this->t('This module results in many "migrate_plus" config entities being created; however, these config entities should not typically be synchronized between systems. Therefore, we integrate with "config_ignore" to ignore the given entities.'),
       '#disabled' => !$this->moduleHandler->moduleExists('config_ignore'),
     ];
     $form['submit'] = [
