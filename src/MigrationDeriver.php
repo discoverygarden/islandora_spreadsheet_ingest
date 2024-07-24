@@ -335,7 +335,7 @@ class MigrationDeriver implements MigrationDeriverInterface {
    * {@inheritdoc}
    */
   public function deleteAll(RequestInterface $request) {
-    // Nuke the storage for the given mgiration group.
+    // Nuke the storage for the given migration group.
     /** @var \Drupal\migrate_plus\Entity\MigrationInterface[] $migrations */
     $migrations = $this->migrationStorage->loadByProperties([
       'migration_group' => $this->migrationGroupDeriver->deriveName($request),
