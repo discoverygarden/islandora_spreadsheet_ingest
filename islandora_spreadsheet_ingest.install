@@ -5,54 +5,122 @@
  * Installation hooks.
  */
 
-use Drupal\Core\Config\Entity\ConfigEntityType;
+use Drupal\Core\Entity\ContentEntityType;
+use Drupal\Core\Field\BaseFieldDefinition;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\islandora_spreadsheet_ingest\Entity\Request;
 
 /**
- * Drop old, disused tables.
+ * Implements hook_update_last_removed().
  */
-function islandora_spreadsheet_ingest_update_8201() {
-  $schema = \Drupal::service('database')->schema();
-
-  $tables = [
-    'islandora_spreadsheet_ingest_templates',
-    'islandora_spreadsheet_ingest_ingests',
-  ];
-  array_map([$schema, 'dropTable'], $tables);
-
-  return t('Dropped tables.');
-}
-
-/**
- * Ensure the Islandora Spreadsheet Request ConfigEntityType is installed.
- */
-function islandora_spreadsheet_ingest_update_9001() {
-  $upm = \Drupal::entityDefinitionUpdateManager();
-  $ent = $upm->getEntityType('isi_request');
-  if (is_null($ent)) {
-    $upm->installEntityType(\Drupal::entityTypeManager()
-      ->getDefinition('isi_request')
-    );
-
-    return t('The "isi_request" config entity has been installed.');
-  }
-  else {
-    return t('The "isi_request" config entity is already installed.');
-  }
+function islandora_spreadsheet_ingest_update_last_removed() {
+  return 9001;
 }
 
 /**
  * Replace config entity with content entity.
  */
 function islandora_spreadsheet_ingest_update_9002() {
-  $etm = \Drupal::entityTypeManager();
   $upm = \Drupal::entityDefinitionUpdateManager();
 
   $upm->uninstallEntityType($upm->getEntityType('isi_request'));
 
-  // XXX: This should probably be including the definition inline to be
-  // installed, including field definitions, instead of dynamically lifting the
-  // definitions from the entity type manager.
-  $definition = $etm->getDefinition('isi_request');
-  $upm->installFieldableEntityType($definition, Request::baseFieldDefinitions($definition));
+  // Much like general schema updates, this needs to include the definition
+  // inline to be installed, including field definitions, instead of dynamically
+  // lifting the definitions from the entity type manager in order to be able to
+  // reliably apply future updates.
+  $definition = new ContentEntityType([
+    "id" => "isi_request",
+    "label" => \t("Islandora Spreadsheet Ingest Request"),
+    "handlers" => [
+      "storage_schema" => "Drupal\islandora_spreadsheet_ingest\RequestStorageSchema",
+      "list_builder" => "Drupal\islandora_spreadsheet_ingest\Controller\RequestListBuilder",
+      "form" => [
+        "process" => "Drupal\islandora_spreadsheet_ingest\Form\Ingest\Review",
+        "add" => "Drupal\islandora_spreadsheet_ingest\Form\Ingest\FileUpload",
+        "delete" => "Drupal\islandora_spreadsheet_ingest\Form\RequestDeleteForm",
+        "edit" => "Drupal\islandora_spreadsheet_ingest\Form\Ingest\FileUpload",
+        "view" => "Drupal\islandora_spreadsheet_ingest\Form\Ingest\Review",
+      ],
+      "access" => "Drupal\islandora_spreadsheet_ingest\RequestAccessControlHandler",
+      "view_builder" => "Drupal\islandora_spreadsheet_ingest\RequestViewBuilder",
+    ],
+    "admin_permission" => "administer islandora_spreadsheet_ingest requests",
+    "base_table" => "islandora_spreadsheet_ingest_request",
+    "entity_keys" => [
+      "id" => "id",
+      "uuid" => "uuid",
+      "label" => "label",
+      "owner" => "uid",
+    ],
+    "links" => [
+      "canonical" => "/admin/content/islandora_spreadsheet_ingest/{isi_request}",
+      "process-form" => "/admin/content/islandora_spreadsheet_ingest/{isi_request}/process",
+      "edit-form" => "/admin/content/islandora_spreadsheet_ingest/{isi_request}/edit",
+      "map-form" => "/admin/content/islandora_spreadsheet_ingest/{isi_request}/mapping",
+      "delete-form" => "/admin/content/islandora_spreadsheet_ingest/{isi_request}/delete",
+    ],
+  ]);
+  $fields = [];
+  $fields['uid'] = BaseFieldDefinition::create('entity_reference')
+    ->setLabel(\t('User ID'))
+    ->setSetting('target_type', 'user')
+    ->setTranslatable(FALSE)
+    ->setDefaultValueCallback(Request::class . '::getDefaultEntityOwner');
+  $fields['label'] = BaseFieldDefinition::create('string')
+    ->setLabel(\t('Title'))
+    ->setRequired(TRUE)
+    ->setTranslatable(FALSE)
+    ->setRevisionable(FALSE)
+    ->setSetting('max_length', 255)
+    ->setDisplayOptions('view', [
+      'label' => 'hidden',
+      'type' => 'string',
+      'weight' => -5,
+    ])
+    ->setDisplayOptions('form', [
+      'type' => 'string_textfield',
+      'weight' => -5,
+    ])
+    ->setDisplayConfigurable('form', TRUE)
+    ->setCardinality(1);
+  $fields['machine_name'] = BaseFieldDefinition::create('string')
+    ->setLabel(\t('Machine Name'))
+    ->setRequired(TRUE)
+    ->setTranslatable(FALSE)
+    ->setRevisionable(FALSE)
+    ->setCardinality(1)
+    ->addConstraint('UniqueField', [
+      'message' => 'The machine_name %value is already in use.',
+    ]);
+  $fields['active'] = BaseFieldDefinition::create('boolean')
+    ->setLabel(\t('Label'))
+    ->setRequired(TRUE)
+    ->setCardinality(1)
+    ->setTranslatable(FALSE)
+    ->setRevisionable(FALSE);
+  $fields['sheet_file'] = BaseFieldDefinition::create('entity_reference')
+    ->setLabel(\t('Spreadsheet file'))
+    ->setRequired(TRUE)
+    ->setTranslatable(FALSE)
+    ->setRevisionable(FALSE)
+    ->setSetting('target_type', 'file')
+    ->setDisplayOptions('form', [
+      'type' => 'file_generic',
+    ])
+    ->setCardinality(1);
+  $fields['sheet_sheet'] = BaseFieldDefinition::create('string')
+    ->setLabel(\t('Worksheet'))
+    ->setDescription(\t('The specific worksheet if the file corresponds to an ODS/XLSX which is possible of containing multiple.'))
+    ->setCardinality(1);
+  $fields['mappings'] = BaseFieldDefinition::create('map')
+    ->setLabel(\t('Mappings'))
+    ->setDescription(\t('Migration mappings'))
+    ->setCardinality(1);
+  $fields['original_mapping'] = BaseFieldDefinition::create('string')
+    ->setLabel(\t('Original mapping'))
+    ->setDescription(\t('Original migration template'))
+    ->setCardinality(1);
+
+  $upm->installFieldableEntityType($definition, $fields);
 }

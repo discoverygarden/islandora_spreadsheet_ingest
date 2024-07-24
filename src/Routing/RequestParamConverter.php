@@ -22,7 +22,7 @@ class RequestParamConverter implements ParamConverterInterface, ContainerInjecti
   public function __construct(
     protected EntityTypeManagerInterface $entityTypeManager,
   ) {
-    $this->requestStorage = $this->entityTypeManager->getStorage('isi_request');
+    // No-op.
   }
 
   /**

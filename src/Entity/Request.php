@@ -30,7 +30,6 @@ use Drupal\user\EntityOwnerTrait;
  *   },
  *   admin_permission = "administer islandora_spreadsheet_ingest requests",
  *   base_table = "islandora_spreadsheet_ingest_request",
- *   data_table = "islandora_spreadsheet_ingest_request_data",
  *   entity_keys = {
  *     "id" = "id",
  *     "uuid" = "uuid",
@@ -88,38 +87,6 @@ class Request extends ContentEntityBase implements EntityOwnerInterface, Request
    */
   public function getOwner() {
     return $this->traitGetOwner()->id();
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function calculateDependencies() {
-    parent::calculateDependencies();
-
-    $storage = $this->entityTypeManager()->getStorage('migration');
-
-    // XXX: We expect the module to be accounted for in the "migration_group"
-    // config entity, and so no need deal with it specifically for the
-    // migration plugin.
-    foreach (array_column($this->getMappings(), 'original_migration_id') as $original_migration_id) {
-      if ($storage->load($original_migration_id)) {
-        $this->addDependency('config', "migrate_plus.migration.{$original_migration_id}");
-      }
-    }
-    [$type, $id] = explode(':', $this->getOriginalMapping());
-    switch ($type) {
-      case 'migration_group':
-        $this->addDependency('config', "migrate_plus.migration_group.{$id}");
-        break;
-
-      default:
-        throw new \Exception(strtr('Unknown type of original mapping: "!type"', [
-          '!type' => $type,
-        ]));
-
-    }
-
-    return $this;
   }
 
   /**
