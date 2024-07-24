@@ -50,7 +50,6 @@ class Admin extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
-    //$form = [];
     $config = $this->config('islandora_spreadsheet_ingest.settings');
     $current_whitelist = $config->get('binary_directory_whitelist');
     $form['schemes'] = [

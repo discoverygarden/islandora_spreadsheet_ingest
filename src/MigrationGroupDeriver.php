@@ -60,7 +60,7 @@ class MigrationGroupDeriver implements MigrationGroupDeriverInterface {
   public function __construct(
     LoggerInterface $logger,
     EntityTypeManagerInterface $entity_type_manager,
-    CacheTagsInvalidatorInterface $invalidator
+    CacheTagsInvalidatorInterface $invalidator,
   ) {
     $this->logger = $logger;
     $this->entityTypeManager = $entity_type_manager;
