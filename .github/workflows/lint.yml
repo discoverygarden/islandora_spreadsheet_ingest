@@ -14,5 +14,3 @@ jobs:
         uses: actions/checkout@v4
       - name: Run CodeSniffer
         uses: discoverygarden/CodeSniffer@v1
-        with:
-          phpcpd-exclude: islandora_spreadsheet_ingest.install
