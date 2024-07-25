@@ -175,12 +175,11 @@ class MigrationDeriver implements MigrationDeriverInterface {
    *   TRUE if it is the same; otherwise, FALSE.
    */
   protected function sameMigrationGroup(MigrationInterface $mig, $target) {
+    /** @var \Drupal\migrate\Plugin\MigrationInterface $loaded_target */
     $loaded_target = $this->migrationPluginManager->createInstance($target);
-    // XXX: General getters were deprecated and removed in:
-    // https://www.drupal.org/node/2873795. Given how migrate_plus injects
-    // the group need to get it without it.
-    $mg = $loaded_target->migration_group;
-    return $mg && $mg == $mig->migration_group;
+
+    $mg = $loaded_target->getPluginDefinition()['migration_group'] ?? FALSE;
+    return $mg && ($mg === ($mig->getPluginDefinition()['migration_group'] ?? FALSE));
   }
 
   const SUBPROCESSING_PLUGINS = [
@@ -275,7 +274,7 @@ class MigrationDeriver implements MigrationDeriverInterface {
    * {@inheritdoc}
    */
   public function createAll(RequestInterface $request) {
-    if (!$request->getActive()) {
+    if (!$request->status() || !$request->getActive()) {
       $this->logger->info('Call to create on non-active request {id}.', ['id' => $request->id()]);
       return;
     }
@@ -286,6 +285,7 @@ class MigrationDeriver implements MigrationDeriverInterface {
 
     foreach ($request->getMappings() as $name => $info) {
       $original_migration = $this->migrationPluginManager->createInstance($info['original_migration_id']);
+      assert($original_migration instanceof MigrationInterface);
       $derived_name = $this->deriveMigrationName($mg_name, $name);
       $source_config = $original_migration->getSourceConfiguration();
       $info = [

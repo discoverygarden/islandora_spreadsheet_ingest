@@ -12,3 +12,66 @@ islandora_spreadsheet_ingest.settings:
       label: 'Allowed source URI schemes.'
       sequence:
         type: string
+
+islandora_spreadsheet_ingest.request.*:
+  type: config_entity
+  mapping:
+    id:
+      type: string
+      label: ID
+    label:
+      type: label
+      label: Label
+    active:
+      type: boolean
+      label: Active
+      description: If this request should have migrations derived for it.
+    sheet:
+      type: mapping
+      mapping:
+        file:
+          # XXX: Really... kind of indicative that these should be pulled out
+          # to content entities instead of being config entities... the whole
+          # having-to-reference a file thing... because the "entity:file"
+          # thing does not appear to work...
+          #type: entity:file
+          type: ignore
+          label: The spreadsheet file to process.
+        sheet:
+          type: string
+          label: The worksheet of the file to process.
+    mappings:
+      type: islandora_spreadsheet_ingest.migration_structure
+    owner:
+      # XXX: Further reinforcement that these should be pulled out to content
+      # entities instead of config, because we are relating to the user here.
+      #type: entity:user
+      type: ignore
+      label: The owner's ID; should be either an int or a string.
+    originalMapping:
+      type: string
+      label: |
+        Reference to the original mapping from which this request was derived.
+
+islandora_spreadsheet_ingest.migration_structure:
+  type: mapping
+  mapping:
+    original_migration_id:
+      type: string
+      label: ID
+    mappings:
+      type: sequence
+      sequence:
+        type: mapping
+        mapping:
+          weight:
+            type: integer
+          pipeline:
+            type: sequence
+            sequence:
+              # XXX: The migrate plugin does not define schemas for its plugins,
+              # nor any obvious mechanism by which to make reference to them...
+              # migrate_plus _does_ roll a handful, describing the things from
+              # migrate; however, it is not complete, nor necessarily desirable.
+              # ... so let's just ignore, for now at least.
+              type: ignore

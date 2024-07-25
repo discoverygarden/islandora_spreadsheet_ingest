@@ -17,9 +17,6 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
  */
 class ConfigTransformationEventSubscriber implements EventSubscriberInterface, ContainerInjectionInterface {
 
-  const MIGRATION_GROUP_PREFIX = 'migrate_plus.migration_group.isi__';
-  const MIGRATION_PREFIX = 'migrate_plus.migration.isi__';
-
   /**
    * Constructor.
    */
@@ -93,9 +90,10 @@ class ConfigTransformationEventSubscriber implements EventSubscriberInterface, C
    * @return \Generator
    *   The names of the configs that should never be changed on imports/exports.
    */
-  protected function toIgnore(StorageInterface $storage) {
-    yield from $storage->listAll(static::MIGRATION_PREFIX);
-    yield from $storage->listAll(static::MIGRATION_GROUP_PREFIX);
+  protected function toIgnore(StorageInterface $storage) : \Generator {
+    yield from $storage->listAll('migrate_plus.migration.isi__');
+    yield from $storage->listAll('migrate_plus.migration_group.isi__');
+    yield from $storage->listAll('islandora_spreadsheet_ingest.request.');
   }
 
 }

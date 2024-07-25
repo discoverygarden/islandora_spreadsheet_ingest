@@ -2,8 +2,8 @@
 
 namespace Drupal\islandora_spreadsheet_ingest\Controller;
 
+use Drupal\Core\Config\Entity\ConfigEntityListBuilder;
 use Drupal\Core\Entity\EntityInterface;
-use Drupal\Core\Entity\EntityListBuilder;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Link;
 use Drupal\islandora_spreadsheet_ingest\Entity\Request;
@@ -12,7 +12,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 /**
  * Request config entity list builder.
  */
-class RequestListBuilder extends EntityListBuilder {
+class RequestListBuilder extends ConfigEntityListBuilder {
 
   /**
    * The migration group deriver service.

@@ -2,12 +2,12 @@
 
 namespace Drupal\islandora_spreadsheet_ingest;
 
-use Drupal\Core\Entity\ContentEntityInterface;
+use Drupal\Core\Config\Entity\ConfigEntityInterface;
 
 /**
  * Request content entity interface.
  */
-interface RequestInterface extends ContentEntityInterface {
+interface RequestInterface extends ConfigEntityInterface {
 
   /**
    * Get the sheet to process.

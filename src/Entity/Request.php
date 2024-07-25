@@ -2,21 +2,16 @@
 
 namespace Drupal\islandora_spreadsheet_ingest\Entity;
 
-use Drupal\Core\Entity\ContentEntityBase;
-use Drupal\Core\Entity\EntityTypeInterface;
-use Drupal\Core\Field\BaseFieldDefinition;
+use Drupal\Core\Config\Entity\ConfigEntityBase;
 use Drupal\islandora_spreadsheet_ingest\RequestInterface;
-use Drupal\user\EntityOwnerInterface;
-use Drupal\user\EntityOwnerTrait;
 
 /**
  * Defines the Request entity.
  *
- * @ContentEntityType(
+ * @ConfigEntityType(
  *   id = "isi_request",
  *   label = @Translation("Islandora Spreadsheet Ingest Request"),
  *   handlers = {
- *     "storage_schema" = "Drupal\islandora_spreadsheet_ingest\RequestStorageSchema",
  *     "list_builder" = "Drupal\islandora_spreadsheet_ingest\Controller\RequestListBuilder",
  *     "form" = {
  *       "process" = "Drupal\islandora_spreadsheet_ingest\Form\Ingest\Review",
@@ -28,13 +23,20 @@ use Drupal\user\EntityOwnerTrait;
  *     "access" = "Drupal\islandora_spreadsheet_ingest\RequestAccessControlHandler",
  *     "view_builder" = "Drupal\islandora_spreadsheet_ingest\RequestViewBuilder",
  *   },
+ *   config_prefix = "request",
  *   admin_permission = "administer islandora_spreadsheet_ingest requests",
- *   base_table = "islandora_spreadsheet_ingest_request",
  *   entity_keys = {
  *     "id" = "id",
- *     "uuid" = "uuid",
  *     "label" = "label",
- *     "owner" = "owner",
+ *   },
+ *   config_export = {
+ *     "id",
+ *     "label",
+ *     "sheet",
+ *     "originalMapping",
+ *     "mappings",
+ *     "active",
+ *     "owner",
  *   },
  *   links = {
  *     "canonical" = "/admin/content/islandora_spreadsheet_ingest/{isi_request}",
@@ -45,129 +47,139 @@ use Drupal\user\EntityOwnerTrait;
  *   }
  * )
  */
-class Request extends ContentEntityBase implements EntityOwnerInterface, RequestInterface {
+class Request extends ConfigEntityBase implements RequestInterface {
 
-  use EntityOwnerTrait {
-    getOwner as traitGetOwner;
-  }
+  /**
+   * The ID of the request.
+   *
+   * @var string
+   */
+  protected $id;
+
+  /**
+   * The request's label.
+   *
+   * @var string
+   */
+  protected $label;
+
+  /**
+   * Coordinates for where to find the particular worksheet.
+   *
+   * Includes:
+   * - sheet: The name of the worksheet.
+   * - file: An array of file IDs... though there should just be one.
+   *
+   * @var array
+   */
+  protected $sheet;
+
+  /**
+   * A representation of the original mapping.
+   *
+   * Should only ever be a "migration_group:*" kind of thing...
+   *
+   * @var string
+   */
+  protected $originalMapping = 'migration_group:isi';
+
+  /**
+   * The associative array of mappings.
+   *
+   * Mapping migration names to:
+   * - original_migration_id: The name of the original migration
+   * - mappings: An associative array mapping field/property names to an
+   *   associative array containing:
+   *   - pipeline: The array of process plugin definitions.
+   *
+   * May be NULL if not yet set.
+   *
+   * @var array|null
+   */
+  protected $mappings = NULL;
+
+  /**
+   * Whether this request should be eligible to be processed.
+   *
+   * @var bool
+   *
+   * @todo Review whether or not the core ConfigEntityBase's "status" may cover
+   *   the same situation.
+   */
+  protected $active = FALSE;
+
+  /**
+   * The creator/owner of this request.
+   *
+   * @var string
+   */
+  protected $owner = NULL;
 
   /**
    * {@inheritdoc}
    */
   public function getOriginalMapping() {
-    return $this->get('original_mapping')->getString();
+    return $this->originalMapping;
   }
 
   /**
    * {@inheritdoc}
    */
   public function getActive() {
-    return $this->get('active')->first()->getValue()['value'];
+    return $this->active;
   }
 
   /**
    * {@inheritdoc}
    */
   public function getSheet() {
-    return [
-      'file' => [$this->get('sheet_file')->first()->getString()],
-      'sheet' => $this->get('sheet_sheet')->first()->getString(),
-    ];
+    return $this->sheet;
   }
 
   /**
    * {@inheritdoc}
    */
   public function getMappings() {
-    return $this->get('mappings')->first()->getValue();
+    return $this->mappings;
   }
 
   /**
    * {@inheritdoc}
    */
   public function getOwner() {
-    return $this->traitGetOwner()->id();
+    return $this->owner;
   }
 
   /**
-   * {@inheritDoc}
+   * {@inheritdoc}
    */
-  public function set($name, $value, $notify = TRUE) {
-    if ($name === 'sheet') {
-      \trigger_deprecation('discoverygarden/islandora_spreadsheet_ingest', '4.0.0', 'Setting `sheet` directly is deprecated as of 4.0.0; instead set `sheet_file` and `sheet_sheet` individually.');
-      return $this->set('sheet_file', $value['file'] ?? [], $notify)
-        ->set('sheet_sheet', $value['sheet'] ?? '', $notify);
+  public function calculateDependencies() {
+    parent::calculateDependencies();
+
+    $storage = $this->entityTypeManager()->getStorage('migration');
+
+    // XXX: We expect the module to be accounted for in the "migration_group"
+    // config entity, an so need need deal with it specifically for the
+    // migration plugin.
+    foreach (array_column($this->getMappings(), 'original_migration_id') as $original_migration_id) {
+      if ($storage->load($original_migration_id)) {
+        $this->addDependency('config', "migrate_plus.migration.{$original_migration_id}");
+      }
     }
-    if ($name === 'originalMapping') {
-      \trigger_deprecation('discoverygarden/islandora_spreadsheet_ingest', '4.0.0', '`originalMapping` has been renamed to `original_mapping` as of 4.0.0.');
-      return $this->set('original_mapping', $value, $notify);
+    [$type, $id] = explode(':', $this->getOriginalMapping());
+    switch ($type) {
+      case 'migration_group':
+        $this->addDependency('config', "migrate_plus.migration_group.{$id}");
+        break;
+
+      default:
+        throw new Exception(strtr('Unknown type of original mapping: "!type"', [
+          '!type' => $type,
+        ]));
+
     }
-    return parent::set($name, $value, $notify);
-  }
 
-  /**
-   * {@inheritDoc}
-   */
-  public static function baseFieldDefinitions(EntityTypeInterface $entity_type) {
-    $fields = parent::baseFieldDefinitions($entity_type);
-    $fields += static::ownerBaseFieldDefinitions($entity_type);
-
-    $fields['label'] = BaseFieldDefinition::create('string')
-      ->setLabel(\t('Title'))
-      ->setRequired(TRUE)
-      ->setTranslatable(FALSE)
-      ->setRevisionable(FALSE)
-      ->setSetting('max_length', 255)
-      ->setDisplayOptions('view', [
-        'label' => 'hidden',
-        'type' => 'string',
-        'weight' => -5,
-      ])
-      ->setDisplayOptions('form', [
-        'type' => 'string_textfield',
-        'weight' => -5,
-      ])
-      ->setDisplayConfigurable('form', TRUE)
-      ->setCardinality(1);
-    $fields['machine_name'] = BaseFieldDefinition::create('string')
-      ->setLabel(\t('Machine Name'))
-      ->setRequired(TRUE)
-      ->setTranslatable(FALSE)
-      ->setRevisionable(FALSE)
-      ->setCardinality(1)
-      ->addConstraint('UniqueField', [
-        'message' => 'The machine_name %value is already in use.',
-      ]);
-    $fields['active'] = BaseFieldDefinition::create('boolean')
-      ->setLabel(\t('Label'))
-      ->setRequired(TRUE)
-      ->setCardinality(1)
-      ->setTranslatable(FALSE)
-      ->setRevisionable(FALSE);
-    $fields['sheet_file'] = BaseFieldDefinition::create('entity_reference')
-      ->setLabel(\t('Spreadsheet file'))
-      ->setRequired(TRUE)
-      ->setTranslatable(FALSE)
-      ->setRevisionable(FALSE)
-      ->setSetting('target_type', 'file')
-      ->setDisplayOptions('form', [
-        'type' => 'file_generic',
-      ])
-      ->setCardinality(1);
-    $fields['sheet_sheet'] = BaseFieldDefinition::create('string')
-      ->setLabel(\t('Worksheet'))
-      ->setDescription(\t('The specific worksheet if the file corresponds to an ODS/XLSX which is possible of containing multiple.'))
-      ->setCardinality(1);
-    $fields['mappings'] = BaseFieldDefinition::create('map')
-      ->setLabel(\t('Mappings'))
-      ->setDescription(\t('Migration mappings'))
-      ->setCardinality(1);
-    $fields['original_mapping'] = BaseFieldDefinition::create('string')
-      ->setLabel(\t('Original mapping'))
-      ->setDescription(\t('Original migration template'))
-      ->setCardinality(1);
-
-    return $fields;
+    return $this;
   }
 
 }
