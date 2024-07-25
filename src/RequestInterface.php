@@ -5,7 +5,7 @@ namespace Drupal\islandora_spreadsheet_ingest;
 use Drupal\Core\Config\Entity\ConfigEntityInterface;
 
 /**
- * Request content entity interface.
+ * Request config entity interface.
  */
 interface RequestInterface extends ConfigEntityInterface {
 
