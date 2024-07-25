@@ -67,8 +67,8 @@ class ConfigTransformationEventSubscriber implements EventSubscriberInterface, C
   public function onImportTransform(StorageTransformEvent $event) : void {
     $storage = $event->getStorage();
 
-    $inbound = iterator_to_array($this->toIgnore($storage), FALSE);
-    $current = iterator_to_array($this->toIgnore($this->activeStorage), FALSE);
+    $inbound = iterator_to_array(static::toIgnore($storage), FALSE);
+    $current = iterator_to_array(static::toIgnore($this->activeStorage), FALSE);
 
     // In case a config object escaped let's deal with it.
     foreach (array_diff($inbound, $current) as $to_delete) {
@@ -90,7 +90,7 @@ class ConfigTransformationEventSubscriber implements EventSubscriberInterface, C
    * @return \Generator
    *   The names of the configs that should never be changed on imports/exports.
    */
-  protected function toIgnore(StorageInterface $storage) : \Generator {
+  protected static function toIgnore(StorageInterface $storage) : \Generator {
     yield from $storage->listAll('migrate_plus.migration.isi__');
     yield from $storage->listAll('migrate_plus.migration_group.isi__');
     yield from $storage->listAll('islandora_spreadsheet_ingest.request.');
