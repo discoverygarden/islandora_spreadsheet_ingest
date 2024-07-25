@@ -7,9 +7,6 @@ islandora_spreadsheet_ingest.settings:
       label: 'List of allowed source directories.'
       sequence:
         type: string
-    enable_config_ignore_integration:
-      type: boolean
-      label: 'If our config_ignore integration should be enabled.'
     schemes:
       type: sequence
       label: 'Allowed source URI schemes.'
