@@ -41,7 +41,9 @@ islandora_spreadsheet_ingest.request.*:
           type: string
           label: The worksheet of the file to process.
     mappings:
-      type: islandora_spreadsheet_ingest.migration_structure
+      type: sequence
+      sequence:
+        type: islandora_spreadsheet_ingest.migration_structure
     owner:
       # XXX: Further reinforcement that these should be pulled out to content
       # entities instead of config, because we are relating to the user here.
