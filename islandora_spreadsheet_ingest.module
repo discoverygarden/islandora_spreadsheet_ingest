@@ -6,10 +6,11 @@
  */
 
 use Drupal\Component\Utility\NestedArray;
+use Drupal\Core\Access\AccessResult;
+use Drupal\Core\Access\AccessResultInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Url;
-
 use Drupal\islandora_spreadsheet_ingest\RequestInterface;
 
 /**
@@ -18,7 +19,7 @@ use Drupal\islandora_spreadsheet_ingest\RequestInterface;
  * @param \Drupal\islandora_spreadsheet_ingest\RequestInterface $request
  *   The request of which to add the usage.
  */
-function _islandora_spreadsheet_ingest_add_file_usage(RequestInterface $request) {
+function _islandora_spreadsheet_ingest_add_file_usage(RequestInterface $request) : void {
   $file_usage_service = \Drupal::service('file.usage');
   $file_service = \Drupal::service('entity_type.manager')->getStorage('file');
   $fids = $request->getSheet()['file'] ?? NULL;
@@ -42,7 +43,7 @@ function _islandora_spreadsheet_ingest_add_file_usage(RequestInterface $request)
  * @param \Drupal\islandora_spreadsheet_ingest\RequestInterface $request
  *   The request of which to delete the usage.
  */
-function _islandora_spreadsheet_ingest_delete_file_usage(RequestInterface $request) {
+function _islandora_spreadsheet_ingest_delete_file_usage(RequestInterface $request) : void {
   $file_usage_service = \Drupal::service('file.usage');
   $file_service = \Drupal::service('entity_type.manager')->getStorage('file');
   $fids = $request->getSheet()['file'];
@@ -63,7 +64,7 @@ function _islandora_spreadsheet_ingest_delete_file_usage(RequestInterface $reque
 /**
  * Implements hook_ENTITY_TYPE_insert().
  */
-function islandora_spreadsheet_ingest_isi_request_insert(RequestInterface $request) {
+function islandora_spreadsheet_ingest_isi_request_insert(RequestInterface $request) : void {
   _islandora_spreadsheet_ingest_add_file_usage($request);
 
   // If active, generate the migration group...
@@ -79,7 +80,7 @@ function islandora_spreadsheet_ingest_isi_request_insert(RequestInterface $reque
 /**
  * Implements hook_ENTITY_TYPE_update().
  */
-function islandora_spreadsheet_ingest_isi_request_update(RequestInterface $request) {
+function islandora_spreadsheet_ingest_isi_request_update(RequestInterface $request) : void {
   _islandora_spreadsheet_ingest_delete_file_usage($request->original);
   _islandora_spreadsheet_ingest_add_file_usage($request);
 
@@ -98,7 +99,7 @@ function islandora_spreadsheet_ingest_isi_request_update(RequestInterface $reque
 /**
  * Implements hook_ENTITY_TYPE_delete().
  */
-function islandora_spreadsheet_ingest_isi_request_delete(RequestInterface $request) {
+function islandora_spreadsheet_ingest_isi_request_delete(RequestInterface $request) : void {
   _islandora_spreadsheet_ingest_delete_file_usage($request);
 
   \Drupal::service('islandora_spreadsheet_ingest.migration_deriver')->deleteAll($request);
@@ -108,7 +109,7 @@ function islandora_spreadsheet_ingest_isi_request_delete(RequestInterface $reque
 /**
  * Implements hook_entity_operation().
  */
-function islandora_spreadsheet_ingest_entity_operation(EntityInterface $entity) {
+function islandora_spreadsheet_ingest_entity_operation(EntityInterface $entity) : array {
   $ops = [];
 
   if ($entity->getEntityType()->id() == 'isi_request') {
@@ -138,7 +139,7 @@ function islandora_spreadsheet_ingest_entity_operation(EntityInterface $entity) 
  * @see islandora_spreadsheet_ingest_migration_group_entity_access()
  * @see islandora_spreadsheet_ingest_migration_entity_access()
  */
-function _islandora_spreadsheet_ingest_migration_entity_helper(EntityInterface $entity, AccountInterface $account, $uid, $tags) {
+function _islandora_spreadsheet_ingest_migration_entity_helper(EntityInterface $entity, AccountInterface $account, $uid, $tags) : AccessResultInterface {
   return AccessResult::allowedIf(in_array('isi_derived_migration', $tags))
     ->addCacheableDependency($entity)
     ->andIf(
@@ -150,8 +151,8 @@ function _islandora_spreadsheet_ingest_migration_entity_helper(EntityInterface $
 /**
  * Implements hook_ENTITY_TYPE_entity_access() for migration_group entities.
  */
-function islandora_spreadsheet_ingest_migration_group_entity_access(EntityInterface $entity, $operation, AccountInterface $account) {
-  $shared = $entity->shared_configuration ?? [];
+function islandora_spreadsheet_ingest_migration_group_entity_access(EntityInterface $entity, $operation, AccountInterface $account) : AccessResultInterface {
+  $shared = $entity->get('shared_configuration') ?? [];
   $tags = NestedArray::getValue($shared, ['migration_tags']) ?? [];
   $uid = NestedArray::getValue($shared, ['source', 'isi', 'uid']) ?? FALSE;
   return _islandora_spreadsheet_ingest_migration_entity_helper($entity, $account, $uid, $tags);
@@ -160,16 +161,17 @@ function islandora_spreadsheet_ingest_migration_group_entity_access(EntityInterf
 /**
  * Implements hook_ENTITY_TYPE_entity_access() for migration entities.
  */
-function islandora_spreadsheet_ingest_migration_entity_access(EntityInterface $entity, $operation, AccountInterface $account) {
-  $tags = $entity->migration_tags ?? [];
-  $uid = NestedArray::getValue($entity->source, ['isi', 'uid']) ?? FALSE;
+function islandora_spreadsheet_ingest_migration_entity_access(EntityInterface $entity, $operation, AccountInterface $account) : AccessResultInterface {
+  $tags = $entity->get('migration_tags') ?? [];
+  $source = $entity->get('source');
+  $uid = NestedArray::getValue($source, ['isi', 'uid']) ?? FALSE;
   return _islandora_spreadsheet_ingest_migration_entity_helper($entity, $account, $uid, $tags);
 }
 
 /**
  * Implements hook_migration_plugins_alter().
  */
-function islandora_spreadsheet_ingest_migration_plugins_alter(&$definitions) {
+function islandora_spreadsheet_ingest_migration_plugins_alter(&$definitions) : void {
   $logger = \Drupal::logger('islandora_spreadsheet_ingest');
   $logger->debug('Altering...');
 

@@ -71,7 +71,7 @@ class MigrationDeriver implements MigrationDeriverInterface {
     EntityTypeManagerInterface $entity_type_manager,
     CacheTagsInvalidatorInterface $invalidator,
     MigrationGroupDeriverInterface $migration_group_deriver,
-    MigrationPluginManagerInterface $migration_plugin_manager
+    MigrationPluginManagerInterface $migration_plugin_manager,
   ) {
     $this->logger = $logger;
     $this->entityTypeManager = $entity_type_manager;
@@ -175,12 +175,11 @@ class MigrationDeriver implements MigrationDeriverInterface {
    *   TRUE if it is the same; otherwise, FALSE.
    */
   protected function sameMigrationGroup(MigrationInterface $mig, $target) {
+    /** @var \Drupal\migrate\Plugin\MigrationInterface $loaded_target */
     $loaded_target = $this->migrationPluginManager->createInstance($target);
-    // XXX: General getters were deprecated and removed in:
-    // https://www.drupal.org/node/2873795. Given how migrate_plus injects
-    // the group need to get it without it.
-    $mg = $loaded_target->migration_group;
-    return $mg && $mg == $mig->migration_group;
+
+    $mg = $loaded_target->getPluginDefinition()['migration_group'] ?? FALSE;
+    return $mg && ($mg === ($mig->getPluginDefinition()['migration_group'] ?? FALSE));
   }
 
   const SUBPROCESSING_PLUGINS = [
@@ -286,6 +285,7 @@ class MigrationDeriver implements MigrationDeriverInterface {
 
     foreach ($request->getMappings() as $name => $info) {
       $original_migration = $this->migrationPluginManager->createInstance($info['original_migration_id']);
+      assert($original_migration instanceof MigrationInterface);
       $derived_name = $this->deriveMigrationName($mg_name, $name);
       $source_config = $original_migration->getSourceConfiguration();
       $info = [
@@ -335,13 +335,16 @@ class MigrationDeriver implements MigrationDeriverInterface {
    * {@inheritdoc}
    */
   public function deleteAll(RequestInterface $request) {
-    // Nuke the storage for the given mgiration group.
+    // Nuke the storage for the given migration group.
+    /** @var \Drupal\migrate_plus\Entity\MigrationInterface[] $migrations */
     $migrations = $this->migrationStorage->loadByProperties([
       'migration_group' => $this->migrationGroupDeriver->deriveName($request),
     ]);
 
     // Nuke the message and map tables for the given migrations.
-    foreach ($migrations as $migration) {
+    foreach ($migrations as $migration_entity) {
+      /** @var \Drupal\migrate\Plugin\MigrationInterface $migration */
+      $migration = $this->migrationPluginManager->createInstance($migration_entity->id());
       $migration->getIdMap()->destroy();
     }
 

@@ -6,6 +6,7 @@ use Drupal\Core\Config\Entity\ConfigEntityListBuilder;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Link;
+use Drupal\islandora_spreadsheet_ingest\Entity\Request;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -38,6 +39,7 @@ class RequestListBuilder extends ConfigEntityListBuilder {
    * {@inheritdoc}
    */
   public function buildRow(EntityInterface $entity) {
+    assert($entity instanceof Request);
     $row['label'] = $entity->toLink(NULL, 'edit-form');
     if (!$row['label']->getUrl()->access()) {
       $row['label'] = $entity->label();

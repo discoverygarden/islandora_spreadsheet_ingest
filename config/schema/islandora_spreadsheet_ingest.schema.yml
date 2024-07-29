@@ -7,6 +7,11 @@ islandora_spreadsheet_ingest.settings:
       label: 'List of allowed source directories.'
       sequence:
         type: string
+    schemes:
+      type: sequence
+      label: 'Allowed source URI schemes.'
+      sequence:
+        type: string
 
 islandora_spreadsheet_ingest.request.*:
   type: config_entity
