@@ -81,6 +81,7 @@ class Admin extends ConfigFormBase {
     $scheme_options = $this->streamWrapperManager->getNames(StreamWrapperInterface::READ_VISIBLE) + [
       'http' => 'HTTP',
       'https' => 'HTTPS',
+      'ftp' => 'FTP',
     ];
     $form['schemes'] = [
       '#type' => 'checkboxes',
