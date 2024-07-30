@@ -6,8 +6,10 @@ use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\File\FileSystemInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\StreamWrapper\StreamWrapperManagerInterface;
+use Drupal\Core\Url;
 use Drupal\migrate\MigrateExecutableInterface;
 use Drupal\migrate\MigrateSkipRowException;
+use Drupal\migrate\Plugin\MigrationInterface;
 use Drupal\migrate\ProcessPluginBase;
 use Drupal\migrate\Row;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -98,6 +100,20 @@ class AccessibleFile extends ProcessPluginBase implements ContainerFactoryPlugin
   public function transform($value, MigrateExecutableInterface $migrate_executable, Row $row, $destination_property) {
     $allowed_paths = $this->configFactory->get('islandora_spreadsheet_ingest.settings')->get('binary_directory_whitelist');
     $allowed_schemes = $this->configFactory->get('islandora_spreadsheet_ingest.settings')->get('schemes');
+
+    // Ignore this check if relevant configuration has not been set, and advise
+    // that the configuration should be set.
+    if (empty($allowed_paths) && empty($allowed_schemes)) {
+      $migrate_executable->saveMessage(
+        strtr("Skipping this process to check (:file) since nothing has been configured to check against in the approved list of directories or schemes. For site security, it is highly recommended to set appropriate configuration at :config_url.", [
+          ':file' => $value,
+          ':config_url' => Url::fromRoute('islandora_spreadsheet_ingest.admin')->toString(),
+        ]),
+        MigrationInterface::MESSAGE_INFORMATIONAL
+      );
+
+      return $value;
+    }
 
     // If it's a local path check to see if it's in our allowed list.
     $file_path = $this->fileSystem->realpath($value);
