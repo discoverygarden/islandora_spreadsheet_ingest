@@ -109,7 +109,7 @@ class AccessibleFile extends ProcessPluginBase implements ContainerFactoryPlugin
           ':file' => $value,
           ':config_url' => Url::fromRoute('islandora_spreadsheet_ingest.admin')->toString(),
         ]),
-        MigrationInterface::MESSAGE_INFORMATIONAL
+        MigrationInterface::MESSAGE_WARNING
       );
 
       return $value;
