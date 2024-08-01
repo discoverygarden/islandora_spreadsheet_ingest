@@ -96,11 +96,6 @@ class Admin extends ConfigFormBase {
       '#default_value' => $current_whitelist ? implode(',', $current_whitelist) : '',
       '#description' => $this->t('A comma separated list of local locations from which spreadsheet ingests can use binaries.'),
     ];
-    $form['info'] = [
-      '#type' => 'item',
-      '#title' => $this->t('If nothing is whitelisted, everything is whitelisted.'),
-      '#description' => $this->t('The plugin that expects to use this information will log warnings if this configuration is missing.'),
-    ];
     $form['submit'] = [
       '#type' => 'submit',
       '#value' => $this->t('Save'),
