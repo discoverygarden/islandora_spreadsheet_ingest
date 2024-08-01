@@ -105,7 +105,7 @@ class AccessibleFile extends ProcessPluginBase implements ContainerFactoryPlugin
     // that the configuration should be set.
     if (empty($allowed_paths) && empty($allowed_schemes)) {
       $migrate_executable->saveMessage(
-        strtr("Skipping this process to check (:file) since nothing has been configured to check against in the approved list of directories or schemes. For site security, it is highly recommended to set appropriate configuration at :config_url.", [
+        strtr("File access criteria is not defined; passing check of file (:file). For site security, it is highly recommended to set appropriate configuration at :config_url.", [
           ':file' => $value,
           ':config_url' => Url::fromRoute('islandora_spreadsheet_ingest.admin')->toString(),
         ]),
