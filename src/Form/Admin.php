@@ -78,12 +78,17 @@ class Admin extends ConfigFormBase {
   public function buildForm(array $form, FormStateInterface $form_state) {
     $config = $this->config('islandora_spreadsheet_ingest.settings');
     $current_whitelist = $config->get('binary_directory_whitelist');
+    $scheme_options = $this->streamWrapperManager->getNames(StreamWrapperInterface::READ_VISIBLE) + [
+      'http' => 'HTTP',
+      'https' => 'HTTPS',
+      'ftp' => 'FTP',
+    ];
     $form['schemes'] = [
       '#type' => 'checkboxes',
       '#title' => $this->t('Schemes'),
       '#description' => $this->t('Allowed list of schemes for which binaries can be referenced from.'),
       '#default_value' => $config->get('schemes') ?? [],
-      '#options' => $this->streamWrapperManager->getNames(StreamWrapperInterface::READ_VISIBLE),
+      '#options' => $scheme_options,
     ];
     $form['paths'] = [
       '#type' => 'textarea',
