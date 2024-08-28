@@ -283,6 +283,8 @@ class MigrationDeriver implements MigrationDeriverInterface {
 
     assert($this->entityTypeManager->getStorage('migration_group')->load($mg_name));
 
+    $migrations = [];
+
     foreach ($request->getMappings() as $name => $info) {
       $original_migration = $this->migrationPluginManager->createInstance($info['original_migration_id']);
       assert($original_migration instanceof MigrationInterface);
@@ -321,10 +323,13 @@ class MigrationDeriver implements MigrationDeriverInterface {
         'migration_tags' => $original_migration->getMigrationTags(),
       ];
 
-      $migration = $this->migrationStorage->load($derived_name) ?? $this->migrationStorage->create();
+      $migrations[] = $migration = $this->migrationStorage->load($derived_name) ?? $this->migrationStorage->create();
       foreach ($info as $key => $value) {
         $migration->set($key, $value);
       }
+    }
+
+    foreach ($migrations as $migration) {
       $migration->save();
     }
 
