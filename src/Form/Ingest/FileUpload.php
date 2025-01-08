@@ -206,7 +206,7 @@ class FileUpload extends EntityForm {
         '#default_value' => $form_state->getValue(['sheet', 'sheet'], $entity->getSheet()['sheet'] ?? NULL),
         '#states' => [
           'visible' => [
-            ':input[name="sheet[file][fids]"]' => [
+            ':input[name="files[sheet_file]"]' => [
               'filled' => TRUE,
             ],
           ],
