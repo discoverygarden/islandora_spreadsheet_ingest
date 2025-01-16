@@ -18,7 +18,7 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 class ConfigTransformationEventSubscriber implements EventSubscriberInterface, ContainerInjectionInterface {
 
   const PRIORITY = 250;
-  
+
   /**
    * Constructor.
    */
