@@ -101,7 +101,7 @@ class Spreadsheet extends SourcePluginBase implements ConfigurableInterface, Con
   /**
    * {@inheritdoc}
    */
-  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition, MigrationInterface $migration = NULL): self {
+  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition, ?MigrationInterface $migration = NULL): self {
     return new static(
       $configuration,
       $plugin_id,

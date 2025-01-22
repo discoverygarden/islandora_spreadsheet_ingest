@@ -17,6 +17,8 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
  */
 class ConfigTransformationEventSubscriber implements EventSubscriberInterface, ContainerInjectionInterface {
 
+  const PRIORITY = 250;
+
   /**
    * Constructor.
    */
@@ -40,8 +42,8 @@ class ConfigTransformationEventSubscriber implements EventSubscriberInterface, C
    */
   public static function getSubscribedEvents() : array {
     return [
-      ConfigEvents::STORAGE_TRANSFORM_EXPORT => 'onExportTransform',
-      ConfigEvents::STORAGE_TRANSFORM_IMPORT => 'onImportTransform',
+      ConfigEvents::STORAGE_TRANSFORM_EXPORT => [['onExportTransform', static::PRIORITY]],
+      ConfigEvents::STORAGE_TRANSFORM_IMPORT => [['onImportTransform', -static::PRIORITY]],
     ];
   }
 
