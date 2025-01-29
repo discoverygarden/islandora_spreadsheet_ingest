@@ -17,7 +17,13 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
  */
 class ConfigTransformationEventSubscriber implements EventSubscriberInterface, ContainerInjectionInterface {
 
-  const PRIORITY = 250;
+  protected const PRIORITY = 250;
+
+  protected const PREFIXES_TO_IGNORE = [
+    'migrate_plus.migration.isi__',
+    'migrate_plus.migration_group.isi__',
+    'islandora_spreadsheet_ingest.request.',
+  ];
 
   /**
    * Constructor.
@@ -55,8 +61,8 @@ class ConfigTransformationEventSubscriber implements EventSubscriberInterface, C
    */
   public function onExportTransform(StorageTransformEvent $event) : void {
     $storage = $event->getStorage();
-    foreach ($this->toIgnore($storage) as $name) {
-      $storage->delete($name);
+    foreach (static::PREFIXES_TO_IGNORE as $prefix) {
+      $storage->deleteAll($prefix);
     }
   }
 
@@ -93,9 +99,9 @@ class ConfigTransformationEventSubscriber implements EventSubscriberInterface, C
    *   The names of the configs that should never be changed on imports/exports.
    */
   protected static function toIgnore(StorageInterface $storage) : \Generator {
-    yield from $storage->listAll('migrate_plus.migration.isi__');
-    yield from $storage->listAll('migrate_plus.migration_group.isi__');
-    yield from $storage->listAll('islandora_spreadsheet_ingest.request.');
+    foreach (static::PREFIXES_TO_IGNORE as $prefix) {
+      yield from $storage->listAll($prefix);
+    }
   }
 
 }
