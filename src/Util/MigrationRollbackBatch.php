@@ -240,7 +240,7 @@ class MigrationRollbackBatch extends MigrateExecutable {
     }
     else {
       $map_row = $id_map->getRowByDestination($item['destination']);
-      if (!isset($map_row['rollback_action']) || $map_row['rollback_action'] === MigrateIdMapInterface::ROLLBACK_DELETE) {
+      if (!isset($map_row['rollback_action']) || $map_row['rollback_action'] == MigrateIdMapInterface::ROLLBACK_DELETE) {
         $this->getEventDispatcher()
           ->dispatch(new MigrateRowDeleteEvent($this->migration, $item['destination']), MigrateEvents::PRE_ROW_DELETE);
         $destination->rollback($item['destination']);
