@@ -10,6 +10,7 @@ use Drupal\islandora_spreadsheet_ingest\Model\Pipeline;
 use Drupal\islandora_spreadsheet_ingest\Model\PipelineInterface;
 use Drupal\islandora_spreadsheet_ingest\Model\ProcessPluginWrapper;
 use Drupal\islandora_spreadsheet_ingest\Model\SourceInterface;
+use Drupal\islandora_spreadsheet_ingest\Spreadsheet\ReaderTrait;
 use Drupal\migrate\Plugin\migrate\destination\Entity;
 use Drupal\migrate\Plugin\MigrationInterface;
 use Drupal\migrate\Row;
@@ -21,6 +22,7 @@ use Drupal\migrate\Row;
  */
 class MigrationMapping extends FormElement {
 
+  use ReaderTrait;
   use MigrationTrait;
 
   /**
@@ -114,11 +116,11 @@ class MigrationMapping extends FormElement {
    */
   protected static function getSourceProperties(array $element, FormStateInterface $form_state) {
     $source = $element['#request']->getSheet();
-    $header = \Drupal::service('islandora_spreadsheet_ingest.spreadsheet_service')
-      ->getHeader(
-        \Drupal::service('entity_type.manager')->getStorage('file')->load(reset($source['file'])),
-        $source['sheet']
-      );
+
+    $header = static::getHeader(
+      \Drupal::service('entity_type.manager')->getStorage('file')->load(reset($source['file']))->getFileUri(),
+      $source['sheet']
+    );
 
     $isi_manager = \Drupal::service('plugin.manager.isi_pipeline_source');
 

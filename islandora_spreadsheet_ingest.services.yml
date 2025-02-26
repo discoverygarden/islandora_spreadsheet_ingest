@@ -7,6 +7,7 @@ services:
     parent: logger.channel_base
     arguments: [isi_migration_deriver]
   islandora_spreadsheet_ingest.spreadsheet_service:
+    deprecated: 'The "%service_id%" service is deprecated.'
     class: Drupal\islandora_spreadsheet_ingest\Spreadsheet\SpreadsheetService
     arguments:
       - '@file_system'

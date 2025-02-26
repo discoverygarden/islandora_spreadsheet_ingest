@@ -6,6 +6,7 @@ use Drupal\Component\Plugin\ConfigurableInterface;
 use Drupal\Component\Utility\NestedArray;
 use Drupal\Core\File\FileSystemInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
+use Drupal\islandora_spreadsheet_ingest\Spreadsheet\ReaderTrait;
 use Drupal\migrate\Plugin\migrate\source\SourcePluginBase;
 use Drupal\migrate\Plugin\MigrationInterface;
 use OpenSpout\Common\Exception\IOException;
@@ -60,6 +61,8 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * )
  */
 class Spreadsheet extends SourcePluginBase implements ConfigurableInterface, ContainerFactoryPluginInterface {
+
+  use ReaderTrait;
 
   /**
    * The reader for the spreadsheet when open.
@@ -217,15 +220,13 @@ class Spreadsheet extends SourcePluginBase implements ConfigurableInterface, Con
       $path = $this->getConfiguration()['file'];
       $realpath = $this->fileSystem->realpath($path);
       if ($realpath !== FALSE) {
-        $reader = ReaderFactory::createFromFile($realpath);
-        $reader->open($realpath);
+        $reader = static::getReader($realpath);
       }
       else {
         try {
           // Real-path of stream wrappers does not quite make sense, so allow
           // an opportunity for files from stream wrappers to be processed.
-          $reader = ReaderFactory::createFromFile($path);
-          $reader->open($path);
+          $reader = static::getReader($path);
         }
         catch (IOException $e) {
           // Possibly an exception such as:
@@ -236,8 +237,7 @@ class Spreadsheet extends SourcePluginBase implements ConfigurableInterface, Con
           // from the equation.
           $spooled = $this->fileSystem->copy($path, sys_get_temp_dir());
           $this->spoolFile = $this->fileSystem->realpath($spooled);
-          $reader = ReaderFactory::createFromFile($this->spoolFile);
-          $reader->open($this->spoolFile);
+          $reader = static::getReader($this->spoolFile);
         }
       }
       $this->reader = $reader;

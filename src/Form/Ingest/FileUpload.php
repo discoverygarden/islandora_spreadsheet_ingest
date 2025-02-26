@@ -6,7 +6,9 @@ use Drupal\Component\Utility\NestedArray;
 use Drupal\Core\Entity\EntityForm;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\file\FileInterface;
 use Drupal\islandora_spreadsheet_ingest\RequestInterface;
+use Drupal\islandora_spreadsheet_ingest\Spreadsheet\ReaderTrait;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -15,6 +17,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class FileUpload extends EntityForm {
 
   use MappingTrait;
+  use ReaderTrait;
 
   /**
    * File storage.
@@ -22,13 +25,6 @@ class FileUpload extends EntityForm {
    * @var \Drupal\file\FileStorageInterface
    */
   protected $fileEntityStorage;
-
-  /**
-   * Spreadsheet service.
-   *
-   * @var \Drupal\islandora_spreadsheet_ingest\Spreadsheet\SpreadsheetServiceInterface
-   */
-  protected $spreadsheetService;
 
   /**
    * Drupal's system.file config.
@@ -59,7 +55,6 @@ class FileUpload extends EntityForm {
 
     $instance->entityTypeManager = $container->get('entity_type.manager');
     $instance->fileEntityStorage = $instance->entityTypeManager->getStorage('file');
-    $instance->spreadsheetService = $container->get('islandora_spreadsheet_ingest.spreadsheet_service');
     $instance->migrationPluginManager = $container->get('plugin.manager.migration');
     $instance->systemFileConfig = $container->get('config.factory')->get('system.file');
     $instance->migrationDeriver = $container->get('islandora_spreadsheet_ingest.migration_deriver');
@@ -71,7 +66,7 @@ class FileUpload extends EntityForm {
   /**
    * Helper; load the target file.
    */
-  protected function getTargetFile(FormStateInterface $form_state) {
+  protected function getTargetFile(FormStateInterface $form_state) : ?FileInterface {
     $target_file = $form_state->getValue(['sheet', 'file']);
     if (isset($target_file['fids'])) {
       $target_file = $target_file['fids'];
@@ -95,9 +90,7 @@ class FileUpload extends EntityForm {
     if (!$file) {
       $form_state->setValue(['sheet', 'sheet'], '');
     }
-    $list = $file ?
-      $this->spreadsheetService->listWorksheets($file) :
-      NULL;
+    $list = static::getWorksheets($file->getFileUri());
     // XXX: Need to provide _some_ name for things like CSVs.
     return $list ?? [$this->t('Single-sheet format')];
   }
@@ -127,7 +120,7 @@ class FileUpload extends EntityForm {
     try {
       $file = $this->getTargetFile($form_state);
       $sheets = $file ?
-        $this->spreadsheetService->listWorksheets($file) :
+        static::getWorksheets($file->getFileUri()) :
         FALSE;
 
       $coords = ['sheet', 'sheet'];

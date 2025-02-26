@@ -85,7 +85,7 @@ class SpreadsheetService implements SpreadsheetServiceInterface {
       return array_map([static::class, 'mapCellToValue'], iterator_to_array($cell_iterator));
     }
 
-    throw new Exception('Failed to read header.');
+    throw new \Exception('Failed to read header.');
   }
 
   /**
