@@ -6,6 +6,7 @@ use Drupal\Core\Entity\EntityForm;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
 use Drupal\dgi_migrate\MigrateBatchExecutable;
+use Drupal\islandora_spreadsheet_ingest\Util\MigrationRollbackBatch;
 use Drupal\migrate\MigrateMessage;
 use Drupal\migrate\Plugin\MigrationInterface;
 use Drupal\migrate_tools\MigrateExecutable;
@@ -192,6 +193,14 @@ class Review extends EntityForm {
         'label' => $this->t('Immediate'),
         'callable' => [$this, 'submitProcessImmediate'],
       ],
+      'full_rollback_migration_group' => [
+        'label' => $this->t('Fully Rollback Migration Group'),
+        'callable' => [$this, 'submitProcessRollbackMigrationGroup'],
+      ],
+      'failed_rollback_migration_group' => [
+        'label' => $this->t('Rollback Failed and Ignored Items in Migration Group'),
+        'callable' => [$this, 'submitProcessRollbackFailedMigrationGroup'],
+      ],
     ];
   }
 
@@ -246,6 +255,82 @@ class Review extends EntityForm {
         'backtrace' => $e->getTraceAsString(),
       ]);
       $this->messenger->addError($this->t('Failed to enqueue batch.'));
+    }
+  }
+
+  /**
+   * Callback for the "full_rollback_migration_group" method.
+   */
+  protected function submitProcessRollbackMigrationGroup(array &$form, FormStateInterface $form_state): void {
+    try {
+      $migrations = $this->migrationPluginManager->createInstancesByTag($this->migrationGroupDeriver->deriveTag($this->entity));
+
+      $migrations = array_reverse($migrations);
+
+      $batch = [
+        'operations' => [],
+      ];
+
+      $messenger = new MigrateMessage();
+
+      foreach ($migrations as $migration) {
+        $executable = new MigrationRollbackBatch($migration, $messenger, [
+          'limit' => 0,
+          'update' => 0,
+          'force' => 0,
+          'checkStatus' => FALSE,
+        ]);
+        $batch['operations'][] = [
+          [$this, 'runBatchOp'],
+          [$migration, $executable],
+        ];
+      }
+
+      batch_set($batch);
+    }
+    catch (\Exception $e) {
+      $this->logger('isi.review')->error("Failed to roll back migration: {exc}\n{backtrace}", [
+        'exc' => $e->getMessage(),
+        'backtrace' => $e->getTraceAsString(),
+      ]);
+      $this->messenger->addError($this->t("Failed to rollback migration."));
+    }
+  }
+
+  /**
+   * Callback for the "failed_rollback_migration_group" method.
+   */
+  protected function submitProcessRollbackFailedMigrationGroup(array &$form, FormStateInterface $form_state): void {
+    try {
+      $migrations = $this->migrationPluginManager->createInstancesByTag($this->migrationGroupDeriver->deriveTag($this->entity));
+      $migrations = array_reverse($migrations);
+      $batch = [
+        'operations' => [],
+      ];
+
+      $messenger = new MigrateMessage();
+
+      foreach ($migrations as $migration) {
+        $executable = new MigrationRollbackBatch($migration, $messenger, [
+          'limit' => 0,
+          'update' => 0,
+          'force' => 0,
+          'checkStatus' => TRUE,
+        ]);
+        $batch['operations'][] = [
+          [$this, 'runBatchOp'],
+          [$migration, $executable],
+        ];
+      }
+
+      batch_set($batch);
+    }
+    catch (\Exception $e) {
+      $this->logger('isi.review')->error("Failed to roll back migration: {exc}\n{backtrace}", [
+        'exc' => $e->getMessage(),
+        'backtrace' => $e->getTraceAsString(),
+      ]);
+      $this->messenger->addError($this->t("Failed to rollback migration."));
     }
   }
 
