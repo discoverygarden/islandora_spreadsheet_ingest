@@ -146,6 +146,7 @@ class Review extends EntityForm {
    *   A reference to the batch context.
    */
   public function runBatchOp(MigrationInterface $migration, MigrateExecutable $e, &$context) {
+    assert($e instanceof MigrationRollbackBatch || $e instanceof MigrateBatchExecutable);
     $sandbox =& $context['sandbox'];
 
     if (!isset($sandbox['prepped'])) {
@@ -153,6 +154,11 @@ class Review extends EntityForm {
 
       try {
         $e->prepareBatch();
+        if (method_exists($e, 'getQueueSize')) {
+          // Method was introduced in dgi_migrate:3.16, the later use of
+          // $sandbox['total'] would have been broken since v3.
+          $sandbox['total'] = $e->getQueueSize();
+        }
       }
       catch (\Exception $ex) {
         $e->finishBatch(FALSE, [], [], NULL);
