@@ -146,7 +146,7 @@ class Review extends EntityForm {
    *   A reference to the batch context.
    */
   public function runBatchOp(MigrationInterface $migration, MigrateExecutable $e, &$context) {
-    assert($e instanceof MigrateBatchExecutable);
+    assert($e instanceof MigrationRollbackBatch);
     $sandbox =& $context['sandbox'];
 
     if (!isset($sandbox['prepped'])) {
