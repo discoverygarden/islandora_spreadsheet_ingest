@@ -10,6 +10,7 @@ use Drupal\migrate\Event\MigrateEvents;
 use Drupal\migrate\Event\MigrateRollbackEvent;
 use Drupal\migrate\Event\MigrateRowDeleteEvent;
 use Drupal\migrate\MigrateMessageInterface;
+use Drupal\migrate\Plugin\MigrateIdMapInterface;
 use Drupal\migrate\Plugin\MigrationInterface;
 use Drupal\migrate_tools\MigrateExecutable;
 
@@ -238,11 +239,14 @@ class MigrationRollbackBatch extends MigrateExecutable {
       $id_map->delete($item['source']);
     }
     else {
-      $this->getEventDispatcher()
-        ->dispatch(new MigrateRowDeleteEvent($this->migration, $item['destination']), MigrateEvents::PRE_ROW_DELETE);
-      $destination->rollback($item['destination']);
-      $this->getEventDispatcher()
-        ->dispatch(new MigrateRowDeleteEvent($this->migration, $item['destination']), MigrateEvents::POST_ROW_DELETE);
+      $map_row = $id_map->getRowByDestination($item['destination']);
+      if (!isset($map_row['rollback_action']) || $map_row['rollback_action'] == MigrateIdMapInterface::ROLLBACK_DELETE) {
+        $this->getEventDispatcher()
+          ->dispatch(new MigrateRowDeleteEvent($this->migration, $item['destination']), MigrateEvents::PRE_ROW_DELETE);
+        $destination->rollback($item['destination']);
+        $this->getEventDispatcher()
+          ->dispatch(new MigrateRowDeleteEvent($this->migration, $item['destination']), MigrateEvents::POST_ROW_DELETE);
+      }
       $id_map->deleteDestination($item['destination']);
     }
 
