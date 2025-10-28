@@ -122,7 +122,7 @@ class Spreadsheet extends SourcePluginBase implements ConfigurableInterface, Con
   /**
    * {@inheritdoc}
    */
-  public function rewind() {
+  public function rewind() : void {
     // XXX: "rewind()" by recreating the underlying iterator, since we make
     // use of the generator business.
     unset($this->iterator);
