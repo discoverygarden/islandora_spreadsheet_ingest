@@ -161,7 +161,12 @@ class Review extends EntityForm {
         }
       }
       catch (\Exception $ex) {
-        $e->finishBatch(FALSE, [], [], NULL);
+        $e->finishBatch(FALSE, $context['results'], [], NULL);
+        $this->messenger()->addWarning($this->t('Migration (@migration) failed to start with exception: @exception_message', [
+          '@migration' => $migration->id(),
+          '@exception_message' => $ex->getMessage(),
+        ]));
+        return;
       }
       $sandbox['prepped'] = TRUE;
     }
