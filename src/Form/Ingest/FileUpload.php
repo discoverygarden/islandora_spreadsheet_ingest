@@ -189,7 +189,7 @@ class FileUpload extends EntityForm {
         '#default_value' => $form_state->getValue(['sheet', 'file', 'fids'], $entity->getSheet()['file'] ?? NULL),
         '#required' => TRUE,
         '#upload_validators' => [
-          'file_validate_extensions' => ['xlsx ods csv'],
+          'FileExtension' => ['xlsx ods csv'],
         ],
         '#upload_location' => "{$this->systemFileConfig->get('default_scheme')}://",
         'sheets' => [
