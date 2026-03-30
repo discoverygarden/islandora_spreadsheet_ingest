@@ -59,6 +59,7 @@ class DeferredIngestCommand extends DrushCommands implements SiteAliasManagerAwa
       $this->logger()->debug('Acquired lock; processing.');
       // Acquired lock, process.
       $request_storage = $this->entityTypeManager->getStorage('isi_request');
+      $failed = FALSE;
       while ($item = $this->queue->claimItem()) {
         // We only care that we made an attempt, so drop the item from the
         // queue.
@@ -95,6 +96,14 @@ class DeferredIngestCommand extends DrushCommands implements SiteAliasManagerAwa
             fwrite(STDOUT, $buffer);
           }
         });
+
+        if (!$process->isSuccessful()) {
+          $this->logger()->error('Subprocess failed for request {id} with exit code {code}.', [
+            'id' => $item->data,
+            'code' => $process->getExitCode(),
+          ]);
+          $failed = TRUE;
+        }
       }
 
       $this->logger()->debug('Processing complete; dropping lock.');
@@ -109,6 +118,10 @@ class DeferredIngestCommand extends DrushCommands implements SiteAliasManagerAwa
       $this->logger()->info('Could not acquire lock; aborting.');
     }
     fclose($lock_pointer);
+
+    if ($failed) {
+      throw new \Exception('One or more deferred ingest subprocesses failed; see log output above.');
+    }
   }
 
 }
