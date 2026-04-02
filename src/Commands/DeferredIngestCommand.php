@@ -55,11 +55,11 @@ class DeferredIngestCommand extends DrushCommands implements SiteAliasManagerAwa
   public function deferredIngest() {
     $lock_path = 'temporary://isi_deferred_lock';
     $lock_pointer = fopen($lock_path, 'w+');
+    $failed = FALSE;
     if (flock($lock_pointer, LOCK_EX | LOCK_NB)) {
       $this->logger()->debug('Acquired lock; processing.');
       // Acquired lock, process.
       $request_storage = $this->entityTypeManager->getStorage('isi_request');
-      $failed = FALSE;
       while ($item = $this->queue->claimItem()) {
         // We only care that we made an attempt, so drop the item from the
         // queue.
