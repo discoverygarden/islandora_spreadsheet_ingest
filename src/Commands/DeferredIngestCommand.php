@@ -55,6 +55,7 @@ class DeferredIngestCommand extends DrushCommands implements SiteAliasManagerAwa
   public function deferredIngest() {
     $lock_path = 'temporary://isi_deferred_lock';
     $lock_pointer = fopen($lock_path, 'w+');
+    $failed = FALSE;
     if (flock($lock_pointer, LOCK_EX | LOCK_NB)) {
       $this->logger()->debug('Acquired lock; processing.');
       // Acquired lock, process.
@@ -95,6 +96,14 @@ class DeferredIngestCommand extends DrushCommands implements SiteAliasManagerAwa
             fwrite(STDOUT, $buffer);
           }
         });
+
+        if (!$process->isSuccessful()) {
+          $this->logger()->error('Subprocess failed for request {id} with exit code {code}.', [
+            'id' => $item->data,
+            'code' => $process->getExitCode(),
+          ]);
+          $failed = TRUE;
+        }
       }
 
       $this->logger()->debug('Processing complete; dropping lock.');
@@ -109,6 +118,10 @@ class DeferredIngestCommand extends DrushCommands implements SiteAliasManagerAwa
       $this->logger()->info('Could not acquire lock; aborting.');
     }
     fclose($lock_pointer);
+
+    if ($failed) {
+      throw new \Exception('One or more deferred ingest subprocesses failed; see log output above.');
+    }
   }
 
 }
