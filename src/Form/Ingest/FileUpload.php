@@ -189,7 +189,7 @@ class FileUpload extends EntityForm {
         '#default_value' => $form_state->getValue(['sheet', 'file', 'fids'], $entity->getSheet()['file'] ?? NULL),
         '#required' => TRUE,
         '#upload_validators' => [
-          'file_validate_extensions' => ['xlsx ods csv'],
+          'FileExtension' => ['extensions' => 'xlsx ods csv'],
         ],
         '#upload_location' => "{$this->systemFileConfig->get('default_scheme')}://",
         'sheets' => [
@@ -257,7 +257,7 @@ class FileUpload extends EntityForm {
    * @param \Drupal\Core\Form\FormStateInterface $form_state
    *   The form state while building.
    */
-  protected function builder($entity_type_id, RequestInterface $request, array &$form, FormStateInterface &$form_state) {
+  public function builder($entity_type_id, RequestInterface $request, array &$form, FormStateInterface &$form_state) {
     // Copy/transform the info from the target.
     [$original, $mapped] = $this->mapMappings($request->getOriginalMapping());
     $request->set('mappings', $mapped);

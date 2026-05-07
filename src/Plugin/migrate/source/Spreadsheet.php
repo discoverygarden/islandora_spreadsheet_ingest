@@ -9,10 +9,11 @@ use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\migrate\Plugin\migrate\source\SourcePluginBase;
 use Drupal\migrate\Plugin\MigrationInterface;
 use OpenSpout\Common\Exception\IOException;
-use OpenSpout\Reader\Common\Creator\ReaderFactory;
 use OpenSpout\Reader\CSV\Reader as CSVReader;
+use OpenSpout\Reader\ODS\Reader as ODSReader;
 use OpenSpout\Reader\ReaderInterface;
 use OpenSpout\Reader\SheetInterface;
+use OpenSpout\Reader\XLSX\Reader as XLSXReader;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -121,7 +122,7 @@ class Spreadsheet extends SourcePluginBase implements ConfigurableInterface, Con
   /**
    * {@inheritdoc}
    */
-  public function rewind() {
+  public function rewind() : void {
     // XXX: "rewind()" by recreating the underlying iterator, since we make
     // use of the generator business.
     unset($this->iterator);
@@ -216,15 +217,22 @@ class Spreadsheet extends SourcePluginBase implements ConfigurableInterface, Con
     if ($this->reader === NULL) {
       $path = $this->getConfiguration()['file'];
       $realpath = $this->fileSystem->realpath($path);
+      $extension = pathinfo($path, PATHINFO_EXTENSION);
+      /** @var \OpenSpout\Reader\ReaderInterface $reader_class */
+      $reader_class = match(strtolower($extension)) {
+        'csv' => CSVReader::class,
+        'ods' => ODSReader::class,
+        'xlsx' => XLSXReader::class,
+      };
+      $reader = new $reader_class();
+
       if ($realpath !== FALSE) {
-        $reader = ReaderFactory::createFromFile($realpath);
         $reader->open($realpath);
       }
       else {
         try {
           // Real-path of stream wrappers does not quite make sense, so allow
           // an opportunity for files from stream wrappers to be processed.
-          $reader = ReaderFactory::createFromFile($path);
           $reader->open($path);
         }
         catch (IOException $e) {
@@ -236,7 +244,6 @@ class Spreadsheet extends SourcePluginBase implements ConfigurableInterface, Con
           // from the equation.
           $spooled = $this->fileSystem->copy($path, sys_get_temp_dir());
           $this->spoolFile = $this->fileSystem->realpath($spooled);
-          $reader = ReaderFactory::createFromFile($this->spoolFile);
           $reader->open($this->spoolFile);
         }
       }
