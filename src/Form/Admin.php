@@ -15,7 +15,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class Admin extends ConfigFormBase {
 
   /**
-   * Drupal's stream wrapper manager service..
+   * Drupal's stream wrapper manager service.
    *
    * @var \Drupal\Core\StreamWrapper\StreamWrapperManagerInterface
    */
