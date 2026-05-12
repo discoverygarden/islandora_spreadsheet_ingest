@@ -4,7 +4,6 @@ namespace Drupal\islandora_spreadsheet_ingest\Spreadsheet;
 
 use Drupal\Core\File\FileSystemInterface;
 use Drupal\file\FileInterface;
-use Drupal\islandora_spreadsheet_ingest\src\Spreadsheet\SelfDestructingFile;
 use OpenSpout\Common\Exception\IOException;
 use OpenSpout\Reader\CSV\Reader as CSVReader;
 use OpenSpout\Reader\ODS\Reader as ODSReader;

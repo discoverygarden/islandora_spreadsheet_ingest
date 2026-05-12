@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\islandora_spreadsheet_ingest\src\Spreadsheet;
+namespace Drupal\islandora_spreadsheet_ingest\Spreadsheet;
 
 /**
  * File that deletes itself when garbage collected.
