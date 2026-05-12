@@ -12,34 +12,6 @@ use Drupal\file\FileInterface;
 interface SpreadsheetServiceInterface {
 
   /**
-   * Read the given file.
-   *
-   * @param \Drupal\file\FileInterface $file
-   *   The spreadsheet file to read.
-   *
-   * @return \PhpOffice\PhpSpreadsheet\Spreadsheet
-   *   A spreadsheet object representing the given file.
-   *
-   * @deprecated in 3.11.x and is removed from 4.x. Use openspout instead.
-   * @see https://github.com/discoverygarden/islandora_spreadsheet_ingest/issues/129
-   */
-  public function read(FileInterface $file);
-
-  /**
-   * Get a reader for the given file.
-   *
-   * @param \Drupal\file\FileInterface $file
-   *   The spreadsheet file for which to build a reader.
-   *
-   * @return \PhpOffice\PhpSpreadsheet\Reader\IReader
-   *   An IReader instance with which the given file might be read.
-   *
-   * @deprecated in 3.11.x and is removed from 4.x. Use openspout instead.
-   * @see https://github.com/discoverygarden/islandora_spreadsheet_ingest/issues/129
-   */
-  public function getReader(FileInterface $file);
-
-  /**
    * Get the header from the given file.
    *
    * @param \Drupal\file\FileInterface $file

@@ -10,7 +10,6 @@ use OpenSpout\Reader\ODS\Reader as ODSReader;
 use OpenSpout\Reader\ReaderInterface;
 use OpenSpout\Reader\SheetInterface;
 use OpenSpout\Reader\XLSX\Reader as XLSXReader;
-use PhpOffice\PhpSpreadsheet\IOFactory;
 
 /**
  * Spreadsheet service.
@@ -41,48 +40,6 @@ class SpreadsheetService implements SpreadsheetServiceInterface {
   ) {
     $this->readers = new \WeakMap();
     $this->worksheets = new \WeakMap();
-  }
-
-  /**
-   * Helper to get the real path of the given file.
-   *
-   * @param \Drupal\file\FileInterface $file
-   *   The file for which to determine the real path.
-   *
-   * @return string
-   *   The real path of the file
-   *
-   * @throws \InvalidArgumentException
-   *   Thrown if the given file is not stored locally.
-   */
-  protected function getFilePath(FileInterface $file) {
-    $path = $this->fileSystem->realpath($file->getFileUri());
-    if ($path) {
-      return $path;
-    }
-    else {
-      throw new \InvalidArgumentException('The file must be local in order to be parsed.');
-    }
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function read(FileInterface $file) {
-    @trigger_error('Deprecated in 3.11.x for removal in 4.x; rework to use another library, such as OpenSpout. See https://github.com/discoverygarden/islandora_spreadsheet_ingest/issues/129', E_USER_DEPRECATED);
-    $reader = $this->getReader($file);
-    return $reader->load($this->getFilePath($file));
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function getReader(FileInterface $file) {
-    @trigger_error('Deprecated in 3.11.x for removal in 4.x; rework to use another library, such as OpenSpout. See https://github.com/discoverygarden/islandora_spreadsheet_ingest/issues/129', E_USER_DEPRECATED);
-    $reader = IOFactory::createReaderForFile($this->getFilePath($file));
-    $reader->setReadDataOnly(TRUE);
-
-    return $reader;
   }
 
   /**
