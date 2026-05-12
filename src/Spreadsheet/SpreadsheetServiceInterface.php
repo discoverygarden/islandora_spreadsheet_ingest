@@ -6,8 +6,6 @@ use Drupal\file\FileInterface;
 
 /**
  * Spreadsheet service interface.
- *
- * phpcs:disable Drupal.Commenting.Deprecated.DeprecatedVersionFormat,Drupal.Commenting.Deprecated.DeprecatedWrongSeeUrlFormat
  */
 interface SpreadsheetServiceInterface {
 
@@ -25,7 +23,7 @@ interface SpreadsheetServiceInterface {
    * @return string[]
    *   The values of the cells from the indicated header row.
    */
-  public function getHeader(FileInterface $file, $sheet = NULL, $row = 0);
+  public function getHeader(FileInterface $file, ?string $sheet = NULL, int $row = 0) : array;
 
   /**
    * List the worksheets contained in the specified spreadsheet.
@@ -37,6 +35,6 @@ interface SpreadsheetServiceInterface {
    *   An array of strings representing the contained worksheets, or NULL if
    *   the file is of a format which does not support multiple sheets.
    */
-  public function listWorksheets(FileInterface $file);
+  public function listWorksheets(FileInterface $file) : ?array;
 
 }

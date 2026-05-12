@@ -13,8 +13,6 @@ use OpenSpout\Reader\XLSX\Reader as XLSXReader;
 
 /**
  * Spreadsheet service.
- *
- * phpcs:disable Drupal.Semantics.FunctionTriggerError.TriggerErrorTextLayoutRelaxed
  */
 class SpreadsheetService implements SpreadsheetServiceInterface {
 
@@ -130,7 +128,7 @@ class SpreadsheetService implements SpreadsheetServiceInterface {
   /**
    * {@inheritdoc}
    */
-  public function getHeader(FileInterface $file, $sheet = NULL, $row = 0) {
+  public function getHeader(FileInterface $file, ?string $sheet = NULL, int $row = 0) : array {
     foreach ($this->getSpoutWorksheet($file, $sheet)->getRowIterator() as $index => $spout_row) {
       if ($index === $row) {
         return $spout_row->toArray();
@@ -143,7 +141,7 @@ class SpreadsheetService implements SpreadsheetServiceInterface {
   /**
    * {@inheritdoc}
    */
-  public function listWorksheets(FileInterface $file) {
+  public function listWorksheets(FileInterface $file) : ?array {
     $reader = $this->getSpoutReader($file);
 
     return match(TRUE) {
