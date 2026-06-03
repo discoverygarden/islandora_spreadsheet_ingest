@@ -6,6 +6,8 @@ use Drupal\file\FileInterface;
 
 /**
  * Spreadsheet service interface.
+ *
+ * phpcs:disable Drupal.Commenting.Deprecated.DeprecatedVersionFormat,Drupal.Commenting.Deprecated.DeprecatedWrongSeeUrlFormat
  */
 interface SpreadsheetServiceInterface {
 
@@ -17,6 +19,9 @@ interface SpreadsheetServiceInterface {
    *
    * @return \PhpOffice\PhpSpreadsheet\Spreadsheet
    *   A spreadsheet object representing the given file.
+   *
+   * @deprecated in 3.11.x and is removed from 4.x. Use openspout instead.
+   * @see https://github.com/discoverygarden/islandora_spreadsheet_ingest/issues/129
    */
   public function read(FileInterface $file);
 
@@ -28,6 +33,9 @@ interface SpreadsheetServiceInterface {
    *
    * @return \PhpOffice\PhpSpreadsheet\Reader\IReader
    *   An IReader instance with which the given file might be read.
+   *
+   * @deprecated in 3.11.x and is removed from 4.x. Use openspout instead.
+   * @see https://github.com/discoverygarden/islandora_spreadsheet_ingest/issues/129
    */
   public function getReader(FileInterface $file);
 
