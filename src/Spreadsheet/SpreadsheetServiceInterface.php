@@ -6,38 +6,8 @@ use Drupal\file\FileInterface;
 
 /**
  * Spreadsheet service interface.
- *
- * phpcs:disable Drupal.Commenting.Deprecated.DeprecatedVersionFormat,Drupal.Commenting.Deprecated.DeprecatedWrongSeeUrlFormat
  */
 interface SpreadsheetServiceInterface {
-
-  /**
-   * Read the given file.
-   *
-   * @param \Drupal\file\FileInterface $file
-   *   The spreadsheet file to read.
-   *
-   * @return \PhpOffice\PhpSpreadsheet\Spreadsheet
-   *   A spreadsheet object representing the given file.
-   *
-   * @deprecated in 3.11.x and is removed from 4.x. Use openspout instead.
-   * @see https://github.com/discoverygarden/islandora_spreadsheet_ingest/issues/129
-   */
-  public function read(FileInterface $file);
-
-  /**
-   * Get a reader for the given file.
-   *
-   * @param \Drupal\file\FileInterface $file
-   *   The spreadsheet file for which to build a reader.
-   *
-   * @return \PhpOffice\PhpSpreadsheet\Reader\IReader
-   *   An IReader instance with which the given file might be read.
-   *
-   * @deprecated in 3.11.x and is removed from 4.x. Use openspout instead.
-   * @see https://github.com/discoverygarden/islandora_spreadsheet_ingest/issues/129
-   */
-  public function getReader(FileInterface $file);
 
   /**
    * Get the header from the given file.
@@ -53,7 +23,7 @@ interface SpreadsheetServiceInterface {
    * @return string[]
    *   The values of the cells from the indicated header row.
    */
-  public function getHeader(FileInterface $file, $sheet = NULL, $row = 0);
+  public function getHeader(FileInterface $file, ?string $sheet = NULL, int $row = 0) : array;
 
   /**
    * List the worksheets contained in the specified spreadsheet.
@@ -65,6 +35,6 @@ interface SpreadsheetServiceInterface {
    *   An array of strings representing the contained worksheets, or NULL if
    *   the file is of a format which does not support multiple sheets.
    */
-  public function listWorksheets(FileInterface $file);
+  public function listWorksheets(FileInterface $file) : ?array;
 
 }

@@ -114,7 +114,9 @@ class MigrationMapping extends FormElement {
    */
   protected static function getSourceProperties(array $element, FormStateInterface $form_state) {
     $source = $element['#request']->getSheet();
-    $header = \Drupal::service('islandora_spreadsheet_ingest.spreadsheet_service')
+    /** @var \Drupal\islandora_spreadsheet_ingest\Spreadsheet\SpreadsheetServiceInterface $spreadsheet_service */
+    $spreadsheet_service = \Drupal::service('islandora_spreadsheet_ingest.spreadsheet_service');
+    $header = $spreadsheet_service
       ->getHeader(
         \Drupal::service('entity_type.manager')->getStorage('file')->load(reset($source['file'])),
         $source['sheet']
