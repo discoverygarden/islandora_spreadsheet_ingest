@@ -3,8 +3,8 @@
 namespace Drupal\islandora_spreadsheet_ingest\Util;
 
 use Drupal\Core\DependencyInjection\DependencySerializationTrait;
-use Drupal\Core\Queue\QueueInterface;
 use Drupal\dgi_migrate\MigrateBatchException;
+use Drupal\dgi_migrate\MigrateBatchExecutable;
 use Drupal\dgi_migrate\StatusFilter;
 use Drupal\migrate\Event\MigrateEvents;
 use Drupal\migrate\Event\MigrateRollbackEvent;
@@ -12,24 +12,16 @@ use Drupal\migrate\Event\MigrateRowDeleteEvent;
 use Drupal\migrate\MigrateMessageInterface;
 use Drupal\migrate\Plugin\MigrateIdMapInterface;
 use Drupal\migrate\Plugin\MigrationInterface;
-use Drupal\migrate_tools\MigrateExecutable;
 
 /**
  * Class responsible for rolling back a migration in batches.
  */
-class MigrationRollbackBatch extends MigrateExecutable {
+class MigrationRollbackBatch extends MigrateBatchExecutable {
 
   use DependencySerializationTrait {
     __sleep as traitSleep;
     __wakeup as traitWakeup;
   }
-
-  /**
-   * Stores the migration rows.
-   *
-   * @var \Drupal\Core\Queue\QueueInterface
-   */
-  protected QueueInterface $queue;
 
   /**
    * Flag if we should exclusively consider failed and ignored rows to rollback.
@@ -91,7 +83,7 @@ class MigrationRollbackBatch extends MigrateExecutable {
    *   One of the MigrationInterface::RESULT_* constants representing the state
    *   of queueing.
    */
-  private function enqueue(): int {
+  protected function enqueue(): int {
     // Only begin the import operation if the migration is currently idle.
     if ($this->migration->getStatus() !== MigrationInterface::STATUS_IDLE) {
       $this->message->display($this->t('Migration @id is busy with another operation: @status',
@@ -293,27 +285,10 @@ class MigrationRollbackBatch extends MigrateExecutable {
   }
 
   /**
-   * Helper; build out the name of the queue.
-   *
-   * @return string
-   *   The name of the queue.
+   * {@inheritDoc}
    */
   public function getQueueName() : string {
     return "dgi_migrate__rollback_batch_queue__{$this->migration->id()}";
-  }
-
-  /**
-   * Lazy-load the queue.
-   *
-   * @return \Drupal\Core\Queue\QueueInterface
-   *   The queue implementation to use.
-   */
-  protected function getQueue() : QueueInterface {
-    if (!isset($this->queue)) {
-      $this->queue = \Drupal::queue($this->getQueueName(), TRUE);
-    }
-
-    return $this->queue;
   }
 
 }
