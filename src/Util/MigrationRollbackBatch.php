@@ -131,7 +131,7 @@ class MigrationRollbackBatch extends MigrateBatchExecutable {
     $queue = $this->getQueue();
 
     if (!isset($sandbox['total'])) {
-      $sandbox['total'] = $queue->numberOfItems();
+      $sandbox['total'] = (int) $queue->numberOfItems();
       if ($sandbox['total'] === 0) {
         $context['message'] = $this->t('Queue empty.');
         $context['finished'] = 1;
