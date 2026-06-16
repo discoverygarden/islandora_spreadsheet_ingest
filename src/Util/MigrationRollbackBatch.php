@@ -3,6 +3,7 @@
 namespace Drupal\islandora_spreadsheet_ingest\Util;
 
 use Drupal\Core\DependencyInjection\DependencySerializationTrait;
+use Drupal\Core\Messenger\MessengerTrait;
 use Drupal\dgi_migrate\MigrateBatchException;
 use Drupal\dgi_migrate\MigrateBatchExecutable;
 use Drupal\dgi_migrate\StatusFilter;
@@ -17,6 +18,8 @@ use Drupal\migrate\Plugin\MigrationInterface;
  * Class responsible for rolling back a migration in batches.
  */
 class MigrationRollbackBatch extends MigrateBatchExecutable {
+
+  use MessengerTrait;
 
   use DependencySerializationTrait {
     __sleep as traitSleep;
@@ -273,10 +276,10 @@ class MigrationRollbackBatch extends MigrateBatchExecutable {
    */
   public function finishBatch($success, $results, $ops, $interval): void {
     if (isset($results['errors']) && !empty($results['errors'])) {
-      $this->messenger->addError($this->t('Rollback encountered errors.'));
+      $this->messenger()->addError($this->t('Rollback encountered errors.'));
       foreach ($results['errors'] as $e) {
         $error_message = is_object($e) ? json_encode($e) : (string) $e;
-        $this->messenger->addError($this->t('Migration group rollback failed with exception: @e', ['@e' => $error_message]));
+        $this->messenger()->addError($this->t('Migration group rollback failed with exception: @e', ['@e' => $error_message]));
       }
     }
 
