@@ -158,6 +158,13 @@ class Review extends EntityForm {
           // Method was introduced in dgi_migrate:3.16, the later use of
           // $sandbox['total'] would have been broken since v3.
           $sandbox['total'] = $e->getQueueSize();
+          if ($sandbox['total'] === 0) {
+            $context['message'] = $this->t('Queue empty.');
+            $context['finished'] = 1;
+            $context['results']['status'] = MigrationInterface::RESULT_COMPLETED;
+            $e->finishBatch(TRUE, $context['results'], [], NULL);
+            return;
+          }
         }
       }
       catch (\Exception $ex) {
