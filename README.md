@@ -63,6 +63,10 @@ Configure allowed binary paths at `/admin/config/islandora_spreadsheet_ingest`.
 Having problems or solved a problem? Contact
 [discoverygarden](http://support.discoverygarden.ca).
 
+### Known Issues
+
+* When using the OpenDocument Spreadsheet (ODS) format as the input, cell comments get included in the content of the cell. XSLX avoids this issue, so simply resaving ODS sheets bearing comments as XSLX can avoid this issue, while maintaining the comments. See: https://github.com/openspout/openspout/issues/347
+
 ## Maintainers/Sponsors
 
 Current maintainers:
