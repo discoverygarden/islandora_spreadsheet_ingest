@@ -6,6 +6,7 @@ use Consolidation\SiteAlias\SiteAliasManagerAwareInterface;
 use Consolidation\SiteAlias\SiteAliasManagerAwareTrait;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Queue\QueueInterface;
+use Drupal\islandora_spreadsheet_ingest\FailureNotifier;
 use Drupal\islandora_spreadsheet_ingest\MigrationGroupDeriverInterface;
 use Drush\Commands\DrushCommands;
 use Symfony\Component\Process\Process;
@@ -39,12 +40,20 @@ class DeferredIngestCommand extends DrushCommands implements SiteAliasManagerAwa
   protected $migrationGroupDeriver;
 
   /**
+   * Notifier for failed ingests.
+   *
+   * @var \Drupal\islandora_spreadsheet_ingest\FailureNotifier
+   */
+  protected $failureNotifier;
+
+  /**
    * Constructor.
    */
-  public function __construct(QueueInterface $queue, EntityTypeManagerInterface $entity_type_manager, MigrationGroupDeriverInterface $migration_group_deriver) {
+  public function __construct(QueueInterface $queue, EntityTypeManagerInterface $entity_type_manager, MigrationGroupDeriverInterface $migration_group_deriver, FailureNotifier $failure_notifier) {
     $this->queue = $queue;
     $this->entityTypeManager = $entity_type_manager;
     $this->migrationGroupDeriver = $migration_group_deriver;
+    $this->failureNotifier = $failure_notifier;
   }
 
   /**
@@ -103,6 +112,17 @@ class DeferredIngestCommand extends DrushCommands implements SiteAliasManagerAwa
             'code' => $process->getExitCode(),
           ]);
           $failed = TRUE;
+        }
+
+        // Row-level failures do not affect the exit code, so always check.
+        try {
+          $this->failureNotifier->notify($request, $process->getExitCode());
+        }
+        catch (\Throwable $e) {
+          $this->logger()->error('Failed to send notification for request {id}: {message}', [
+            'id' => $item->data,
+            'message' => $e->getMessage(),
+          ]);
         }
       }
 

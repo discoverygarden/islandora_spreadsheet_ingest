@@ -1,3 +1,7 @@
 ---
 binary_directory_whitelist: []
 schemes: []
+notifications:
+  enabled: false
+  notify_owner: true
+  recipients: []

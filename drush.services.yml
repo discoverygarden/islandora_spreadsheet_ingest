@@ -10,5 +10,6 @@ services:
       - '@islandora_spreadsheet_ingest.deferred_ingest.queue'
       - '@entity_type.manager'
       - '@islandora_spreadsheet_ingest.migration_group_deriver'
+      - '@islandora_spreadsheet_ingest.failure_notifier'
     tags:
       - { name: drush.command }

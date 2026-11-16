@@ -12,6 +12,21 @@ islandora_spreadsheet_ingest.settings:
       label: 'Allowed source URI schemes.'
       sequence:
         type: string
+    notifications:
+      type: mapping
+      label: 'Failure notification settings.'
+      mapping:
+        enabled:
+          type: boolean
+          label: 'Send notifications of failed deferred ingests.'
+        notify_owner:
+          type: boolean
+          label: 'Notify the owner of the request.'
+        recipients:
+          type: sequence
+          label: 'Additional addresses to notify.'
+          sequence:
+            type: string
 
 islandora_spreadsheet_ingest.request.*:
   type: config_entity
