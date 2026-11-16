@@ -13,6 +13,19 @@ services:
   plugin.manager.isi_pipeline_source:
     class: Drupal\islandora_spreadsheet_ingest\Plugin\PipelineSourcePluginManager
     parent: default_plugin_manager
+  logger.channel.isi_failure_notifier:
+    parent: logger.channel_base
+    arguments: [isi_failure_notifier]
+  islandora_spreadsheet_ingest.failure_notifier:
+    class: Drupal\islandora_spreadsheet_ingest\FailureNotifier
+    arguments:
+      - '@config.factory'
+      - '@entity_type.manager'
+      - '@plugin.manager.migration'
+      - '@plugin.manager.mail'
+      - '@language_manager'
+      - '@islandora_spreadsheet_ingest.migration_group_deriver'
+      - '@logger.channel.isi_failure_notifier'
   islandora_spreadsheet_ingest.migration_group_deriver:
     class: Drupal\islandora_spreadsheet_ingest\MigrationGroupDeriver
     arguments:

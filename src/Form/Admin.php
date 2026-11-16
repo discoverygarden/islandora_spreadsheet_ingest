@@ -96,6 +96,29 @@ class Admin extends ConfigFormBase {
       '#default_value' => $current_whitelist ? implode(',', $current_whitelist) : '',
       '#description' => $this->t('A comma separated list of local locations from which spreadsheet ingests can use binaries.'),
     ];
+    $form['notifications'] = [
+      '#type' => 'details',
+      '#title' => $this->t('Failure notifications'),
+      '#open' => (bool) $config->get('notifications.enabled'),
+      '#tree' => TRUE,
+    ];
+    $form['notifications']['enabled'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Email when a deferred ingest has failures'),
+      '#description' => $this->t('Sent when the ingest process fails or any rows failed to import.'),
+      '#default_value' => $config->get('notifications.enabled') ?? FALSE,
+    ];
+    $form['notifications']['notify_owner'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Notify the owner of the request'),
+      '#default_value' => $config->get('notifications.notify_owner') ?? TRUE,
+    ];
+    $form['notifications']['recipients'] = [
+      '#type' => 'textarea',
+      '#title' => $this->t('Additional recipients'),
+      '#description' => $this->t('Email addresses, one per line.'),
+      '#default_value' => implode("\n", $config->get('notifications.recipients') ?? []),
+    ];
     $form['submit'] = [
       '#type' => 'submit',
       '#value' => $this->t('Save'),
@@ -119,6 +142,12 @@ class Admin extends ConfigFormBase {
     $whitelist = array_filter(explode(',', $form_state->getValue('paths')));
     $config->set('binary_directory_whitelist', $whitelist);
     $config->set('schemes', array_filter($form_state->getValue('schemes')));
+    $notifications = $form_state->getValue('notifications');
+    $config->set('notifications', [
+      'enabled' => (bool) $notifications['enabled'],
+      'notify_owner' => (bool) $notifications['notify_owner'],
+      'recipients' => array_values(array_filter(array_map('trim', explode("\n", $notifications['recipients'])))),
+    ]);
     $config->save();
     parent::submitForm($form, $form_state);
   }
